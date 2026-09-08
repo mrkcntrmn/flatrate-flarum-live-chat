@@ -13,6 +13,11 @@ Object.assign(Chat.prototype, {
     first_message: Model.hasOne('first_message'),
     last_message: Model.hasOne('last_message'),
     icon: Model.attribute('icon'),
+    room_key: Model.attribute('room_key'),
+    scope_type: Model.attribute('scope_type'),
+    scope_key: Model.attribute('scope_key'),
+    visibility: Model.attribute('visibility'),
+    audience: Model.attribute('audience'),
 
     role: Model.attribute('role'),
     unreaded: Model.attribute('unreaded', (v) => Math.max(v, 0)),

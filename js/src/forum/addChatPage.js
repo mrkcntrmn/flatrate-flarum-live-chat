@@ -4,17 +4,16 @@ import LinkButton from 'flarum/components/LinkButton';
 import ChatPage from './components/ChatPage';
 
 export default function addChatPage() {
+    // Canonical family: /live/{roomKey}
+    app.routes['flatrate-live-chat.live'] = {
+        path: '/live/:roomKey',
+        component: ChatPage,
+    };
+    // Legacy /chat retained for disposable smoke; not a member nav destination.
     app.routes.chat = { path: '/chat', component: ChatPage };
 
     extend(IndexPage.prototype, 'navItems', function (items) {
-        if (app.screen() !== 'phone') return;
-
-        items.add(
-            'chat',
-            <LinkButton icon="fas fa-comment" href={app.route('chat')}>
-                {app.translator.trans('flatrate-live-chat.forum.index.chat_link')}
-            </LinkButton>,
-            -10
-        );
+        // SIDEBAR_LIVE_CHAT_TOP_LEVEL=false — do not add a fourth top-level nav item.
+        return;
     });
 }

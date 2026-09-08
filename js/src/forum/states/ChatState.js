@@ -54,7 +54,46 @@ export default class ChatState {
 
         this.viewportStates = {};
 
-        if (app.session.user && app.pusher) app.pusher.then(this.listenSocketChannels.bind(this));
+        // Prefer owned FlatRate realtime client; keep legacy ambient hook only if present.
+        if (app.session.user && app.flatrateLiveRealtime && app.flatrateLiveRealtime.isConfigured()) {
+            // Subscriptions happen when a chat is selected (per-room private channels).
+        } else if (app.session.user && app.pusher) {
+            app.pusher.then(this.listenSocketChannels.bind(this));
+        }
+    }
+
+    handleFlatRateRealtime(envelope) {
+        // Realtime acceleration — HTTP history remains authoritative.
+        if (!envelope || !envelope.type) return;
+        const roomKey = envelope.roomKey;
+        // Map versioned events into existing handlers where possible.
+        if (envelope.type === 'message.created' || envelope.type === 'message.edited' || envelope.type === 'message.deleted') {
+            // Trigger a bounded refetch for the active room rather than trusting payload bodies.
+            const chat = this.chats.find((c) => c.room_key?.() === roomKey || c.roomKey?.() === roomKey);
+            if (chat) {
+                this.apiFetchChatMessages?.(chat, [envelope.order || envelope.payload?.messageId].filter(Boolean), {
+                    notify: true,
+                    withFlash: true,
+                    disableLoader: true,
+                });
+            }
+            m.redraw();
+        } else if (envelope.type === 'room.updated') {
+            this.apiFetchChats?.();
+        }
+    }
+
+    subscribeRoomChannel(channelName) {
+        if (app.flatrateLiveRealtime) {
+            return app.flatrateLiveRealtime.subscribe(channelName);
+        }
+        return null;
+    }
+
+    unsubscribeRoomChannel(channelName) {
+        if (app.flatrateLiveRealtime) {
+            app.flatrateLiveRealtime.unsubscribe(channelName);
+        }
     }
 
     getViewportState(model) {

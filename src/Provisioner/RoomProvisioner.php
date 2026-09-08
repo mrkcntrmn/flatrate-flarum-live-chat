@@ -1,19 +1,20 @@
 <?php
 /*
  * This file is part of flatrate/flarum-live-chat
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
  */
 
 namespace FlatRate\LiveChat\Provisioner;
 
 use FlatRate\LiveChat\Catalog\RoomCatalog;
 use FlatRate\LiveChat\Chat;
+use FlatRate\LiveChat\Rollout\RolloutProfile;
+use FlatRate\LiveChat\Rollout\RoomAudience;
+use FlatRate\LiveChat\Rollout\RoomVisibility;
 
 /**
  * validate / dry-run / reconcile for canonical rooms.
  * Disposable only — defaults to dry-run. No production credentials.
+ * Reconcile always targets CANONICAL_ROOM_COUNT=42.
  */
 class RoomProvisioner
 {
@@ -23,13 +24,15 @@ class RoomProvisioner
 
     public function __construct(
         private RoomCatalog $catalog,
-        private bool $allowWrites = false
+        private bool $allowWrites = false,
+        private ?RolloutProfile $rollout = null
     ) {
+        $this->rollout = $rollout ?? new RolloutProfile();
     }
 
     /**
-     * @param list<array{room_key?:string,roomKey?:string,title?:string,scope_type?:string,scope_key?:string}> $existingRooms
-     * @return array{mode:string,expected:int,missing:list,extra:list,drifted:list,created:list,updated:list,unchanged:int}
+     * @param list<array{room_key?:string,roomKey?:string,title?:string,scope_type?:string,scope_key?:string,visibility?:string,audience?:string}> $existingRooms
+     * @return array{mode:string,expected:int,missing:list,extra:list,drifted:list,created:list,updated:list,unchanged:int,writesApplied:bool}
      */
     public function run(string $mode, array $existingRooms = []): array
     {
@@ -42,6 +45,10 @@ class RoomProvisioner
         }
 
         $expected = $this->catalog->rooms();
+        if (count($expected) !== 42) {
+            throw new \RuntimeException('CANONICAL_ROOM_COUNT must be 42');
+        }
+
         $byKey = [];
         foreach ($existingRooms as $row) {
             $key = $row['room_key'] ?? $row['roomKey'] ?? null;
@@ -59,10 +66,12 @@ class RoomProvisioner
         foreach ($expected as $room) {
             $key = $room['roomKey'];
             $seen[$key] = true;
+            $policy = $this->rollout->policyForRoomKey($key);
+
             if (!isset($byKey[$key])) {
                 $missing[] = $room;
                 if ($mode === self::MODE_RECONCILE) {
-                    $created[] = $this->createRoom($room);
+                    $created[] = $this->createRoom($room, $policy);
                 }
                 continue;
             }
@@ -80,10 +89,18 @@ class RoomProvisioner
                     'to' => [$room['scopeType'], $room['scopeKey']],
                 ];
             }
+            $curVis = $existing['visibility'] ?? null;
+            $curAud = $existing['audience'] ?? null;
+            if ($curVis !== $policy['visibility'] || $curAud !== $policy['audience']) {
+                $drift['rollout'] = [
+                    'from' => ['visibility' => $curVis, 'audience' => $curAud],
+                    'to' => $policy,
+                ];
+            }
             if ($drift) {
                 $drifted[] = ['roomKey' => $key, 'drift' => $drift];
                 if ($mode === self::MODE_RECONCILE) {
-                    $updated[] = $this->updateRoom($existing, $room);
+                    $updated[] = $this->updateRoom($existing, $room, $policy);
                 }
             }
         }
@@ -91,7 +108,6 @@ class RoomProvisioner
         $extra = [];
         foreach ($byKey as $key => $row) {
             if (!isset($seen[$key]) && !empty($row['room_key'] ?? $row['roomKey'])) {
-                // Extra rows that look canonical (have room_key) are reported.
                 $extra[] = ['roomKey' => $key];
             }
         }
@@ -106,27 +122,35 @@ class RoomProvisioner
             'updated' => $updated,
             'unchanged' => count($expected) - count($missing) - count($drifted),
             'writesApplied' => $mode === self::MODE_RECONCILE,
+            'rolloutProfile' => $this->rollout->profileId(),
         ];
     }
 
-    private function createRoom(array $room): array
+    private function createRoom(array $room, array $policy): array
     {
         $chat = Chat::build(
             $room['name'],
             '#334155',
             '',
-            1, // public channel type only
-            0, // system/reconcile creator (not a member-created room)
+            1,
+            0,
             \Carbon\Carbon::now()
         );
         $chat->room_key = $room['roomKey'];
         $chat->scope_type = $room['scopeType'];
         $chat->scope_key = $room['scopeKey'];
+        $chat->visibility = $policy['visibility'] ?? RoomVisibility::HIDDEN;
+        $chat->audience = $policy['audience'] ?? RoomAudience::STAFF_PREVIEW;
         $chat->save();
-        return ['roomKey' => $room['roomKey'], 'id' => $chat->id];
+        return [
+            'roomKey' => $room['roomKey'],
+            'id' => $chat->id,
+            'visibility' => $chat->visibility,
+            'audience' => $chat->audience,
+        ];
     }
 
-    private function updateRoom(array $existing, array $room): array
+    private function updateRoom(array $existing, array $room, array $policy): array
     {
         $id = $existing['id'] ?? null;
         if (!$id) {
@@ -136,9 +160,18 @@ class RoomProvisioner
         if (!$chat) {
             return ['roomKey' => $room['roomKey'], 'updated' => false];
         }
+        // Display name may update; room_key / scope are durable identity — never rewrite.
         $chat->title = $room['name'];
-        // room_key / scope are durable — do not rewrite keys on display-name reconcile
+        // Visibility/audience may transition without changing identity/messages.
+        $chat->visibility = $policy['visibility'];
+        $chat->audience = $policy['audience'];
         $chat->save();
-        return ['roomKey' => $room['roomKey'], 'updated' => true];
+        return [
+            'roomKey' => $room['roomKey'],
+            'updated' => true,
+            'visibility' => $chat->visibility,
+            'audience' => $chat->audience,
+            'identityPreserved' => true,
+        ];
     }
 }

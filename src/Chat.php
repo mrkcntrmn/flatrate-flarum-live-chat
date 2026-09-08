@@ -28,6 +28,8 @@ class Chat extends AbstractModel
         'room_key',
         'scope_type',
         'scope_key',
+        'visibility',
+        'audience',
     ];
 
     /**

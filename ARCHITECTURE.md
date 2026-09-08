@@ -20,6 +20,8 @@ Durable FlatRate identity (not Neon numeric `chat.id`, not Flarum tag id/slug):
 ```text
 room_key UNIQUE
 (scope_type, scope_key) UNIQUE
+visibility  (visible|hidden)
+audience    (members|staff-preview)
 ```
 
 Canonical catalog (embedded `resources/room-catalog.json`):
@@ -27,51 +29,57 @@ Canonical catalog (embedded `resources/room-catalog.json`):
 - 41 brand rooms: `roomKey={boardKey}-live`, `scopeType=board`, `scopeKey={boardKey}`
 - 1 General Live: `community-general-live`, `scopeType=navigation-group`, `scopeKey=community`
 
+```text
+CANONICAL_ROOM_COUNT=42
+```
+
 GM Live and CDJR Live are independent of child brand rooms. No mirroring.
+
+## Rollout
+
+See `ROLLOUT.md`. Profile `general-live-first`: General Live member-visible;
+all brand rooms hidden/staff-preview. Not a single `enabled` boolean.
 
 ## Authorization
 
 `Auth\ChatAuthorization` is enforced server-side on API handlers:
 
-- guests: no post; no message history
-- members: read/post permitted public canonical rooms only
+- guests: no post; no message history; no realtime
+- members: read/post only rooms visible under rollout (General Live first)
+- staff preview: `canPreviewHiddenChatRooms(actor)` (admin + moderator)
 - members: cannot create/rename/delete/mutate scope
-- suspended: cannot post
+- suspended: cannot post or subscribe
 - sender always from actor (spoof rejected)
 - type=0 private/group chat disabled (`DM_COUPLING=false`)
+- Prefer 404 over revealing 403 for hidden room guesses
+
+## Routes
+
+Canonical family: `/live/{roomKey}` (examples: `/live/community-general-live`, `/live/toyota-live`).
 
 ## Provisioner
 
 `Provisioner\RoomProvisioner` modes: `validate` | `dry-run` | `reconcile`.
 
 Default `allowWrites=false` (DRY_RUN_ONLY). Reconcile requires explicit allowWrites for disposable runtimes only (`FLATRATE_LIVE_CHAT_ALLOW_WRITES=1`).
+Reconcile applies rollout visibility/audience without rewriting durable identity.
 
 ## Realtime boundary
 
-```text
-RealtimePublisher abstraction = implemented
-per-room publish scope = implemented
-NullRealtimePublisher (default production-safe)
-FakeRealtimePublisher (tests / disposable HTTP matrix)
-transport selection = PENDING (CHAT-001C)
-subscription transport AuthZ = PENDING (CHAT-001C)
-```
+See `REALTIME.md`.
 
 ```text
-REALTIME_IMPLEMENTATION_DECISION=PENDING
-TRANSPORT_SUBSCRIPTION_AUTH=PENDING
+TRANSPORT_IMPLEMENTATION=PUSHER_CHANNELS
+transportDecision=PUSHER_CHANNELS
+transportImplementationStatus=implemented/complete
+transportExternalQualification=PENDING
+productionPusherConfigured=false
 PUSHER_SELECTED=false
-PUSHER_AUTHORIZED=false
-PUSHER_CONFIGURED=false
 SHARED_PUBLIC_PUSHER_CHANNEL=false
 ```
 
-Events are published to isolated per-room channel keys. No shared `public` fanout.
-Pusher is not the selected solution; transport remains undecided until CHAT-001C.
-
-Disposable runtimes may set `FLATRATE_LIVE_CHAT_FAKE_REALTIME=1` (optional
-`FLATRATE_LIVE_CHAT_FAKE_REALTIME_FILE`) to prove publish-scope isolation through
-the real HTTP post path without configuring a production transport.
+`NullRealtimePublisher` when credentials incomplete; `FakeRealtimePublisher` for
+disposable HTTP matrix (`FLATRATE_LIVE_CHAT_FAKE_REALTIME=1`).
 
 ## Content / media / indexing
 
@@ -80,6 +88,14 @@ the real HTTP post path without configuring a production transport.
 - `CHAT_INDEXING=false` — noindex on chat frontend
 - `CHAT_IP_PERSISTENCE=false`
 - `CHAT_EMAIL_NOTIFICATIONS=false`
+
+## Doctor
+
+```bash
+php flarum flatrate:live-chat:doctor
+```
+
+Reports catalog/rollout/transport without secrets.
 
 ## Flarum 2 boundary
 

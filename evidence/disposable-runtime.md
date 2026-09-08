@@ -1,4 +1,4 @@
-# Disposable runtime evidence (FORUM-CHAT-001B.R1)
+# Disposable runtime evidence (FORUM-CHAT-001C)
 
 ```text
 RUNTIME_PATH=/home/ilove/dev/flarum-chat-001b-r1-runtime
@@ -6,14 +6,16 @@ DISPOSABLE_FLARUM_VERSION=1.8.19
 DISPOSABLE_FLARUM_CORE_VERSION=1.8.19
 PHP_VERSION=8.2.33
 DB_ENGINE=mariadb:10.11
-OWNED_PACKAGE_PATH=/home/ilove/dev/flatrate-flarum-live-chat
+OWNED_PACKAGE_PATH=/home/ilove/dev/_worktrees/flatrate-flarum-live-chat-chat001c
 DISPOSABLE_RUNTIME_PASS=true
 LIVE_ROOMS_CREATED=0
 PRODUCTION_INSTALL=false
 PACKAGIST_PUBLISHED=false
+PUSHER_SELECTED=false
+productionPusherConfigured=false
 ```
 
-## Required proofs (§37)
+## Required proofs (CHAT-001C)
 
 ```text
 COMPOSER_RESOLVE_PASS=true
@@ -24,40 +26,36 @@ ROOM_RECONCILE_PASS=true
 ROOM_RECONCILE_IDEMPOTENT=true
 FIRST_RECONCILE_CREATED=42
 SECOND_RECONCILE_MUTATION_COUNT=0
+CANONICAL_ROOM_COUNT=42
 
-TOTAL_ROOM_COUNT=42
-BRAND_ROOM_COUNT=41
-GENERAL_ROOM_COUNT=1
-
-HTTP_AUTHZ_MATRIX_PASS=true
-MESSAGE_PERSISTENCE_PASS=true
-SENDER_SPOOF_PASS=true
-SUSPENDED_USER_PASS=true
-FLOODGATE_RUNTIME_PASS=true
-
-SERIALIZER_RUNTIME_ALLOWLIST_PASS=true
-IP_PERSISTENCE_DISABLED=true
-IP_DATABASE_WRITE_COUNT=0
-SCRIPT_REEXECUTION_RUNTIME_PASS=true
-
-PRIVATE_CHAT_HTTP_DISABLED=true
-
+ROLLOUT_PROFILE=general-live-first
+MEMBER_LIST_COUNT=1
+STAFF_LIST_COUNT=42
+MEMBER_TOYOTA_404=true
+STAFF_TOYOTA_OK=true
+GENERAL_LIVE_MEMBER_POST=true
+GUEST_DENY=true
+REALTIME_AUTH_FAIL_CLOSED_NO_CREDS=true
 PUBLISH_SCOPE_ISOLATION_PASS=true
-TRANSPORT_SUBSCRIPTION_AUTH=PENDING
-REALTIME_IMPLEMENTATION_DECISION=PENDING
+VISIBILITY_TRANSITION_PRESERVES_IDENTITY=true
 
-MUST_FIX_REMAINING_COUNT=0
+TRANSPORT_IMPLEMENTATION=PUSHER_CHANNELS
+transportDecision=PUSHER_CHANNELS
+transportImplementationStatus=implemented/complete
+transportExternalQualification=PENDING
+TRANSPORT_SUBSCRIPTION_AUTH=implemented
+SHARED_PUBLIC_PUSHER_CHANNEL=false
+
+CHAT_ATTACHMENTS_INITIAL=false
+CHAT_INDEXING=false
+CHAT_EMAIL_NOTIFICATIONS=false
+DM_COUPLING=false
 ```
 
-## Environment notes
+## Notes
 
-- Installed `flatrate/flarum-live-chat` from local path mount (not stock Neon / Packagist).
-- Canonical rooms: `community-general-live`, `gm-live`, `cdjr-live`, `toyota-live` present.
-- Absent: `start-here-live`, `general-shop-discussion-live`, `technician-topics-live`.
-- Duplicate `room_key` / `(scope_type,scope_key)` rejected by UNIQUE indexes.
-- Disposable actors: guest, member_a, member_b, suspended_member, moderator, admin (credentials only under runtime `evidence/`, gitignored).
-- Floodgate proven via Flarum session `AccessToken` (ApiKey auth intentionally sets `bypassThrottling`).
-- Realtime: `FakeRealtimePublisher` file-backed publish-scope isolation PASS; no Pusher.
-- Browser smoke: CLI/curl only (`BROWSER_SMOKE=CLI_CURL_ONLY`); Chrome DevTools MCP not required for R1 closure.
-
-Machine-readable copy: runtime `evidence/http-authz-matrix-results.json` + `evidence/http-authz-matrix.log`.
+- Mounted C worktree at `/opt/flatrate-flarum-live-chat` for qualification.
+- FakeRealtimePublisher file-backed publish-scope isolation PASS.
+- No production Pusher credentials configured; auth endpoint fail-closed 403.
+- Doctor CLI: `php flarum flatrate:live-chat:doctor` reports catalog/rollout/transport without secrets.
+- Matrix log: runtime `evidence/http-chat001c-matrix.log`.

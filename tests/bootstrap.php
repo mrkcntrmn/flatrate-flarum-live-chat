@@ -11,6 +11,7 @@ spl_autoload_register(function ($class) {
         'Flarum\\Api\\Serializer\\BasicUserSerializer' => __DIR__ . '/_stubs/BasicUserSerializer.php',
         'Flarum\\Api\\Serializer\\UserSerializer' => __DIR__ . '/_stubs/UserSerializer.php',
         'Flarum\\Foundation\\AbstractServiceProvider' => __DIR__ . '/_stubs/AbstractServiceProvider.php',
+        'Illuminate\\Database\\Eloquent\\ModelNotFoundException' => __DIR__ . '/_stubs/Illuminate/Database/Eloquent/ModelNotFoundException.php',
     ];
     if (isset($stubs[$class]) && file_exists($stubs[$class])) {
         require_once $stubs[$class];

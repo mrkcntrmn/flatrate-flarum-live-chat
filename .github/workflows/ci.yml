@@ -15,14 +15,27 @@ jobs:
           php-version: '8.2'
           tools: composer:v2
           coverage: none
-          extensions: dom, mbstring, xmlwriter, tokenizer
+          extensions: dom, mbstring, xmlwriter, tokenizer, curl
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: js/package-lock.json
       - name: Composer validate
         run: composer validate --no-check-publish --strict
       - name: Install dependencies (platform-strict)
         # PHP 8.2 + declared platform extensions; no blanket --ignore-platform-reqs.
         run: composer update --no-interaction --prefer-dist
-      - name: PHPUnit security/domain tests
+      - name: PHPUnit security/domain/rollout/realtime tests
         run: vendor/bin/phpunit --colors=always
+      - name: JS install, test, build
+        working-directory: js
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+        run: |
+          npm ci
+          npm test
+          npm run build
       - name: Upstream provenance guard
         run: |
           python3 - <<'PY'
@@ -49,7 +62,7 @@ jobs:
         run: |
           ! grep -R --include='ChatState.js' -n "createElement('script')" js/src
           ! grep -n "createElement('script')" js/dist/forum.js
-      - name: Room catalog guard
+      - name: Room catalog + rollout guard
         run: |
           python3 - <<'PY'
           import json
@@ -62,8 +75,30 @@ jobs:
           assert 'start-here-live' not in keys
           assert 'general-shop-discussion-live' not in keys
           assert 'technician-topics-live' not in keys
-          print('catalog_ok', len(d['rooms']))
+          r=json.load(open('resources/rollout/general-live-first.json'))
+          assert r['profileId']=='general-live-first'
+          assert r['canonicalRoomCount']==42
+          assert r['defaultBrand']['visibility']=='hidden'
+          assert r['defaultBrand']['audience']=='staff-preview'
+          rooms={x['roomKey']:x for x in r['rooms']}
+          g=rooms['community-general-live']
+          assert g['visibility']=='visible' and g['audience']=='members'
+          print('catalog_rollout_ok', len(d['rooms']))
           PY
+      - name: Transport decision guard
+        run: |
+          grep -q 'TRANSPORT_IMPLEMENTATION=PUSHER_CHANNELS' REALTIME.md ARCHITECTURE.md
+          grep -q 'PUSHER_SELECTED=false' REALTIME.md SECURITY.md
+          grep -q 'productionPusherConfigured=false' REALTIME.md
+          grep -q 'private-flatrate-live-' src/Realtime/PerRoomChannelNamer.php
+          ! grep -R --include='*.php' -n "trigger('public'" src/
+          ! grep -R --include='*.php' -n 'sendPublic' src/
+          test -f src/Realtime/PusherRealtimePublisher.php
+          test -f src/Realtime/PusherChannelAuthorizer.php
+          test -f src/Realtime/PusherClientConfig.php
+          test -f src/Realtime/NullRealtimePublisher.php
+          test -f src/Realtime/FakeRealtimePublisher.php
+          echo transport_guard_ok
 
   flarum-resolve:
     runs-on: ubuntu-latest
@@ -90,6 +125,6 @@ jobs:
           echo "resolved_core=$CORE"
           test "$CORE" = "1.8.19" || test "$CORE" = "* 1.8.19"
           composer show flatrate/flarum-live-chat
-          # Accept either exact line or versions line containing 1.8.19
-          composer show flarum/core | grep -E 'versions\s+:.*1\.8\.19' 
+          composer show flatrate/flarum-live-chat | grep -i pusher || true
+          composer show flarum/core | grep -E 'versions\s+:.*1\.8\.19'
           echo "FLARUM_CORE_RESOLVE_PASS=true"
