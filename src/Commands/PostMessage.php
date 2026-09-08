@@ -24,16 +24,16 @@ class PostMessage
     public $data;
 
     /**
-     * @var string
+     * @var string|null
      */
     public $ip_address;
 
     /**
      * @param User $actor
      * @param mixed $data
-     * @param string $ip_address
+     * @param string|null $ip_address CHAT_IP_PERSISTENCE=false — callers pass null
      */
-    public function __construct(User $actor, $data, string $ip_address)
+    public function __construct(User $actor, $data, ?string $ip_address = null)
     {
         $this->actor = $actor;
         $this->data = $data;

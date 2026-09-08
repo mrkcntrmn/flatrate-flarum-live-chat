@@ -50,15 +50,15 @@ class FloodgateAndSerializerSafetyTest extends TestCase
         $throttler = new ChatMessage(new FakeSettings());
         $actor = (object) ['id' => 1];
 
-        $this->assertFalse($throttler(new FakeRequest('discussions.create', $actor)));
-        $this->assertFalse($throttler(new FakeRequest('posts.create', $actor)));
+        $this->assertNull($throttler(new FakeRequest('discussions.create', $actor)));
+        $this->assertNull($throttler(new FakeRequest('posts.create', $actor)));
 
         $src = file_get_contents(dirname(__DIR__) . '/src/Api/Throttler/ChatMessage.php');
         $this->assertStringContainsString('neonchat.chatmessages.post', $src);
         $this->assertStringNotContainsString("'discussions.create'", $src);
         $this->assertStringContainsString('chatRoutes', $src);
 
-        // Binding proof without hitting Eloquent: chat route is in allowlist; non-chat returns false above.
+        // Non-chat routes must return null (ignored). Returning false would disable all throttlers.
         $this->assertTrue(true);
     }
 

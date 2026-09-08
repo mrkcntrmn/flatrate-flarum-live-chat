@@ -24,29 +24,30 @@ class ChatMessage
         $this->settings = $settings;
     }
 
-    public function __invoke($request): bool
+    public function __invoke($request): ?bool
     {
         $actor = $request->getAttribute('actor');
         $routeName = $request->getAttribute('routeName');
-
         $chatRoutes = [
             'neonchat.chatmessages.post',
             'flatrate-live-chat.chatmessages.post',
         ];
 
+        // Flarum ThrottleApi: false overrides ALL throttlers; only return true/false
+        // for chat post routes. Non-matching routes must be ignored (null).
         if (!in_array($routeName, $chatRoutes, true)) {
-            return false;
+            return null;
         }
 
         if (!$actor || !$actor->id) {
-            return false;
+            return null;
         }
 
         $number = (int) $this->settings->get('flatrate-live-chat.settings.floodgate.number');
         $time = $this->settings->get('flatrate-live-chat.settings.floodgate.time') ?: '10 seconds';
 
         if ($number <= 0) {
-            return false;
+            return null;
         }
 
         $count = Message::where('created_at', '>=', new DateTime('-' . $time))

@@ -9,16 +9,29 @@
 namespace FlatRate\LiveChat\Realtime;
 
 /**
- * Disposable in-memory publisher for isolation tests.
+ * Disposable publisher for isolation tests.
  * SHARED_PUBLIC_PUSHER_CHANNEL=false — events are stored per room channel only.
+ *
+ * When FLATRATE_LIVE_CHAT_FAKE_REALTIME_FILE is set, events persist across
+ * PHP-FPM/Apache request processes (required for HTTP matrix proofs).
  */
 class FakeRealtimePublisher implements RealtimePublisher
 {
     /** @var array<string, list<array{event:string,payload:array}>> */
     private array $channels = [];
 
+    private ?string $persistPath;
+
+    public function __construct(?string $persistPath = null)
+    {
+        $env = getenv('FLATRATE_LIVE_CHAT_FAKE_REALTIME_FILE') ?: null;
+        $this->persistPath = $persistPath ?? ($env !== false && $env !== '' ? $env : null);
+        $this->load();
+    }
+
     public function publish(string $roomChannelKey, string $event, array $payload): void
     {
+        $this->load();
         if (!isset($this->channels[$roomChannelKey])) {
             $this->channels[$roomChannelKey] = [];
         }
@@ -26,6 +39,7 @@ class FakeRealtimePublisher implements RealtimePublisher
             'event' => $event,
             'payload' => $payload,
         ];
+        $this->persist();
     }
 
     /**
@@ -33,7 +47,17 @@ class FakeRealtimePublisher implements RealtimePublisher
      */
     public function eventsFor(string $roomChannelKey): array
     {
+        $this->load();
         return $this->channels[$roomChannelKey] ?? [];
+    }
+
+    /**
+     * @return array<string, list<array{event:string,payload:array}>>
+     */
+    public function allChannels(): array
+    {
+        $this->load();
+        return $this->channels;
     }
 
     public function hasEvent(string $roomChannelKey, string $event): bool
@@ -49,5 +73,37 @@ class FakeRealtimePublisher implements RealtimePublisher
     public function reset(): void
     {
         $this->channels = [];
+        $this->persist();
+    }
+
+    private function load(): void
+    {
+        if (!$this->persistPath || !is_file($this->persistPath)) {
+            return;
+        }
+        $raw = file_get_contents($this->persistPath);
+        if ($raw === false || $raw === '') {
+            return;
+        }
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded)) {
+            $this->channels = $decoded;
+        }
+    }
+
+    private function persist(): void
+    {
+        if (!$this->persistPath) {
+            return;
+        }
+        $dir = dirname($this->persistPath);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        file_put_contents(
+            $this->persistPath,
+            json_encode($this->channels, JSON_PRETTY_PRINT),
+            LOCK_EX
+        );
     }
 }

@@ -54,11 +54,21 @@ class FetchMessageController extends AbstractListController
     protected function data(ServerRequestInterface $request, Document $document)
     {
         $actor = $request->getAttribute('actor');
-        $chat_id = Arr::get($request->getQueryParams(), 'chat_id');
-        $query = Arr::get($request->getQueryParams(), 'query', 0);
+        $params = $request->getQueryParams();
+        $chat_id = Arr::get($params, 'chat_id');
+        if ($chat_id === null) {
+            $chat_id = Arr::get($params, 'filter.chat_id');
+        }
+        if ($chat_id === null && isset($params['filter']) && is_array($params['filter'])) {
+            $chat_id = $params['filter']['chat_id'] ?? null;
+        }
+        $query = Arr::get($params, 'query', 0);
+        if ($chat_id === null || $chat_id === '') {
+            throw new \InvalidArgumentException('chat_id is required');
+        }
 
         return $this->bus->dispatch(
-            new FetchMessage($query, $actor, $chat_id)
+            new FetchMessage($query, $actor, (int) $chat_id)
         );
     }
 }

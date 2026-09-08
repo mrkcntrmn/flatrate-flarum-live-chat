@@ -6,8 +6,12 @@
 COMPOSER=flatrate/flarum-live-chat
 EXTENSION_ID=flatrate-live-chat
 NAMESPACE=FlatRate\LiveChat\
+UPSTREAM_SOURCE=xelson/flarum-ext-chat
 UPSTREAM=xelson/flarum-ext-chat@v1.1.5@a7489ac183764eef12969135d6b665ac5eb18272
 ```
+
+`UPSTREAM.md` SOURCE must remain `xelson/flarum-ext-chat`. Owned package identity
+is separate and must not overwrite provenance fields.
 
 ## Room model
 
@@ -40,24 +44,34 @@ GM Live and CDJR Live are independent of child brand rooms. No mirroring.
 
 `Provisioner\RoomProvisioner` modes: `validate` | `dry-run` | `reconcile`.
 
-Default `allowWrites=false` (DRY_RUN_ONLY). Reconcile requires explicit allowWrites for disposable runtimes only.
+Default `allowWrites=false` (DRY_RUN_ONLY). Reconcile requires explicit allowWrites for disposable runtimes only (`FLATRATE_LIVE_CHAT_ALLOW_WRITES=1`).
 
-## Realtime
+## Realtime boundary
 
 ```text
-RealtimePublisher
-NullRealtimePublisher (default)
-FakeRealtimePublisher (tests)
-PerRoomChannelNamer
+RealtimePublisher abstraction = implemented
+per-room publish scope = implemented
+NullRealtimePublisher (default production-safe)
+FakeRealtimePublisher (tests / disposable HTTP matrix)
+transport selection = PENDING (CHAT-001C)
+subscription transport AuthZ = PENDING (CHAT-001C)
 ```
 
 ```text
 REALTIME_IMPLEMENTATION_DECISION=PENDING
+TRANSPORT_SUBSCRIPTION_AUTH=PENDING
 PUSHER_SELECTED=false
+PUSHER_AUTHORIZED=false
+PUSHER_CONFIGURED=false
 SHARED_PUBLIC_PUSHER_CHANNEL=false
 ```
 
 Events are published to isolated per-room channel keys. No shared `public` fanout.
+Pusher is not the selected solution; transport remains undecided until CHAT-001C.
+
+Disposable runtimes may set `FLATRATE_LIVE_CHAT_FAKE_REALTIME=1` (optional
+`FLATRATE_LIVE_CHAT_FAKE_REALTIME_FILE`) to prove publish-scope isolation through
+the real HTTP post path without configuring a production transport.
 
 ## Content / media / indexing
 

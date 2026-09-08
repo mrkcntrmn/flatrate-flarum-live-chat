@@ -116,8 +116,8 @@ class RoomProvisioner
             '#334155',
             '',
             1, // public channel type only
-            null,
-            null
+            0, // system/reconcile creator (not a member-created room)
+            \Carbon\Carbon::now()
         );
         $chat->room_key = $room['roomKey'];
         $chat->scope_type = $room['scopeType'];
