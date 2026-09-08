@@ -15,6 +15,7 @@ jobs:
           php-version: '8.2'
           tools: composer:v2
           coverage: none
+          extensions: dom, mbstring, xmlwriter, tokenizer
       - name: Composer validate
         run: composer validate --no-check-publish --strict
       - name: Install dependencies
