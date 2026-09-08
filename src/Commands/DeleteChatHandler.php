@@ -1,17 +1,17 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Commands;
+namespace FlatRate\LiveChat\Commands;
 
-use Xelson\Chat\ChatRepository;
+use FlatRate\LiveChat\ChatRepository;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Events\Dispatcher;
-use Xelson\Chat\Event\Chat\Deleting;
+use FlatRate\LiveChat\Event\Chat\Deleting;
 
 class DeleteChatHandler
 {

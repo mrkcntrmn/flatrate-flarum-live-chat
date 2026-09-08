@@ -1,25 +1,25 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Commands;
+namespace FlatRate\LiveChat\Commands;
 
 use Carbon\Carbon;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Arr;
-use Xelson\Chat\Chat;
-use Xelson\Chat\ChatUser;
-use Xelson\Chat\ChatValidator;
-use Xelson\Chat\ChatRepository;
-use Xelson\Chat\EventMessageChatCreated;
-use Xelson\Chat\Commands\PostEventMessage;
-use Xelson\Chat\Event\Chat\Saved;
-use Xelson\Chat\Exceptions\ChatEditException;
+use FlatRate\LiveChat\Chat;
+use FlatRate\LiveChat\ChatUser;
+use FlatRate\LiveChat\ChatValidator;
+use FlatRate\LiveChat\ChatRepository;
+use FlatRate\LiveChat\EventMessageChatCreated;
+use FlatRate\LiveChat\Commands\PostEventMessage;
+use FlatRate\LiveChat\Event\Chat\Saved;
+use FlatRate\LiveChat\Exceptions\ChatEditException;
 
 class CreateChatHandler
 {
@@ -54,7 +54,7 @@ class CreateChatHandler
 
         $isChannel = intval($attributes['isChannel']);
 
-        $actor->assertCan($isChannel ? 'xelson-chat.permissions.create.channel' : 'xelson-chat.permissions.create');
+        $actor->assertCan($isChannel ? 'flatrate-live-chat.permissions.create.channel' : 'flatrate-live-chat.permissions.create');
 
         $invited = [];
 

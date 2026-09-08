@@ -55,7 +55,7 @@ export default class UsersSearchResults {
         if (resultsFind.length > 5) {
             moreText = (
                 <div class="MoreResultsText">
-                    {app.translator.trans('xelson-chat.forum.chat.list.add_modal.search.more_results', { more_results: resultsFind.length - 5 })}
+                    {app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.search.more_results', { more_results: resultsFind.length - 5 })}
                 </div>
             );
 
@@ -64,7 +64,7 @@ export default class UsersSearchResults {
 
         if (!resultsFind.length) {
             if (!this.searching)
-                return <li className="SearchFailed">{app.translator.trans('xelson-chat.forum.chat.list.add_modal.search.failed')}</li>;
+                return <li className="SearchFailed">{app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.search.failed')}</li>;
             else LoadingIndicator.component({ size: 'tiny', className: 'Button Button--icon Button--link' });
         }
 
@@ -88,7 +88,7 @@ export default class UsersSearchResults {
             }),
             moreText,
             resultsSelected.length ? (
-                <li className="Dropdown-header">{app.translator.trans('xelson-chat.forum.chat.list.add_modal.search.invited')}</li>
+                <li className="Dropdown-header">{app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.search.invited')}</li>
             ) : null,
             resultsSelected.map((user) => {
                 const name = username(user);

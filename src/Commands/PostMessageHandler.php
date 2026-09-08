@@ -1,19 +1,19 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Commands;
+namespace FlatRate\LiveChat\Commands;
 
 use Carbon\Carbon;
 use Illuminate\Contracts\Events\Dispatcher;
-use Xelson\Chat\ChatRepository;
-use Xelson\Chat\Event\Message\Saved;
-use Xelson\Chat\Message;
-use Xelson\Chat\MessageValidator;
+use FlatRate\LiveChat\ChatRepository;
+use FlatRate\LiveChat\Event\Message\Saved;
+use FlatRate\LiveChat\Message;
+use FlatRate\LiveChat\MessageValidator;
 
 class PostMessageHandler
 {
@@ -54,7 +54,7 @@ class PostMessageHandler
 
         $chat = $this->chats->findOrFail($chat_id, $actor);
 
-        $actor->assertCan('xelson-chat.permissions.chat');
+        $actor->assertCan('flatrate-live-chat.permissions.chat');
 
         $chatUser = $chat->getChatUser($actor);
 

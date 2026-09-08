@@ -100,10 +100,10 @@ export default class ChatPreview extends Component {
     formatTextPreview(text) {
         let type;
         if (text.startsWith('```')) {
-            text = app.translator.trans('xelson-chat.forum.chat.message.type.code');
+            text = app.translator.trans('flatrate-live-chat.forum.chat.message.type.code');
             type = 'media';
         } else if (text.startsWith('http://') || text.startsWith('https://')) {
-            text = app.translator.trans('xelson-chat.forum.chat.message.type.url');
+            text = app.translator.trans('flatrate-live-chat.forum.chat.message.type.url');
             type = 'media';
         }
         return { text, type };
@@ -114,7 +114,7 @@ export default class ChatPreview extends Component {
         if (lastMessage.type() != 0) {
             return (
                 <div className="message">
-                    <span className="media">{app.translator.trans('xelson-chat.forum.chat.message.type.event')}</span>
+                    <span className="media">{app.translator.trans('flatrate-live-chat.forum.chat.message.type.event')}</span>
                 </div>
             );
         }
@@ -124,14 +124,14 @@ export default class ChatPreview extends Component {
             users = this.model.users(),
             sender = lastMessage.user();
         if (app.session.user) {
-            if (app.session.user == sender) senderName = `${app.translator.trans('xelson-chat.forum.chat.message.you')}: `;
+            if (app.session.user == sender) senderName = `${app.translator.trans('flatrate-live-chat.forum.chat.message.you')}: `;
             else if (users.length > 2 || this.model.type()) senderName = sender.displayName() + ': ';
         }
 
         return (
             <div
                 className={classList({ message: true, censored: lastMessage.is_censored() })}
-                title={lastMessage.is_censored() ? app.translator.trans('xelson-chat.forum.chat.message.censored') : null}
+                title={lastMessage.is_censored() ? app.translator.trans('flatrate-live-chat.forum.chat.message.censored') : null}
             >
                 <span className="sender">{senderName}</span>
                 <span className={formatResult.type}>{formatResult.text}</span>
@@ -142,7 +142,7 @@ export default class ChatPreview extends Component {
     componentTextEmpty() {
         return (
             <div className="message">
-                <span className="empty">{app.translator.trans('xelson-chat.forum.chat.list.preview.empty')}</span>
+                <span className="empty">{app.translator.trans('flatrate-live-chat.forum.chat.list.preview.empty')}</span>
             </div>
         );
     }

@@ -7,10 +7,10 @@
  * LICENSE file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Event\Message;
+namespace FlatRate\LiveChat\Event\Message;
 
 use Flarum\User\User;
-use Xelson\Chat\Message;
+use FlatRate\LiveChat\Message;
 
 class Saved
 {

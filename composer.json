@@ -1,19 +1,20 @@
 {
-    "name": "xelson/flarum-ext-chat",
-    "description": "Realtime Chat for Flarum!",
+    "name": "flatrate/flarum-live-chat",
+    "description": "FlatRate.wiki-owned hardened realtime live chat for Flarum (derived from Neon Chat / Xelson).",
     "keywords": [
         "chat",
         "flarum",
+        "flatrate",
+        "live-chat",
         "xelson",
         "push-edx",
-        "Xelson"
+        "neon-chat"
     ],
     "type": "flarum-extension",
     "license": "MIT",
     "support": {
-        "issues": "https://github.com/Xelson/flarum-ext-chat/issues",
-        "source": "https://github.com/Xelson/flarum-ext-chat",
-        "forum": "https://discuss.flarum.org/d/25361"
+        "issues": "https://github.com/mrkcntrmn/flatrate-flarum-live-chat/issues",
+        "source": "https://github.com/mrkcntrmn/flatrate-flarum-live-chat"
     },
     "authors": [
         {
@@ -27,27 +28,47 @@
         {
             "name": "Xelson",
             "homepage": "https://neonsky.ru"
+        },
+        {
+            "name": "FlatRate.wiki",
+            "homepage": "https://flatrate.wiki"
         }
     ],
     "require": {
-        "flarum/core": "^1.0",
-        "flarum/markdown": "^1.0"
+        "flarum/core": "^1.8.5",
+        "flarum/markdown": "^1.0",
+        "php": "^8.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6"
+    },
+    "conflict": {
+        "xelson/flarum-ext-chat": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "FlatRate\\LiveChat\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FlatRate\\LiveChat\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
     },
     "extra": {
         "flarum-extension": {
-            "title": "Neon Chat",
+            "title": "FlatRate Live Chat",
             "category": "feature",
             "icon": {
                 "image": "icon.svg",
-                "backgroundColor": "#ffaad4",
+                "backgroundColor": "#1f2937",
                 "backgroundSize": "cover",
                 "backgroundPosition": "center"
             }
         }
     },
-    "autoload": {
-        "psr-4": {
-            "Xelson\\Chat\\": "src/"
-        }
-    }
+    "homepage": "https://github.com/mrkcntrmn/flatrate-flarum-live-chat"
 }

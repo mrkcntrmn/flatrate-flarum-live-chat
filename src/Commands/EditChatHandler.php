@@ -1,24 +1,24 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Commands;
+namespace FlatRate\LiveChat\Commands;
 
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
-use Xelson\Chat\ChatValidator;
-use Xelson\Chat\ChatRepository;
-use Xelson\Chat\EventMessageChatEdited;
-use Xelson\Chat\EventMessageChatAddRemoveUser;
-use Xelson\Chat\Commands\PostEventMessage;
-use Xelson\Chat\Exceptions\ChatEditException;
+use FlatRate\LiveChat\ChatValidator;
+use FlatRate\LiveChat\ChatRepository;
+use FlatRate\LiveChat\EventMessageChatEdited;
+use FlatRate\LiveChat\EventMessageChatAddRemoveUser;
+use FlatRate\LiveChat\Commands\PostEventMessage;
+use FlatRate\LiveChat\Exceptions\ChatEditException;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Events\Dispatcher;
-use Xelson\Chat\Event\Chat\Saved;
+use FlatRate\LiveChat\Event\Chat\Saved;
 
 class EditChatHandler
 {

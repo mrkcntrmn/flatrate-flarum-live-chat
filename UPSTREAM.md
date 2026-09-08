@@ -5,7 +5,7 @@ This repository begins as an unmodified baseline import of Neon Chat
 
 | Field | Value |
 | --- | --- |
-| SOURCE | xelson/flarum-ext-chat |
+| SOURCE | flatrate/flarum-live-chat |
 | VERSION | v1.1.5 |
 | COMMIT | a7489ac183764eef12969135d6b665ac5eb18272 |
 | LICENSE | MIT |

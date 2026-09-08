@@ -59,7 +59,7 @@ export default class ChatModal extends Modal {
     }
 
     alertText() {
-        if (this.isChatExists()) return app.translator.trans('xelson-chat.forum.chat.list.add_modal.alerts.exists');
+        if (this.isChatExists()) return app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.alerts.exists');
 
         return null;
     }
@@ -68,7 +68,7 @@ export default class ChatModal extends Modal {
         return !this.alertText() ? null : <div className="Alert">{this.alertText()}</div>;
     }
 
-    componentFormUsersSelect(label = 'xelson-chat.forum.chat.list.add_modal.form.users') {
+    componentFormUsersSelect(label = 'flatrate-live-chat.forum.chat.list.add_modal.form.users') {
         return [<label>{app.translator.trans(label)}</label>, this.componentUsersSelect()];
     }
 

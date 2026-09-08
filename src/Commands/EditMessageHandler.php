@@ -1,20 +1,20 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Commands;
+namespace FlatRate\LiveChat\Commands;
 
 use Carbon\Carbon;
-use Xelson\Chat\ChatRepository;
-use Xelson\Chat\MessageRepository;
-use Xelson\Chat\MessageValidator;
+use FlatRate\LiveChat\ChatRepository;
+use FlatRate\LiveChat\MessageRepository;
+use FlatRate\LiveChat\MessageValidator;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Arr;
-use Xelson\Chat\Event\Message\Saved;
+use FlatRate\LiveChat\Event\Message\Saved;
 
 class EditMessageHandler
 {
@@ -75,7 +75,7 @@ class EditMessageHandler
         $chatUser = $chat->getChatUser($actor);
 
         if (isset($actions['msg'])) {
-            $actor->assertCan('xelson-chat.permissions.edit');
+            $actor->assertCan('flatrate-live-chat.permissions.edit');
             $actor->assertPermission($actor->id == $message->user_id);
             $actor->assertPermission($message->message != $actions['msg']);
 
@@ -86,7 +86,7 @@ class EditMessageHandler
 
             $message->save();
         } else if (isset($actions['hide'])) {
-            $actor->assertCan('xelson-chat.permissions.delete');
+            $actor->assertCan('flatrate-live-chat.permissions.delete');
 
             if ($actions['hide']) {
                 if ($message->user_id != $actor->id) {

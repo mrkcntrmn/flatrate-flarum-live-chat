@@ -74,8 +74,8 @@ xelson-chat:
               label: => core.ref.icon
               validator: => core.ref.icon_text
             color:
-              label: => xelson-chat.forum.chat.edit_modal.form.color.label
-              validator: => xelson-chat.forum.chat.edit_modal.form.color.validator
+              label: => flatrate-live-chat.forum.chat.edit_modal.form.color.label
+              validator: => flatrate-live-chat.forum.chat.edit_modal.form.color.validator
             users: Người dùng đã chọn
           search:
             placeholder: Tìm kiếm người dùng

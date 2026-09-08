@@ -1,30 +1,30 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat;
+namespace FlatRate\LiveChat;
 
 use Flarum\Extend;
 
 use Flarum\Api\Serializer\ForumSerializer;
 use Illuminate\Contracts\Events\Dispatcher;
-use Xelson\Chat\Api\Controllers\PostMessageController;
-use Xelson\Chat\Api\Controllers\FetchMessageController;
-use Xelson\Chat\Api\Controllers\EditMessageController;
-use Xelson\Chat\Api\Controllers\DeleteMessageController;
-use Xelson\Chat\Api\Controllers\ShowUserSafeController;
-use Xelson\Chat\Api\Controllers\ListChatsController;
-use Xelson\Chat\Api\Controllers\CreateChatController;
-use Xelson\Chat\Api\Controllers\EditChatController;
-use Xelson\Chat\Api\Controllers\DeleteChatController;
+use FlatRate\LiveChat\Api\Controllers\PostMessageController;
+use FlatRate\LiveChat\Api\Controllers\FetchMessageController;
+use FlatRate\LiveChat\Api\Controllers\EditMessageController;
+use FlatRate\LiveChat\Api\Controllers\DeleteMessageController;
+use FlatRate\LiveChat\Api\Controllers\ShowUserSafeController;
+use FlatRate\LiveChat\Api\Controllers\ListChatsController;
+use FlatRate\LiveChat\Api\Controllers\CreateChatController;
+use FlatRate\LiveChat\Api\Controllers\EditChatController;
+use FlatRate\LiveChat\Api\Controllers\DeleteChatController;
 
 
 use Flarum\User\User;
-use Xelson\Chat\Chat;
+use FlatRate\LiveChat\Chat;
 
 return [
     (new Extend\Frontend('admin'))
@@ -61,12 +61,12 @@ return [
             $actor = $serializer->getActor();
 
             $permissions = [
-                'xelson-chat.permissions.chat',
-                'xelson-chat.permissions.create',
-                'xelson-chat.permissions.create.channel',
-                'xelson-chat.permissions.enabled',
-                'xelson-chat.permissions.edit',
-                'xelson-chat.permissions.delete'
+                'flatrate-live-chat.permissions.chat',
+                'flatrate-live-chat.permissions.create',
+                'flatrate-live-chat.permissions.create.channel',
+                'flatrate-live-chat.permissions.enabled',
+                'flatrate-live-chat.permissions.edit',
+                'flatrate-live-chat.permissions.delete'
             ];
 
             foreach ($permissions as $permission) {
@@ -80,9 +80,9 @@ return [
         ->set('chat-message', Api\Throttler\ChatMessage::class),
 
     (new Extend\Settings())
-        ->serializeToForum('xelson-chat.settings.charlimit', 'xelson-chat.settings.charlimit')
-        ->serializeToForum('xelson-chat.settings.display.minimize', 'xelson-chat.settings.display.minimize')
-        ->serializeToForum('xelson-chat.settings.display.censor', 'xelson-chat.settings.display.censor'),
+        ->serializeToForum('flatrate-live-chat.settings.charlimit', 'flatrate-live-chat.settings.charlimit')
+        ->serializeToForum('flatrate-live-chat.settings.display.minimize', 'flatrate-live-chat.settings.display.minimize')
+        ->serializeToForum('flatrate-live-chat.settings.display.censor', 'flatrate-live-chat.settings.display.censor'),
 
     (new Extend\Event)->subscribe(Listener\PushChatEvents::class)
 ];

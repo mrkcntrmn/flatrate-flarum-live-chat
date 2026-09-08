@@ -7,10 +7,10 @@
  * LICENSE file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Event\Chat;
+namespace FlatRate\LiveChat\Event\Chat;
 
 use Flarum\User\User;
-use Xelson\Chat\Chat;
+use FlatRate\LiveChat\Chat;
 
 class Deleting
 {

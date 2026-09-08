@@ -1,19 +1,19 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Api\Serializers;
+namespace FlatRate\LiveChat\Api\Serializers;
 
 use Flarum\User\User;
 use Flarum\Api\Serializer\AbstractSerializer;
 use Flarum\Api\Serializer\BasicUserSerializer;
 use Flarum\Settings\SettingsRepositoryInterface;
-use Xelson\Chat\ChatSocket;
-use Xelson\Chat\Api\Serializers\ChatSerializer;
+use FlatRate\LiveChat\ChatSocket;
+use FlatRate\LiveChat\Api\Serializers\ChatSerializer;
 
 class MessageSerializer extends AbstractSerializer
 {
@@ -57,7 +57,7 @@ class MessageSerializer extends AbstractSerializer
 
         $attributes['created_at'] = $this->formatDate($message->created_at);
         if($attributes['edited_at']) $attributes['edited_at'] = $this->formatDate($message->edited_at);
-        if($this->settings->get('xelson-chat.settings.display.censor') && !$this->actor->id)
+        if($this->settings->get('flatrate-live-chat.settings.display.censor') && !$this->actor->id)
         {
             $attributes['message'] = str_repeat("*", strlen($attributes['message']));
             $attributes['is_censored'] = true;

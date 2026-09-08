@@ -1,22 +1,22 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Api\Controllers;
+namespace FlatRate\LiveChat\Api\Controllers;
 
-use Xelson\Chat\Api\Serializers\ChatUserSerializer;
+use FlatRate\LiveChat\Api\Serializers\ChatUserSerializer;
 use Flarum\Api\Controller\AbstractShowController;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
 use Illuminate\Support\Arr;
 
-use Xelson\Chat\Commands\EditChat;
-use Xelson\Chat\Commands\ReadChat;
+use FlatRate\LiveChat\Commands\EditChat;
+use FlatRate\LiveChat\Commands\ReadChat;
 
 class EditChatController extends AbstractShowController
 {

@@ -12,7 +12,7 @@ export default function addChatPage() {
         items.add(
             'chat',
             <LinkButton icon="fas fa-comment" href={app.route('chat')}>
-                {app.translator.trans('xelson-chat.forum.index.chat_link')}
+                {app.translator.trans('flatrate-live-chat.forum.index.chat_link')}
             </LinkButton>,
             -10
         );

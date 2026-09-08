@@ -10,13 +10,13 @@ export default class ChatFrame extends Component {
             <div className={classes.join(' ')}>
                 <div className="header">
                     <div className="input-wrapper input--down">
-                        <input id="chat-find" bidi={app.chat.q} placeholder={app.translator.trans('xelson-chat.forum.chat.list.placeholder')} />
+                        <input id="chat-find" bidi={app.chat.q} placeholder={app.translator.trans('flatrate-live-chat.forum.chat.list.placeholder')} />
                     </div>
                     <div
                         className="icon icon-minimize"
                         onclick={this.toggleChat.bind(this)}
                         data-title={app.translator.trans(
-                            'xelson-chat.forum.toolbar.' + (app.chat.getFrameState('beingShown') ? 'minimize' : 'maximize')
+                            'flatrate-live-chat.forum.toolbar.' + (app.chat.getFrameState('beingShown') ? 'minimize' : 'maximize')
                         )}
                     >
                         <i className={app.chat.getFrameState('beingShown') ? 'fas fa-window-minimize' : 'fas fa-window-maximize'}></i>
@@ -28,7 +28,7 @@ export default class ChatFrame extends Component {
                             className="ToggleButton icon icon-toggle"
                             onclick={this.toggleChatsList.bind(this)}
                             data-title={app.translator.trans(
-                                'xelson-chat.forum.chat.list.' + (app.chat.getFrameState('beingShownChatsList') ? 'unpin' : 'pin')
+                                'flatrate-live-chat.forum.chat.list.' + (app.chat.getFrameState('beingShownChatsList') ? 'unpin' : 'pin')
                             )}
                         >
                             <i className="fas fa-paperclip"></i>

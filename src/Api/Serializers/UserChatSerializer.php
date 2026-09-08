@@ -1,14 +1,14 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Api\Serializers;
+namespace FlatRate\LiveChat\Api\Serializers;
 
-use Xelson\Chat\Chat;
+use FlatRate\LiveChat\Chat;
 use Flarum\Api\Serializer\UserSerializer;
 
 class UserChatSerializer extends UserSerializer

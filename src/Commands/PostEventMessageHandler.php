@@ -1,16 +1,16 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Commands;
+namespace FlatRate\LiveChat\Commands;
 
 use Carbon\Carbon;
-use Xelson\Chat\ChatRepository;
-use Xelson\Chat\Message;
+use FlatRate\LiveChat\ChatRepository;
+use FlatRate\LiveChat\Message;
 
 class PostEventMessageHandler
 {

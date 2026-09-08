@@ -1,18 +1,18 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Api\Throttler;
+namespace FlatRate\LiveChat\Api\Throttler;
 
 use DateTime;
 use Flarum\User\User;
 use Flarum\Settings\SettingsRepositoryInterface;
 
-use Xelson\Chat\Message;
+use FlatRate\LiveChat\Message;
 
 class ChatMessage
 {
@@ -42,8 +42,8 @@ class ChatMessage
 			return false;
 		}
 
-		$number = $this->settings->get('xelson-chat.settings.floodgate.number');
-		$time = $this->settings->get('xelson-chat.settings.floodgate.time');
+		$number = $this->settings->get('flatrate-live-chat.settings.floodgate.number');
+		$time = $this->settings->get('flatrate-live-chat.settings.floodgate.time');
 
 		if ($number <= 0) return false;
 
