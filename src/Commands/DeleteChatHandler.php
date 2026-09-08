@@ -8,51 +8,18 @@
 
 namespace FlatRate\LiveChat\Commands;
 
-use FlatRate\LiveChat\ChatRepository;
-use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
-use Illuminate\Contracts\Events\Dispatcher;
-use FlatRate\LiveChat\Event\Chat\Deleting;
+use FlatRate\LiveChat\Auth\ChatAuthorization;
 
 class DeleteChatHandler
 {
-    /**
-     * @param ChatRepository $chats
-     * @param ChatSocket $socket
-     * @param Dispatcher $events
-     */
-    public function __construct(ChatRepository $chats, BusDispatcher $bus, Dispatcher $events)
+    public function __construct(private ChatAuthorization $auth)
     {
-        $this->chats  = $chats;
-        $this->bus = $bus;
-        $this->events = $events;
     }
 
-    /**
-     * Handles the command execution.
-     *
-     * @param DeleteChat $command
-     * @return null|string
-     */
     public function handle(DeleteChat $command)
     {
-        $chat_id = $command->chat_id;
-        $actor = $command->actor;
-
-        $chat = $this->chats->findOrFail($chat_id, $actor);
-
-        $users = $chat->users()->get();
-
-        $actor->assertPermission(
-            ($actor->isAdmin() || $chat->creator_id == $actor->id) && (count($users) > 2 || $chat->type == 1)
-        );
-
-        $this->events->dispatch(
-            new Deleting($chat, $actor)
-        );
-
-        $chat->users()->detach();
-        $chat->delete();
-
-        return $chat;
+        $this->auth->assertMemberCannotMutateRooms($command->actor);
+        // Canonical room delete is not exposed via member/admin freeform API in B.
+        $this->auth->assertPrivateChatDisabled();
     }
 }

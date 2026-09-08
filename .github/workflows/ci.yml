@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+      - name: Composer validate
+        run: composer validate --no-check-publish --strict
+      - name: Install dependencies
+        run: |
+          composer update --no-interaction --ignore-platform-reqs --prefer-dist
+      - name: PHPUnit security/domain tests
+        run: vendor/bin/phpunit --colors=always
+      - name: Script re-exec guard
+        run: |
+          ! grep -R --include='ChatState.js' -n "createElement('script')" js/src
+          ! grep -n "createElement('script')" js/dist/forum.js
+      - name: Room catalog guard
+        run: |
+          python3 - <<'PY'
+          import json
+          d=json.load(open('resources/room-catalog.json'))
+          assert d['totalRoomCount']==42
+          assert d['brandRoomCount']==41
+          assert d['generalRoomCount']==1
+          keys={r['roomKey'] for r in d['rooms']}
+          assert 'gm-live' in keys and 'cdjr-live' in keys and 'community-general-live' in keys
+          print('catalog_ok', len(d['rooms']))
+          PY

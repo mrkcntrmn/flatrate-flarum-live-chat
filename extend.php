@@ -9,9 +9,9 @@
 namespace FlatRate\LiveChat;
 
 use Flarum\Extend;
-
 use Flarum\Api\Serializer\ForumSerializer;
-use Illuminate\Contracts\Events\Dispatcher;
+use Flarum\Frontend\Document;
+use Flarum\User\User;
 use FlatRate\LiveChat\Api\Controllers\PostMessageController;
 use FlatRate\LiveChat\Api\Controllers\FetchMessageController;
 use FlatRate\LiveChat\Api\Controllers\EditMessageController;
@@ -22,10 +22,6 @@ use FlatRate\LiveChat\Api\Controllers\CreateChatController;
 use FlatRate\LiveChat\Api\Controllers\EditChatController;
 use FlatRate\LiveChat\Api\Controllers\DeleteChatController;
 
-
-use Flarum\User\User;
-use FlatRate\LiveChat\Chat;
-
 return [
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js'),
@@ -33,7 +29,11 @@ return [
     (new Extend\Frontend('forum'))
         ->css(__DIR__ . '/resources/less/forum.less')
         ->js(__DIR__ . '/js/dist/forum.js')
-        ->route('/chat', 'chat'),
+        ->route('/chat', 'chat')
+        ->content(function (Document $document) {
+            // CHAT_INDEXING=false
+            $document->head[] = '<meta name="robots" content="noindex, nofollow">';
+        }),
 
     (new Extend\Locales(__DIR__ . '/resources/locale')),
 
@@ -46,12 +46,10 @@ return [
         ->post('/chatmessages/{id}', 'neonchat.chatmessages.post', PostMessageController::class)
         ->patch('/chatmessages/{id}', 'neonchat.chatmessages.edit', EditMessageController::class)
         ->delete('/chatmessages/{id}', 'neonchat.chatmessages.delete', DeleteMessageController::class)
-
         ->get('/chat/user/{id}', 'neonchat.chat.user', ShowUserSafeController::class),
 
     (new Extend\Model(User::class))
         ->relationship('chats', function ($user) {
-
             return $user->belongsToMany(Chat::class, 'neonchat_chat_user')
                 ->withPivot('joined_at', 'removed_by', 'role', 'readed_at', 'removed_at');
         }),
@@ -59,20 +57,23 @@ return [
     (new Extend\ApiSerializer(ForumSerializer::class))
         ->attributes(function ($serializer, $model, $attributes) {
             $actor = $serializer->getActor();
-
             $permissions = [
                 'flatrate-live-chat.permissions.chat',
                 'flatrate-live-chat.permissions.create',
                 'flatrate-live-chat.permissions.create.channel',
                 'flatrate-live-chat.permissions.enabled',
                 'flatrate-live-chat.permissions.edit',
-                'flatrate-live-chat.permissions.delete'
+                'flatrate-live-chat.permissions.delete',
+                'flatrate-live-chat.permissions.moderate',
+                'flatrate-live-chat.permissions.admin-rooms',
             ];
-
             foreach ($permissions as $permission) {
                 $attributes[$permission] = $actor->can($permission);
             }
-
+            $attributes['flatrate-live-chat.settings.attachments'] = false;
+            $attributes['flatrate-live-chat.settings.email_notifications'] = false;
+            $attributes['flatrate-live-chat.settings.indexing'] = false;
+            $attributes['flatrate-live-chat.realtime.decision'] = 'PENDING';
             return $attributes;
         }),
 
@@ -84,5 +85,8 @@ return [
         ->serializeToForum('flatrate-live-chat.settings.display.minimize', 'flatrate-live-chat.settings.display.minimize')
         ->serializeToForum('flatrate-live-chat.settings.display.censor', 'flatrate-live-chat.settings.display.censor'),
 
-    (new Extend\Event)->subscribe(Listener\PushChatEvents::class)
+    (new Extend\ServiceProvider())
+        ->register(LiveChatServiceProvider::class),
+
+    (new Extend\Event)->subscribe(Listener\PushChatEvents::class),
 ];

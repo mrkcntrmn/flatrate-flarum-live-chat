@@ -313,19 +313,7 @@ export default class ChatState {
                     }
                 });
 
-            throttle(100, () => {
-                $('.NeonChatFrame script').each(function () {
-                    if (!self.executedScripts) self.executedScripts = {};
-                    let scriptURL = $(this).attr('src');
-                    if (!self.executedScripts[scriptURL]) {
-                        var scriptTag = document.createElement('script');
-                        scriptTag.src = scriptURL;
-                        document.head.appendChild(scriptTag);
-
-                        self.executedScripts[scriptURL] = true;
-                    }
-                });
-            })();
+            // SCRIPT_REEXECUTION_REMOVAL: never re-execute script[src] from formatter output.
         }
     }
 

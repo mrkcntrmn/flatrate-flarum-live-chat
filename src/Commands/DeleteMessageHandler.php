@@ -9,60 +9,43 @@
 namespace FlatRate\LiveChat\Commands;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use FlatRate\LiveChat\Auth\ChatAuthorization;
 use FlatRate\LiveChat\ChatRepository;
 use FlatRate\LiveChat\Event\Message\Deleting;
 use FlatRate\LiveChat\MessageRepository;
 
 class DeleteMessageHandler
 {
-    /**
-     * @var MessageRepository
-     */
-    protected $messages;
-
-    /**
-     * @param MessageRepository $messages
-     * @param ChatRepository $chats
-     * @param Dispatcher $events
-     */
-    public function __construct(MessageRepository $messages, ChatRepository $chats, Dispatcher $events)
-    {
-        $this->messages  = $messages;
-        $this->chats = $chats;
-        $this->events = $events;
+    public function __construct(
+        private MessageRepository $messages,
+        private ChatRepository $chats,
+        private Dispatcher $events,
+        private ChatAuthorization $auth
+    ) {
     }
 
-    /**
-     * Handles the command execution.
-     *
-     * @param DeleteMessage $command
-     * @return null|string
-     */
     public function handle(DeleteMessage $command)
     {
-        $messageId = $command->id;
         $actor = $command->actor;
+        $message = $this->messages->findOrFail($command->id);
 
-        $message = $this->messages->findOrFail($messageId);
-
-        $actor->assertPermission(
-            !$message->type
-        );
+        $actor->assertPermission(!$message->type);
 
         $chat = $this->chats->findOrFail($message->chat_id, $actor);
-        $chatUser = $chat->getChatUser($actor);
 
-        $actor->assertPermission(
-            $chatUser && $chatUser->role != 0
-        );
+        $isOwner = (int) $message->user_id === (int) $actor->id;
+        if (!$isOwner) {
+            $this->auth->assertCanModerate($actor);
+        } else {
+            $this->auth->assertNotSuspended($actor);
+            $this->auth->assertEnabled($actor);
+        }
 
-        $this->events->dispatch(
-            new Deleting($message, $actor)
-        );
+        $this->events->dispatch(new Deleting($message, $actor));
 
-        $message->delete();
         $message->deleted_by = $actor->id;
-        $message->deleted_forever = true;
+        $message->save();
+        $message->delete();
 
         return $message;
     }

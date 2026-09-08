@@ -9,54 +9,51 @@
 namespace FlatRate\LiveChat\Api\Throttler;
 
 use DateTime;
-use Flarum\User\User;
 use Flarum\Settings\SettingsRepositoryInterface;
-
 use FlatRate\LiveChat\Message;
 
+/**
+ * Floodgate bound to FlatRate chat message routes (not discussions/posts).
+ */
 class ChatMessage
 {
-	/**
-	 * @var SettingsRepositoryInterface
-	 */
-	protected $settings;
+    protected $settings;
 
-	/**
-	 * @param SettingsRepositoryInterface $settings
-	 */
-	public function __construct(SettingsRepositoryInterface $settings)
-	{
-		$this->settings = $settings;
-	}
+    public function __construct(SettingsRepositoryInterface $settings)
+    {
+        $this->settings = $settings;
+    }
 
-	/**
-	 * @param User $actor
-	 * @return bool
-	 */
-	public function __invoke($request): bool
-	{
-		$actor = $request->getAttribute('actor');
+    public function __invoke($request): bool
+    {
+        $actor = $request->getAttribute('actor');
+        $routeName = $request->getAttribute('routeName');
 
+        $chatRoutes = [
+            'neonchat.chatmessages.post',
+            'flatrate-live-chat.chatmessages.post',
+        ];
 
-		if (!in_array($request->getAttribute('routeName'), ['discussions.create', 'posts.create'])) {
-			return false;
-		}
+        if (!in_array($routeName, $chatRoutes, true)) {
+            return false;
+        }
 
-		$number = $this->settings->get('flatrate-live-chat.settings.floodgate.number');
-		$time = $this->settings->get('flatrate-live-chat.settings.floodgate.time');
+        if (!$actor || !$actor->id) {
+            return false;
+        }
 
-		if ($number <= 0) return false;
+        $number = (int) $this->settings->get('flatrate-live-chat.settings.floodgate.number');
+        $time = $this->settings->get('flatrate-live-chat.settings.floodgate.time') ?: '10 seconds';
 
-		$lastMessages = Message::where('created_at', '>=', new DateTime('-' . $time))
-			->where('user_id', $actor->id)
-			->orderBy('id', 'DESC')
-			->limit($number)
-			->get();
+        if ($number <= 0) {
+            return false;
+        }
 
-		if (count($lastMessages) <= $number) {
-			return false;
-		}
+        $count = Message::where('created_at', '>=', new DateTime('-' . $time))
+            ->where('user_id', $actor->id)
+            ->count();
 
-		return true;
-	}
+        // Throttle when the actor has already posted `number` messages in the window.
+        return $count >= $number;
+    }
 }

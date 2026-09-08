@@ -8,39 +8,34 @@
 
 namespace FlatRate\LiveChat;
 
-class ChatSocket extends PusherWrapper
+use FlatRate\LiveChat\Realtime\PerRoomChannelNamer;
+use FlatRate\LiveChat\Realtime\RealtimePublisher;
+
+/**
+ * Legacy Neon socket replaced: no shared public Pusher channel.
+ * Delegates to RealtimePublisher with per-room isolation.
+ * REALTIME_IMPLEMENTATION_DECISION=PENDING — NullRealtimePublisher by default.
+ */
+class ChatSocket
 {
-	protected $channel = 'neonchat.events';
+    public function __construct(
+        private RealtimePublisher $publisher,
+        private PerRoomChannelNamer $channels
+    ) {
+    }
 
-	public function sendChatEvent($chat_id, $event_id, $options)
-	{
-		if (!$this->pusher()) return;
-
-		$chat = Chat::findOrFail($chat_id);
-
-		$attributes = [
-			'event' => [
-				'id' => $event_id,
-				'chat_id' => $chat_id
-			],
-			'response' => $options
-		];
-		if($chat) $chat->type ? $this->sendPublic($attributes) : $this->sendPrivate($chat->id, $attributes);
-	}
-
-	public function sendPublic($attributes)
-	{
-		$this->pusher()->trigger('public', $this->channel, $attributes);
-	}
-
-	public function sendPrivate($chat_id, $attributes)
-	{
-		$chatUsers = ChatUser::where('chat_id', $chat_id)
-			->whereNull('removed_at')
-			->pluck('user_id')
-			->all();
-			
-		foreach($chatUsers as $user_id)
-			$this->pusher()->trigger('private-user' . $user_id, $this->channel, $attributes);
-	}
+    public function sendChatEvent($chat_id, $event_id, $options)
+    {
+        $chat = Chat::find($chat_id);
+        if (!$chat || !$chat->room_key) {
+            return;
+        }
+        // Never sendPublic('public', ...) — SHARED_PUBLIC_PUSHER_CHANNEL=false
+        $channel = $this->channels->channelKeyForRoom($chat);
+        $this->publisher->publish($channel, (string) $event_id, [
+            'chat_id' => $chat_id,
+            'room_key' => $chat->room_key,
+            'response' => $options,
+        ]);
+    }
 }
