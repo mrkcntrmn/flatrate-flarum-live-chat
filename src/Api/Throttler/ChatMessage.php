@@ -1,62 +1,60 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Api\Throttler;
+namespace FlatRate\LiveChat\Api\Throttler;
 
 use DateTime;
-use Flarum\User\User;
 use Flarum\Settings\SettingsRepositoryInterface;
+use FlatRate\LiveChat\Message;
 
-use Xelson\Chat\Message;
-
+/**
+ * Floodgate bound to FlatRate chat message routes (not discussions/posts).
+ */
 class ChatMessage
 {
-	/**
-	 * @var SettingsRepositoryInterface
-	 */
-	protected $settings;
+    protected $settings;
 
-	/**
-	 * @param SettingsRepositoryInterface $settings
-	 */
-	public function __construct(SettingsRepositoryInterface $settings)
-	{
-		$this->settings = $settings;
-	}
+    public function __construct(SettingsRepositoryInterface $settings)
+    {
+        $this->settings = $settings;
+    }
 
-	/**
-	 * @param User $actor
-	 * @return bool
-	 */
-	public function __invoke($request): bool
-	{
-		$actor = $request->getAttribute('actor');
+    public function __invoke($request): ?bool
+    {
+        $actor = $request->getAttribute('actor');
+        $routeName = $request->getAttribute('routeName');
+        $chatRoutes = [
+            'neonchat.chatmessages.post',
+            'flatrate-live-chat.chatmessages.post',
+        ];
 
+        // Flarum ThrottleApi: false overrides ALL throttlers; only return true/false
+        // for chat post routes. Non-matching routes must be ignored (null).
+        if (!in_array($routeName, $chatRoutes, true)) {
+            return null;
+        }
 
-		if (!in_array($request->getAttribute('routeName'), ['discussions.create', 'posts.create'])) {
-			return false;
-		}
+        if (!$actor || !$actor->id) {
+            return null;
+        }
 
-		$number = $this->settings->get('xelson-chat.settings.floodgate.number');
-		$time = $this->settings->get('xelson-chat.settings.floodgate.time');
+        $number = (int) $this->settings->get('flatrate-live-chat.settings.floodgate.number');
+        $time = $this->settings->get('flatrate-live-chat.settings.floodgate.time') ?: '10 seconds';
 
-		if ($number <= 0) return false;
+        if ($number <= 0) {
+            return null;
+        }
 
-		$lastMessages = Message::where('created_at', '>=', new DateTime('-' . $time))
-			->where('user_id', $actor->id)
-			->orderBy('id', 'DESC')
-			->limit($number)
-			->get();
+        $count = Message::where('created_at', '>=', new DateTime('-' . $time))
+            ->where('user_id', $actor->id)
+            ->count();
 
-		if (count($lastMessages) <= $number) {
-			return false;
-		}
-
-		return true;
-	}
+        // Throttle when the actor has already posted `number` messages in the window.
+        return $count >= $number;
+    }
 }

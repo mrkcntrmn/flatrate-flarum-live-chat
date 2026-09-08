@@ -34,7 +34,7 @@ export default class ChatEventMessage extends ChatMessage {
         switch (this.parsedContent.id) {
             case 'chatCensored': {
                 return (
-                    <div className="censored" title={app.translator.trans('xelson-chat.forum.chat.message.censored')}>
+                    <div className="censored" title={app.translator.trans('flatrate-live-chat.forum.chat.message.censored')}>
                         {this.model.message()}
                     </div>
                 );
@@ -43,13 +43,13 @@ export default class ChatEventMessage extends ChatMessage {
                 if (!this.model.chat()) return;
 
                 if (this.model.chat().type() == 1) {
-                    return app.translator.trans(`xelson-chat.forum.chat.message.events.channel.created`, {
+                    return app.translator.trans(`flatrate-live-chat.forum.chat.message.events.channel.created`, {
                         creatorname: this.componentUserMention(this.model.user()),
                         chatname: <b className="chat-title">{this.model.chat().title()}</b>,
                     });
                 } else {
                     if (this.model.chat().type() == 0 && this.model.chat().users().length <= 2) {
-                        return app.translator.trans(`xelson-chat.forum.chat.message.events.pm.created`, {
+                        return app.translator.trans(`flatrate-live-chat.forum.chat.message.events.pm.created`, {
                             creatorname: this.componentUserMention(this.model.chat().creator()),
                             username: this.parsedContent.users.length
                                 ? this.componentUserMention(app.store.getById('users', this.parsedContent.users[0]))
@@ -57,7 +57,7 @@ export default class ChatEventMessage extends ChatMessage {
                         });
                     }
 
-                    return app.translator.trans(`xelson-chat.forum.chat.message.events.chat.created`, {
+                    return app.translator.trans(`flatrate-live-chat.forum.chat.message.events.chat.created`, {
                         creatorname: this.componentUserMention(this.model.user()),
                         chatname: <b className="chat-title">{this.model.chat().title()}</b>,
                         usernames: this.componentUserMentionsByIds(this.parsedContent.users),
@@ -86,7 +86,7 @@ export default class ChatEventMessage extends ChatMessage {
                         break;
                 }
 
-                return app.translator.trans(`xelson-chat.forum.chat.message.events.${this.parsedContent.column}.edited`, {
+                return app.translator.trans(`flatrate-live-chat.forum.chat.message.events.${this.parsedContent.column}.edited`, {
                     editorname: this.componentUserMention(this.model.user()),
                     old: componentOld,
                     new: componentNew,
@@ -94,29 +94,29 @@ export default class ChatEventMessage extends ChatMessage {
             }
             case 'chatAddRemoveUser': {
                 if (this.parsedContent.add.length && this.parsedContent.remove.length) {
-                    return app.translator.trans('xelson-chat.forum.chat.message.events.users.invited_kicked', {
+                    return app.translator.trans('flatrate-live-chat.forum.chat.message.events.users.invited_kicked', {
                         editorname: this.componentUserMention(this.model.user()),
                         invitednames: this.componentUserMentionsByIds(this.parsedContent.add),
                         kickednames: this.componentUserMentionsByIds(this.parsedContent.remove),
                     });
                 } else if (this.parsedContent.add.length) {
                     if (this.parsedContent.add[0] == this.model.user().id()) {
-                        return app.translator.trans('xelson-chat.forum.chat.message.events.self.entered', {
+                        return app.translator.trans('flatrate-live-chat.forum.chat.message.events.self.entered', {
                             username: this.componentUserMention(this.model.user()),
                         });
                     } else {
-                        return app.translator.trans('xelson-chat.forum.chat.message.events.users.invited', {
+                        return app.translator.trans('flatrate-live-chat.forum.chat.message.events.users.invited', {
                             editorname: this.componentUserMention(this.model.user()),
                             usernames: this.componentUserMentionsByIds(this.parsedContent.add),
                         });
                     }
                 } else if (this.parsedContent.remove.length) {
                     if (this.parsedContent.remove[0] == this.model.user().id()) {
-                        return app.translator.trans('xelson-chat.forum.chat.message.events.self.leaved', {
+                        return app.translator.trans('flatrate-live-chat.forum.chat.message.events.self.leaved', {
                             username: this.componentUserMention(this.model.user()),
                         });
                     } else {
-                        return app.translator.trans('xelson-chat.forum.chat.message.events.users.kicked', {
+                        return app.translator.trans('flatrate-live-chat.forum.chat.message.events.users.kicked', {
                             editorname: this.componentUserMention(this.model.user()),
                             usernames: this.componentUserMentionsByIds(this.parsedContent.remove),
                         });

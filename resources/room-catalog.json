@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "kind": "flatrate-live-chat-room-catalog",
+  "generatedFrom": {
+    "boardsTarget": "configs/forum/boards-target.json",
+    "liveChatTarget": "configs/forum/live-chat-target.json",
+    "controlRepoNote": "embedded snapshot; no runtime wiki filesystem dependency"
+  },
+  "brandRoomCount": 41,
+  "generalRoomCount": 1,
+  "totalRoomCount": 42,
+  "rooms": [
+    {
+      "roomKey": "acura-live",
+      "name": "Acura Live",
+      "scopeType": "board",
+      "scopeKey": "acura"
+    },
+    {
+      "roomKey": "alfa-romeo-live",
+      "name": "Alfa Romeo Live",
+      "scopeType": "board",
+      "scopeKey": "alfa-romeo"
+    },
+    {
+      "roomKey": "audi-live",
+      "name": "Audi Live",
+      "scopeType": "board",
+      "scopeKey": "audi"
+    },
+    {
+      "roomKey": "bentley-live",
+      "name": "Bentley Live",
+      "scopeType": "board",
+      "scopeKey": "bentley"
+    },
+    {
+      "roomKey": "bmw-live",
+      "name": "BMW Live",
+      "scopeType": "board",
+      "scopeKey": "bmw"
+    },
+    {
+      "roomKey": "cdjr-live",
+      "name": "CDJR Live",
+      "scopeType": "board",
+      "scopeKey": "cdjr"
+    },
+    {
+      "roomKey": "buick-live",
+      "name": "Buick Live",
+      "scopeType": "board",
+      "scopeKey": "buick"
+    },
+    {
+      "roomKey": "cadillac-live",
+      "name": "Cadillac Live",
+      "scopeType": "board",
+      "scopeKey": "cadillac"
+    },
+    {
+      "roomKey": "chevrolet-live",
+      "name": "Chevrolet Live",
+      "scopeType": "board",
+      "scopeKey": "chevrolet"
+    },
+    {
+      "roomKey": "chrysler-live",
+      "name": "Chrysler Live",
+      "scopeType": "board",
+      "scopeKey": "chrysler"
+    },
+    {
+      "roomKey": "dodge-live",
+      "name": "Dodge Live",
+      "scopeType": "board",
+      "scopeKey": "dodge"
+    },
+    {
+      "roomKey": "ferrari-live",
+      "name": "Ferrari Live",
+      "scopeType": "board",
+      "scopeKey": "ferrari"
+    },
+    {
+      "roomKey": "ford-live",
+      "name": "Ford Live",
+      "scopeType": "board",
+      "scopeKey": "ford"
+    },
+    {
+      "roomKey": "genesis-live",
+      "name": "Genesis Live",
+      "scopeType": "board",
+      "scopeKey": "genesis"
+    },
+    {
+      "roomKey": "gm-live",
+      "name": "GM Live",
+      "scopeType": "board",
+      "scopeKey": "gm"
+    },
+    {
+      "roomKey": "gmc-live",
+      "name": "GMC Live",
+      "scopeType": "board",
+      "scopeKey": "gmc"
+    },
+    {
+      "roomKey": "honda-live",
+      "name": "Honda Live",
+      "scopeType": "board",
+      "scopeKey": "honda"
+    },
+    {
+      "roomKey": "hyundai-live",
+      "name": "Hyundai Live",
+      "scopeType": "board",
+      "scopeKey": "hyundai"
+    },
+    {
+      "roomKey": "infiniti-live",
+      "name": "Infiniti Live",
+      "scopeType": "board",
+      "scopeKey": "infiniti"
+    },
+    {
+      "roomKey": "jaguar-live",
+      "name": "Jaguar Live",
+      "scopeType": "board",
+      "scopeKey": "jaguar"
+    },
+    {
+      "roomKey": "jeep-live",
+      "name": "Jeep Live",
+      "scopeType": "board",
+      "scopeKey": "jeep"
+    },
+    {
+      "roomKey": "kia-live",
+      "name": "Kia Live",
+      "scopeType": "board",
+      "scopeKey": "kia"
+    },
+    {
+      "roomKey": "lamborghini-live",
+      "name": "Lamborghini Live",
+      "scopeType": "board",
+      "scopeKey": "lamborghini"
+    },
+    {
+      "roomKey": "lexus-live",
+      "name": "Lexus Live",
+      "scopeType": "board",
+      "scopeKey": "lexus"
+    },
+    {
+      "roomKey": "lincoln-live",
+      "name": "Lincoln Live",
+      "scopeType": "board",
+      "scopeKey": "lincoln"
+    },
+    {
+      "roomKey": "maserati-live",
+      "name": "Maserati Live",
+      "scopeType": "board",
+      "scopeKey": "maserati"
+    },
+    {
+      "roomKey": "mazda-live",
+      "name": "Mazda Live",
+      "scopeType": "board",
+      "scopeKey": "mazda"
+    },
+    {
+      "roomKey": "mclaren-live",
+      "name": "McLaren Live",
+      "scopeType": "board",
+      "scopeKey": "mclaren"
+    },
+    {
+      "roomKey": "mercedes-benz-live",
+      "name": "Mercedes-Benz Live",
+      "scopeType": "board",
+      "scopeKey": "mercedes-benz"
+    },
+    {
+      "roomKey": "mini-live",
+      "name": "MINI Live",
+      "scopeType": "board",
+      "scopeKey": "mini"
+    },
+    {
+      "roomKey": "mitsubishi-live",
+      "name": "Mitsubishi Live",
+      "scopeType": "board",
+      "scopeKey": "mitsubishi"
+    },
+    {
+      "roomKey": "nissan-live",
+      "name": "Nissan Live",
+      "scopeType": "board",
+      "scopeKey": "nissan"
+    },
+    {
+      "roomKey": "other-makes-live",
+      "name": "Other Makes Live",
+      "scopeType": "board",
+      "scopeKey": "other-makes"
+    },
+    {
+      "roomKey": "porsche-live",
+      "name": "Porsche Live",
+      "scopeType": "board",
+      "scopeKey": "porsche"
+    },
+    {
+      "roomKey": "ram-live",
+      "name": "Ram Live",
+      "scopeType": "board",
+      "scopeKey": "ram"
+    },
+    {
+      "roomKey": "rivian-live",
+      "name": "Rivian Live",
+      "scopeType": "board",
+      "scopeKey": "rivian"
+    },
+    {
+      "roomKey": "subaru-live",
+      "name": "Subaru Live",
+      "scopeType": "board",
+      "scopeKey": "subaru"
+    },
+    {
+      "roomKey": "tesla-live",
+      "name": "Tesla Live",
+      "scopeType": "board",
+      "scopeKey": "tesla"
+    },
+    {
+      "roomKey": "toyota-live",
+      "name": "Toyota Live",
+      "scopeType": "board",
+      "scopeKey": "toyota"
+    },
+    {
+      "roomKey": "volkswagen-live",
+      "name": "Volkswagen Live",
+      "scopeType": "board",
+      "scopeKey": "volkswagen"
+    },
+    {
+      "roomKey": "volvo-live",
+      "name": "Volvo Live",
+      "scopeType": "board",
+      "scopeKey": "volvo"
+    },
+    {
+      "roomKey": "community-general-live",
+      "name": "General Live",
+      "scopeType": "navigation-group",
+      "scopeKey": "community"
+    }
+  ]
+}

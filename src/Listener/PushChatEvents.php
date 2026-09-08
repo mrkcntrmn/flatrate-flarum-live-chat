@@ -7,21 +7,21 @@
  * LICENSE file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Listener;
+namespace FlatRate\LiveChat\Listener;
 
 use Flarum\Http\RequestUtil;
 use Illuminate\Contracts\Events\Dispatcher;
 use Laminas\Diactoros\ServerRequestFactory;
 use Tobscure\JsonApi\Document;
 use Tobscure\JsonApi\Resource;
-use Xelson\Chat\Api\Serializers\ChatSerializer;
-use Xelson\Chat\Api\Serializers\ChatUserSerializer;
-use Xelson\Chat\Api\Serializers\MessageSerializer;
-use Xelson\Chat\ChatSocket;
-use Xelson\Chat\Event\Chat\Saved as ChatSaved;
-use Xelson\Chat\Event\Chat\Deleting as ChatDeleting;
-use Xelson\Chat\Event\Message\Saved as MessageSaved;
-use Xelson\Chat\Event\Message\Deleting as MessageDeleting;
+use FlatRate\LiveChat\Api\Serializers\ChatSerializer;
+use FlatRate\LiveChat\Api\Serializers\ChatUserSerializer;
+use FlatRate\LiveChat\Api\Serializers\MessageSerializer;
+use FlatRate\LiveChat\ChatSocket;
+use FlatRate\LiveChat\Event\Chat\Saved as ChatSaved;
+use FlatRate\LiveChat\Event\Chat\Deleting as ChatDeleting;
+use FlatRate\LiveChat\Event\Message\Saved as MessageSaved;
+use FlatRate\LiveChat\Event\Message\Deleting as MessageDeleting;
 
 class PushChatEvents
 {

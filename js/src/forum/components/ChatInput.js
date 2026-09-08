@@ -12,7 +12,7 @@ export default class ChatInput extends Component {
 
         app.chat.input = this;
 
-        this.messageCharLimit = app.forum.attribute('xelson-chat.settings.charlimit') ?? 512;
+        this.messageCharLimit = app.forum.attribute('flatrate-live-chat.settings.charlimit') ?? 512;
 
         this.updatePlaceholder();
     }
@@ -43,10 +43,10 @@ export default class ChatInput extends Component {
     }
 
     updatePlaceholder() {
-        if (!app.session.user) this.inputPlaceholder = app.translator.trans('xelson-chat.forum.errors.unauthenticated');
-        else if (!app.chat.getPermissions().post) this.inputPlaceholder = app.translator.trans('xelson-chat.forum.errors.chatdenied');
-        else if (this.model.removed_at()) this.inputPlaceholder = app.translator.trans('xelson-chat.forum.errors.removed');
-        else this.inputPlaceholder = app.translator.trans('xelson-chat.forum.chat.placeholder');
+        if (!app.session.user) this.inputPlaceholder = app.translator.trans('flatrate-live-chat.forum.errors.unauthenticated');
+        else if (!app.chat.getPermissions().post) this.inputPlaceholder = app.translator.trans('flatrate-live-chat.forum.errors.chatdenied');
+        else if (this.model.removed_at()) this.inputPlaceholder = app.translator.trans('flatrate-live-chat.forum.errors.removed');
+        else this.inputPlaceholder = app.translator.trans('flatrate-live-chat.forum.chat.placeholder');
     }
 
     view() {
@@ -72,7 +72,7 @@ export default class ChatInput extends Component {
                 ) : null}
                 {this.model.removed_at() && this.model.removed_by() === parseInt(app.session.user.id()) ? (
                     <Button className="Button Button--primary ButtonRejoin" onclick={() => app.modal.show(ChatEditModal, { model: this.model })}>
-                        {app.translator.trans('xelson-chat.forum.chat.rejoin')}
+                        {app.translator.trans('flatrate-live-chat.forum.chat.rejoin')}
                     </Button>
                 ) : (
                     [

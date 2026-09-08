@@ -1,75 +1,62 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Commands;
+namespace FlatRate\LiveChat\Commands;
 
 use Carbon\Carbon;
 use Illuminate\Contracts\Events\Dispatcher;
-use Xelson\Chat\ChatRepository;
-use Xelson\Chat\Event\Message\Saved;
-use Xelson\Chat\Message;
-use Xelson\Chat\MessageValidator;
+use FlatRate\LiveChat\Auth\ChatAuthorization;
+use FlatRate\LiveChat\ChatRepository;
+use FlatRate\LiveChat\Event\Message\Saved;
+use FlatRate\LiveChat\Message;
+use FlatRate\LiveChat\MessageValidator;
+use FlatRate\LiveChat\Realtime\PerRoomChannelNamer;
+use FlatRate\LiveChat\Realtime\RealtimePublisher;
 
 class PostMessageHandler
 {
-    /**
-     * @var MessageValidator
-     */
-    protected $validator;
-
-    /**
-     * @param MessageValidator      $validator
-     * @param ChatRepository        $chats
-     * @param Dispatcher            $events
-     */
     public function __construct(
-        MessageValidator $validator,
-        ChatRepository $chats,
-        Dispatcher $events
+        private MessageValidator $validator,
+        private ChatRepository $chats,
+        private Dispatcher $events,
+        private ChatAuthorization $auth,
+        private RealtimePublisher $realtime,
+        private PerRoomChannelNamer $channels
     ) {
-        $this->validator = $validator;
-        $this->chats = $chats;
-        $this->events = $events;
     }
 
-    /**
-     * Handles the command execution.
-     *
-     * @param PostMessage $command
-     * @return null|string
-     */
     public function handle(PostMessage $command)
     {
         $actor = $command->actor;
-        $attributes = $command->data['attributes'];
-        $ip_address = $command->ip_address;
+        $attributes = $command->data['attributes'] ?? [];
 
-        $content = $attributes['message'];
-        $chat_id = $attributes['chat_id'];
+        $content = $attributes['message'] ?? '';
+        $chat_id = $attributes['chat_id'] ?? null;
+
+        $senderId = $this->auth->resolveSenderId($actor, $attributes);
 
         $chat = $this->chats->findOrFail($chat_id, $actor);
+        $this->auth->assertCanPost($actor, $chat);
 
-        $actor->assertCan('xelson-chat.permissions.chat');
-
+        // Explicit membership for posting only — never on read.
+        $chat->ensureMembership($actor);
         $chatUser = $chat->getChatUser($actor);
-
         $actor->assertPermission($chatUser && !$chatUser->removed_at);
 
         $message = Message::build(
             $content,
-            $actor->id,
+            $senderId,
             Carbon::now(),
             $chat->id,
-            $ip_address
+            null // CHAT_IP_PERSISTENCE=false
         );
 
         $this->validator->assertValid($message->getDirty());
-
         $message->save();
 
         $chat->users()->updateExistingPivot($actor->id, ['readed_at' => Carbon::now()]);
@@ -77,6 +64,13 @@ class PostMessageHandler
         $this->events->dispatch(
             new Saved($message, $actor, $command->data, true)
         );
+
+        $channel = $this->channels->channelKeyForRoom($chat);
+        $this->realtime->publish($channel, 'RoomMessageCreated', [
+            'room_key' => $chat->room_key,
+            'message_id' => $message->id,
+            'user_id' => $senderId,
+        ]);
 
         return $message;
     }

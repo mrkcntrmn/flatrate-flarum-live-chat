@@ -1,12 +1,12 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Commands;
+namespace FlatRate\LiveChat\Commands;
 
 use Flarum\User\User;
 
@@ -24,16 +24,16 @@ class PostMessage
     public $data;
 
     /**
-     * @var string
+     * @var string|null
      */
     public $ip_address;
 
     /**
      * @param User $actor
      * @param mixed $data
-     * @param string $ip_address
+     * @param string|null $ip_address CHAT_IP_PERSISTENCE=false — callers pass null
      */
-    public function __construct(User $actor, $data, string $ip_address)
+    public function __construct(User $actor, $data, ?string $ip_address = null)
     {
         $this->actor = $actor;
         $this->data = $data;

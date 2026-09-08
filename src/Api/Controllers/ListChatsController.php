@@ -1,16 +1,16 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Api\Controllers;
+namespace FlatRate\LiveChat\Api\Controllers;
 
-use Xelson\Chat\Api\Serializers\ChatUserSerializer;
-use Xelson\Chat\Chat;
-use Xelson\Chat\ChatRepository;
+use FlatRate\LiveChat\Api\Serializers\ChatUserSerializer;
+use FlatRate\LiveChat\Chat;
+use FlatRate\LiveChat\ChatRepository;
 use Illuminate\Support\Arr;
 use Tobscure\JsonApi\Document;
 use Illuminate\Contracts\Bus\Dispatcher;

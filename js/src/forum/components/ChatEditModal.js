@@ -27,7 +27,7 @@ export default class ChatEditModal extends ChatModal {
     }
 
     title() {
-        return app.translator.trans('xelson-chat.forum.chat.edit_modal.title');
+        return app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.title');
     }
 
     onsubmit() {
@@ -98,14 +98,14 @@ export default class ChatEditModal extends ChatModal {
                     onclick={this.userMentionDropdownOnclick.bind(this, user, 'moder')}
                     disabled={user == app.session.user || !this.isCreator(app.session.user) || this.isCreator(user)}
                 >
-                    {app.translator.trans('xelson-chat.forum.chat.moder')}
+                    {app.translator.trans('flatrate-live-chat.forum.chat.moder')}
                 </Button>
                 <Button
                     icon="fas fa-trash-alt"
                     onclick={this.userMentionDropdownOnclick.bind(this, user, 'kick')}
                     disabled={user.chat_pivot(this.model.id()).role() >= this.isLocalModerator && user != app.session.user}
                 >
-                    {app.translator.trans(`xelson-chat.forum.chat.${user == app.session.user ? 'leave' : 'kick'}`)}
+                    {app.translator.trans(`flatrate-live-chat.forum.chat.${user == app.session.user ? 'leave' : 'kick'}`)}
                 </Button>
             </Dropdown>
         );
@@ -121,8 +121,8 @@ export default class ChatEditModal extends ChatModal {
 
     componentFormInputIcon() {
         return this.componentFormIcon({
-            title: app.translator.trans('xelson-chat.forum.chat.edit_modal.form.icon.label'),
-            desc: app.translator.trans('xelson-chat.forum.chat.edit_modal.form.icon.validator', {
+            title: app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.form.icon.label'),
+            desc: app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.form.icon.validator', {
                 a: <a href="https://fontawesome.com/icons?m=free" tabindex="-1" target="blank" />,
             }),
             stream: this.getInput().icon,
@@ -132,19 +132,19 @@ export default class ChatEditModal extends ChatModal {
 
     componentFormInputTitle() {
         return this.componentFormInput({
-            title: app.translator.trans('xelson-chat.forum.chat.edit_modal.form.title.label'),
-            desc: app.translator.trans('xelson-chat.forum.chat.edit_modal.form.title.validator'),
+            title: app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.form.title.label'),
+            desc: app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.form.title.validator'),
             stream: this.getInput().title,
-            placeholder: app.translator.trans('xelson-chat.forum.chat.edit_modal.form.title.label'),
+            placeholder: app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.form.title.label'),
         });
     }
 
     componentFormInputColor() {
         return this.componentFormColor({
-            title: app.translator.trans('xelson-chat.forum.chat.edit_modal.form.color.label'),
-            desc: app.translator.trans('xelson-chat.forum.chat.edit_modal.form.color.validator'),
+            title: app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.form.color.label'),
+            desc: app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.form.color.validator'),
             stream: this.getInput().color,
-            placeholder: app.translator.trans('xelson-chat.forum.chat.edit_modal.form.color.label'),
+            placeholder: app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.form.color.label'),
         });
     }
 
@@ -167,7 +167,7 @@ export default class ChatEditModal extends ChatModal {
                   this.componentFormInputTitle(),
                   this.componentFormInputColor(),
                   this.componentFormInputIcon(),
-                  this.componentFormUsersSelect('xelson-chat.forum.chat.edit_modal.form.users.edit'),
+                  this.componentFormUsersSelect('flatrate-live-chat.forum.chat.edit_modal.form.users.edit'),
               ]
             : this.componentChatInfo();
     }
@@ -195,7 +195,7 @@ export default class ChatEditModal extends ChatModal {
                     onclick={this.onsubmit.bind(this)}
                     disabled={this.model.type() ? !this.isCanEditChannel() : !this.isCanEditChat()}
                 >
-                    {app.translator.trans('xelson-chat.forum.chat.edit_modal.save_button')}
+                    {app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.save_button')}
                 </Button>
             );
 
@@ -205,7 +205,7 @@ export default class ChatEditModal extends ChatModal {
                 onclick={this.onleave.bind(this)}
                 disabled={this.model.removed_by() && this.model.removed_by() != app.session.user.id()}
             >
-                {app.translator.trans(`xelson-chat.forum.chat.edit_modal.form.${this.isLocalLeaved ? 'return' : 'leave'}`)}
+                {app.translator.trans(`flatrate-live-chat.forum.chat.edit_modal.form.${this.isLocalLeaved ? 'return' : 'leave'}`)}
             </Button>
         );
 
@@ -252,9 +252,9 @@ export default class ChatEditModal extends ChatModal {
                 ? [
                       <br></br>,
                       this.componentFormInput({
-                          title: app.translator.trans('xelson-chat.forum.chat.edit_modal.form.delete.title'),
-                          desc: app.translator.trans('xelson-chat.forum.chat.edit_modal.form.delete.desc'),
-                          placeholder: app.translator.trans('xelson-chat.forum.chat.edit_modal.form.delete.placeholder'),
+                          title: app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.form.delete.title'),
+                          desc: app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.form.delete.desc'),
+                          placeholder: app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.form.delete.placeholder'),
                           stream: this.deleteChatTitleInput,
                       }),
                   ]
@@ -264,7 +264,7 @@ export default class ChatEditModal extends ChatModal {
                 onclick={this.ondelete.bind(this)}
                 disabled={this.deleteState == 1 && !this.isValidTitleCopy()}
             >
-                {app.translator.trans('xelson-chat.forum.chat.edit_modal.form.delete.button')}
+                {app.translator.trans('flatrate-live-chat.forum.chat.edit_modal.form.delete.button')}
             </Button>,
         ];
     }

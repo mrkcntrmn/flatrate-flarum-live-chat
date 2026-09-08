@@ -50,7 +50,7 @@ export default class ChatSearchUser extends Search {
                     <input
                         className="FormControl"
                         type="search"
-                        placeholder={app.translator.trans('xelson-chat.forum.chat.list.add_modal.search.placeholder')}
+                        placeholder={app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.search.placeholder')}
                         value={this.state.getValue()}
                         oninput={(e) => this.state.setValue(e.target.value)}
                         onfocus={() => (this.hasFocus = true)}

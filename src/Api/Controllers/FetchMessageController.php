@@ -1,15 +1,15 @@
 <?php
 /*
- * This file is part of xelson/flarum-ext-chat
+ * This file is part of flatrate/flarum-live-chat
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Xelson\Chat\Api\Controllers;
+namespace FlatRate\LiveChat\Api\Controllers;
 
-use Xelson\Chat\Api\Serializers\MessageSerializer;
-use Xelson\Chat\Commands\FetchMessage;
+use FlatRate\LiveChat\Api\Serializers\MessageSerializer;
+use FlatRate\LiveChat\Commands\FetchMessage;
 use Illuminate\Support\Arr;
 use Flarum\Api\Controller\AbstractListController;
 use Illuminate\Contracts\Bus\Dispatcher;
@@ -54,11 +54,21 @@ class FetchMessageController extends AbstractListController
     protected function data(ServerRequestInterface $request, Document $document)
     {
         $actor = $request->getAttribute('actor');
-        $chat_id = Arr::get($request->getQueryParams(), 'chat_id');
-        $query = Arr::get($request->getQueryParams(), 'query', 0);
+        $params = $request->getQueryParams();
+        $chat_id = Arr::get($params, 'chat_id');
+        if ($chat_id === null) {
+            $chat_id = Arr::get($params, 'filter.chat_id');
+        }
+        if ($chat_id === null && isset($params['filter']) && is_array($params['filter'])) {
+            $chat_id = $params['filter']['chat_id'] ?? null;
+        }
+        $query = Arr::get($params, 'query', 0);
+        if ($chat_id === null || $chat_id === '') {
+            throw new \InvalidArgumentException('chat_id is required');
+        }
 
         return $this->bus->dispatch(
-            new FetchMessage($query, $actor, $chat_id)
+            new FetchMessage($query, $actor, (int) $chat_id)
         );
     }
 }

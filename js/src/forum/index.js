@@ -14,7 +14,7 @@ chat.setAttribute('id', 'chat');
 
 document.body.append(chat);
 
-app.initializers.add('xelson-chat', (app) => {
+app.initializers.add('flatrate-live-chat', (app) => {
     app.store.models.chats = Chat;
     app.store.models.chatmessages = Message;
 
@@ -45,7 +45,7 @@ app.initializers.add('xelson-chat', (app) => {
     });
 
     extend(Application.prototype, 'mount', function () {
-        if (!app.forum.attribute('xelson-chat.permissions.enabled')) return;
+        if (!app.forum.attribute('flatrate-live-chat.permissions.enabled')) return;
 
         app.chat = new ChatState();
 
@@ -54,7 +54,7 @@ app.initializers.add('xelson-chat', (app) => {
         if ('Notification' in window && app.chat.getFrameState('notify')) Notification.requestPermission();
 
         if (!app.pusher) {
-            app.alerts.show({ type: 'error' }, app.translator.trans('xelson-chat.forum.pusher_not_found'));
+            app.alerts.show({ type: 'error' }, app.translator.trans('flatrate-live-chat.forum.pusher_not_found'));
         }
 
         app.chat.apiFetchChats();

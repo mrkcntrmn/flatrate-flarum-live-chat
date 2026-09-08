@@ -38,12 +38,12 @@ export default class ChatHeader extends Component {
                               ) : null,
                               app.chat.getCurrentChat().title(),
                           ]
-                        : app.translator.trans('xelson-chat.forum.toolbar.title')}
+                        : app.translator.trans('flatrate-live-chat.forum.toolbar.title')}
                 </h2>
                 {!app.chat.getCurrentChat() || !app.session.user ? null : (
                     <div
                         className="icon"
-                        data-title={app.translator.trans('xelson-chat.forum.toolbar.chat.settings')}
+                        data-title={app.translator.trans('flatrate-live-chat.forum.toolbar.chat.settings')}
                         onclick={() => app.modal.show(ChatEditModal, { model: app.chat.getCurrentChat() })}
                     >
                         <i className="fas fa-cog"></i>
@@ -63,7 +63,7 @@ export default class ChatHeader extends Component {
                 className="icon"
                 onclick={this.toggleSound.bind(this)}
                 data-title={app.translator.trans(
-                    'xelson-chat.forum.toolbar.' + (app.chat.getFrameState('isMuted') ? 'enable_sounds' : 'disable_sounds')
+                    'flatrate-live-chat.forum.toolbar.' + (app.chat.getFrameState('isMuted') ? 'enable_sounds' : 'disable_sounds')
                 )}
             >
                 <i className={app.chat.getFrameState('isMuted') ? 'fas fa-volume-mute' : 'fas fa-volume-up'}></i>
@@ -76,7 +76,7 @@ export default class ChatHeader extends Component {
                 className="icon"
                 onclick={this.toggleNotifications.bind(this)}
                 data-title={app.translator.trans(
-                    'xelson-chat.forum.toolbar.' + (app.chat.getFrameState('notify') ? 'disable_notifications' : 'enable_notifications')
+                    'flatrate-live-chat.forum.toolbar.' + (app.chat.getFrameState('notify') ? 'disable_notifications' : 'enable_notifications')
                 )}
             >
                 <i className={app.chat.getFrameState('notify') ? 'fas fa-bell' : 'fas fa-bell-slash'}></i>
@@ -89,7 +89,7 @@ export default class ChatHeader extends Component {
                 <div
                     className="icon"
                     onclick={this.toggleChat.bind(this)}
-                    data-title={app.translator.trans('xelson-chat.forum.toolbar.' + (app.chat.getFrameState('beingShown') ? 'minimize' : 'maximize'))}
+                    data-title={app.translator.trans('flatrate-live-chat.forum.toolbar.' + (app.chat.getFrameState('beingShown') ? 'minimize' : 'maximize'))}
                 >
                     <i className={app.chat.getFrameState('beingShown') ? 'fas fa-window-minimize' : 'fas fa-window-maximize'}></i>
                 </div>
@@ -103,7 +103,7 @@ export default class ChatHeader extends Component {
                 <Link
                     className="icon"
                     href={app.route('chat')}
-                    data-title={app.translator.trans('xelson-chat.forum.toolbar.' + (app.chat.getFrameState('beingShown') ? 'minimize' : 'maximize'))}
+                    data-title={app.translator.trans('flatrate-live-chat.forum.toolbar.' + (app.chat.getFrameState('beingShown') ? 'minimize' : 'maximize'))}
                 >
                     <i className="fas fa-expand"></i>
                 </Link>

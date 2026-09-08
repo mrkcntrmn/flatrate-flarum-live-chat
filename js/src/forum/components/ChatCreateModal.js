@@ -13,7 +13,7 @@ export default class ChatCreateModal extends ChatModal {
     }
 
     title() {
-        return app.translator.trans('xelson-chat.forum.chat.list.add_modal.title');
+        return app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.title');
     }
 
     onsubmit() {
@@ -36,17 +36,17 @@ export default class ChatCreateModal extends ChatModal {
 
     componentFormInputColor() {
         return this.componentFormColor({
-            title: app.translator.trans('xelson-chat.forum.chat.list.add_modal.form.color.label'),
-            desc: app.translator.trans('xelson-chat.forum.chat.list.add_modal.form.color.validator'),
+            title: app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.form.color.label'),
+            desc: app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.form.color.validator'),
             stream: this.getInput().color,
-            placeholder: app.translator.trans('xelson-chat.forum.chat.list.add_modal.form.color.label'),
+            placeholder: app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.form.color.label'),
         });
     }
 
     componentFormInputIcon() {
         return this.componentFormIcon({
-            title: app.translator.trans('xelson-chat.forum.chat.list.add_modal.form.icon.label'),
-            desc: app.translator.trans('xelson-chat.forum.chat.list.add_modal.form.icon.validator', {
+            title: app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.form.icon.label'),
+            desc: app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.form.icon.validator', {
                 a: <a href="https://fontawesome.com/icons?m=free" tabindex="-1" target="blank" />,
             }),
             stream: this.getInput().icon,
@@ -59,10 +59,10 @@ export default class ChatCreateModal extends ChatModal {
             this.usersSelected.length > 1
                 ? [
                       this.componentFormInput({
-                          title: app.translator.trans('xelson-chat.forum.chat.list.add_modal.form.title.chat'),
-                          desc: app.translator.trans('xelson-chat.forum.chat.list.add_modal.form.title.validator'),
+                          title: app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.form.title.chat'),
+                          desc: app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.form.title.validator'),
                           stream: this.getInput().title,
-                          placeholder: app.translator.trans('xelson-chat.forum.chat.list.add_modal.form.title.chat'),
+                          placeholder: app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.form.title.chat'),
                       }),
                       this.componentFormInputColor(),
                       this.componentFormInputIcon(),
@@ -75,10 +75,10 @@ export default class ChatCreateModal extends ChatModal {
     componentFormChannel() {
         return [
             this.componentFormInput({
-                title: app.translator.trans('xelson-chat.forum.chat.list.add_modal.form.title.channel'),
-                desc: app.translator.trans('xelson-chat.forum.chat.list.add_modal.form.title.validator'),
+                title: app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.form.title.channel'),
+                desc: app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.form.title.validator'),
                 stream: this.getInput().title,
-                placeholder: app.translator.trans('xelson-chat.forum.chat.list.add_modal.form.title.channel'),
+                placeholder: app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.form.title.channel'),
             }),
             this.componentFormInputColor(),
             this.componentFormInputIcon(),
@@ -107,13 +107,13 @@ export default class ChatCreateModal extends ChatModal {
                                 className={classList({ 'Tab Tab--left': true, 'Tab--active': !this.isChannel })}
                                 onclick={(() => (this.isChannel = false)).bind(this)}
                             >
-                                {app.translator.trans('xelson-chat.forum.chat.list.add_modal.chat')}
+                                {app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.chat')}
                             </div>
                             <div
                                 className={classList({ 'Tab Tab--right': true, 'Tab--active': this.isChannel })}
                                 onclick={(() => (this.isChannel = true)).bind(this)}
                             >
-                                {app.translator.trans('xelson-chat.forum.chat.list.add_modal.channel')}
+                                {app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.channel')}
                             </div>
                         </div>
                     ) : null}
@@ -124,7 +124,7 @@ export default class ChatCreateModal extends ChatModal {
                         disabled={this.isChannel ? !this.isCanCreateChannel() : !this.isCanCreateChat()}
                         onclick={this.onsubmit.bind(this)}
                     >
-                        {app.translator.trans('xelson-chat.forum.chat.list.add_modal.create.' + (this.isChannel ? 'channel' : 'chat'))}
+                        {app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.create.' + (this.isChannel ? 'channel' : 'chat'))}
                     </Button>
                 </div>
             </div>

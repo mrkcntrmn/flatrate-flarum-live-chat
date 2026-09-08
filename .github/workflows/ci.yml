@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+          extensions: dom, mbstring, xmlwriter, tokenizer
+      - name: Composer validate
+        run: composer validate --no-check-publish --strict
+      - name: Install dependencies (platform-strict)
+        # PHP 8.2 + declared platform extensions; no blanket --ignore-platform-reqs.
+        run: composer update --no-interaction --prefer-dist
+      - name: PHPUnit security/domain tests
+        run: vendor/bin/phpunit --colors=always
+      - name: Upstream provenance guard
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+          text = pathlib.Path('UPSTREAM.md').read_text()
+          checks = [
+            (r'\|\s*SOURCE\s*\|\s*xelson/flarum-ext-chat\s*\|', 'SOURCE'),
+            (r'\|\s*COMMIT\s*\|\s*a7489ac183764eef12969135d6b665ac5eb18272\s*\|', 'COMMIT'),
+            (r'\|\s*VERSION\s*\|\s*v1\.1\.5\s*\|', 'VERSION'),
+            (r'\|\s*REPOSITORY\s*\|\s*https://github\.com/Xelson/flarum-ext-chat\s*\|', 'REPOSITORY'),
+            (r'\|\s*LICENSE\s*\|\s*MIT\s*\|', 'LICENSE'),
+            (r'\|\s*OWNED_PACKAGE\s*\|\s*flatrate/flarum-live-chat\s*\|', 'OWNED_PACKAGE'),
+          ]
+          for pat, label in checks:
+            if not re.search(pat, text):
+              print(f'FAIL provenance: {label}', file=sys.stderr)
+              sys.exit(1)
+          if re.search(r'\|\s*SOURCE\s*\|\s*flatrate/flarum-live-chat\s*\|', text):
+            print('FAIL: SOURCE must not be owned package identity', file=sys.stderr)
+            sys.exit(1)
+          print('provenance_ok')
+          PY
+      - name: Script re-exec guard
+        run: |
+          ! grep -R --include='ChatState.js' -n "createElement('script')" js/src
+          ! grep -n "createElement('script')" js/dist/forum.js
+      - name: Room catalog guard
+        run: |
+          python3 - <<'PY'
+          import json
+          d=json.load(open('resources/room-catalog.json'))
+          assert d['totalRoomCount']==42
+          assert d['brandRoomCount']==41
+          assert d['generalRoomCount']==1
+          keys={r['roomKey'] for r in d['rooms']}
+          assert 'gm-live' in keys and 'cdjr-live' in keys and 'community-general-live' in keys
+          assert 'start-here-live' not in keys
+          assert 'general-shop-discussion-live' not in keys
+          assert 'technician-topics-live' not in keys
+          print('catalog_ok', len(d['rooms']))
+          PY
+
+  flarum-resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+          extensions: dom, curl, gd, mbstring, pdo, pdo_mysql, tokenizer, xml, zip
+      - name: Resolve flatrate/flarum-live-chat into Flarum 1.8.19
+        run: |
+          set -euo pipefail
+          ROOT="$PWD"
+          TMP="$(mktemp -d)"
+          cd "$TMP"
+          composer create-project flarum/flarum:^1.8.0 flarum --no-interaction
+          cd flarum
+          composer config repositories.flatrate-live-chat path "$ROOT"
+          composer require flatrate/flarum-live-chat:*@dev flarum/core:1.8.19 --no-update --no-interaction
+          composer update flatrate/flarum-live-chat flarum/core --with-all-dependencies --no-interaction --prefer-dist
+          CORE="$(composer show flarum/core | awk '/^versions/ {print $NF; exit}')"
+          echo "resolved_core=$CORE"
+          test "$CORE" = "1.8.19" || test "$CORE" = "* 1.8.19"
+          composer show flatrate/flarum-live-chat
+          # Accept either exact line or versions line containing 1.8.19
+          composer show flarum/core | grep -E 'versions\s+:.*1\.8\.19' 
+          echo "FLARUM_CORE_RESOLVE_PASS=true"
