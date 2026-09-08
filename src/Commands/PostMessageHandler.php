@@ -66,10 +66,14 @@ class PostMessageHandler
         );
 
         $channel = $this->channels->channelKeyForRoom($chat);
-        $this->realtime->publish($channel, 'RoomMessageCreated', [
+        $this->realtime->publish($channel, 'message.created', [
             'room_key' => $chat->room_key,
+            'roomKey' => $chat->room_key,
             'message_id' => $message->id,
+            'messageId' => $message->id,
             'user_id' => $senderId,
+            'userId' => $senderId,
+            'order' => $message->id,
         ]);
 
         return $message;

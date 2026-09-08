@@ -118,7 +118,9 @@ class FloodgateAndSerializerSafetyTest extends TestCase
         $this->assertStringContainsString('noindex', $src);
         $this->assertStringContainsString("attachments'] = false", $src);
         $this->assertStringContainsString("email_notifications'] = false", $src);
-        $this->assertStringContainsString("'PENDING'", $src);
+        $this->assertStringContainsString("'PUSHER_CHANNELS'", $src);
+        $this->assertStringContainsString('flatrate-live-chat/realtime/auth', $src);
+        $this->assertStringContainsString('/live/{roomKey}', $src);
     }
 
     public function testGuestSubscribeDenied(): void

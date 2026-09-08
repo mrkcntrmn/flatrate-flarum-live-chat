@@ -106,11 +106,11 @@ class RoomCatalogAndRealtimeTest extends TestCase
         $toyotaCh = $namer->channelKeyForRoom($toyota);
         $gmCh = $namer->channelKeyForRoom($gm);
         $this->assertNotSame($toyotaCh, $gmCh);
-        $this->assertStringStartsWith('private-flatrate-chat-room-', $toyotaCh);
+        $this->assertStringStartsWith('private-flatrate-live-', $toyotaCh);
 
-        $pub->publish($gmCh, 'RoomMessageCreated', ['room_key' => 'gm-live']);
-        $this->assertTrue($pub->hasEvent($gmCh, 'RoomMessageCreated'));
-        $this->assertFalse($pub->hasEvent($toyotaCh, 'RoomMessageCreated'));
+        $pub->publish($gmCh, 'message.created', ['room_key' => 'gm-live']);
+        $this->assertTrue($pub->hasEvent($gmCh, 'message.created'));
+        $this->assertFalse($pub->hasEvent($toyotaCh, 'message.created'));
         $this->assertSame([], $pub->eventsFor($toyotaCh));
     }
 

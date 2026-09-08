@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "flatrate-live-chat-rollout-profile",
+  "profileId": "general-live-first",
+  "canonicalRoomCount": 42,
+  "defaultBrand": {
+    "visibility": "hidden",
+    "audience": "staff-preview"
+  },
+  "rooms": [
+    {
+      "roomKey": "community-general-live",
+      "visibility": "visible",
+      "audience": "members"
+    }
+  ],
+  "notes": "Brand rooms inherit defaultBrand. Visibility transitions must not rewrite roomKey/id/scope/messages."
+}

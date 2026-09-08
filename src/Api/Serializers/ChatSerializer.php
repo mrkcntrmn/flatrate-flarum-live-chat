@@ -34,6 +34,8 @@ class ChatSerializer extends AbstractSerializer
             'room_key' => $chat->room_key,
             'scope_type' => $chat->scope_type,
             'scope_key' => $chat->scope_key,
+            'visibility' => $chat->visibility,
+            'audience' => $chat->audience,
             'created_at' => $chat->created_at ? $this->formatDate($chat->created_at) : null,
         ];
     }

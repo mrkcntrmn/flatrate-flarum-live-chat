@@ -8,6 +8,7 @@ import User from 'flarum/models/User';
 import Model from 'flarum/Model';
 import ChatState from './states/ChatState';
 import addChatPage from './addChatPage';
+import FlatRateRealtimeClient from './realtime/FlatRateRealtimeClient';
 
 const chat = document.createElement('div');
 chat.setAttribute('id', 'chat');
@@ -44,21 +45,30 @@ app.initializers.add('flatrate-live-chat', (app) => {
         },
     });
 
+    addChatPage();
+
     extend(Application.prototype, 'mount', function () {
         if (!app.forum.attribute('flatrate-live-chat.permissions.enabled')) return;
 
         app.chat = new ChatState();
 
+        // Owned Pusher Channels client — fail closed when not configured.
+        app.flatrateLiveRealtime = new FlatRateRealtimeClient({
+            app,
+            onEvent: (envelope) => {
+                if (app.chat && typeof app.chat.handleFlatRateRealtime === 'function') {
+                    app.chat.handleFlatRateRealtime(envelope);
+                }
+            },
+        });
+        if (app.session.user && app.flatrateLiveRealtime.isConfigured()) {
+            app.flatrateLiveRealtime.connect();
+        }
+
         m.mount(document.getElementById('chat'), ChatFrame);
 
         if ('Notification' in window && app.chat.getFrameState('notify')) Notification.requestPermission();
 
-        if (!app.pusher) {
-            app.alerts.show({ type: 'error' }, app.translator.trans('flatrate-live-chat.forum.pusher_not_found'));
-        }
-
         app.chat.apiFetchChats();
     });
-
-    //addChatPage();
 });

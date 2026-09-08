@@ -1,20 +1,17 @@
 <?php
 /*
  * This file is part of flatrate/flarum-live-chat
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
  */
 
 namespace FlatRate\LiveChat;
 
+use FlatRate\LiveChat\Realtime\EventEnvelope;
 use FlatRate\LiveChat\Realtime\PerRoomChannelNamer;
 use FlatRate\LiveChat\Realtime\RealtimePublisher;
 
 /**
- * Legacy Neon socket replaced: no shared public Pusher channel.
  * Delegates to RealtimePublisher with per-room isolation.
- * REALTIME_IMPLEMENTATION_DECISION=PENDING — NullRealtimePublisher by default.
+ * SHARED_PUBLIC_PUSHER_CHANNEL=false — never sendPublic('public', ...).
  */
 class ChatSocket
 {
@@ -30,11 +27,26 @@ class ChatSocket
         if (!$chat || !$chat->room_key) {
             return;
         }
-        // Never sendPublic('public', ...) — SHARED_PUBLIC_PUSHER_CHANNEL=false
         $channel = $this->channels->channelKeyForRoom($chat);
-        $this->publisher->publish($channel, (string) $event_id, [
-            'chat_id' => $chat_id,
+        $type = EventEnvelope::mapLegacyEvent((string) $event_id) ?? (string) $event_id;
+        $order = null;
+        if (isset($options['message']['data']['id'])) {
+            $order = (int) $options['message']['data']['id'];
+        } elseif (isset($options['message']['id'])) {
+            $order = (int) $options['message']['id'];
+        }
+
+        $this->publisher->publish($channel, $type, [
             'room_key' => $chat->room_key,
+            'roomKey' => $chat->room_key,
+            'chat_id' => $chat_id,
+            'order' => $order,
+            'message_id' => $order,
+            'visibility' => $chat->visibility,
+            'audience' => $chat->audience,
+            'title' => $chat->title,
+            // Keep legacy response for FakeRealtimePublisher HTTP matrix compatibility,
+            // but EventEnvelope allowlist strips it before Pusher publish.
             'response' => $options,
         ]);
     }

@@ -1,9 +1,6 @@
 <?php
 /*
  * This file is part of flatrate/flarum-live-chat
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
  */
 
 namespace FlatRate\LiveChat;
@@ -21,6 +18,9 @@ use FlatRate\LiveChat\Api\Controllers\ListChatsController;
 use FlatRate\LiveChat\Api\Controllers\CreateChatController;
 use FlatRate\LiveChat\Api\Controllers\EditChatController;
 use FlatRate\LiveChat\Api\Controllers\DeleteChatController;
+use FlatRate\LiveChat\Api\Controllers\RealtimeAuthController;
+use FlatRate\LiveChat\Console\DoctorCommand;
+use FlatRate\LiveChat\Realtime\PusherClientConfig;
 
 return [
     (new Extend\Frontend('admin'))
@@ -30,6 +30,7 @@ return [
         ->css(__DIR__ . '/resources/less/forum.less')
         ->js(__DIR__ . '/js/dist/forum.js')
         ->route('/chat', 'chat')
+        ->route('/live/{roomKey}', 'flatrate-live-chat.live')
         ->content(function (Document $document) {
             // CHAT_INDEXING=false
             $document->head[] = '<meta name="robots" content="noindex, nofollow">';
@@ -46,7 +47,8 @@ return [
         ->post('/chatmessages/{id}', 'neonchat.chatmessages.post', PostMessageController::class)
         ->patch('/chatmessages/{id}', 'neonchat.chatmessages.edit', EditMessageController::class)
         ->delete('/chatmessages/{id}', 'neonchat.chatmessages.delete', DeleteMessageController::class)
-        ->get('/chat/user/{id}', 'neonchat.chat.user', ShowUserSafeController::class),
+        ->get('/chat/user/{id}', 'neonchat.chat.user', ShowUserSafeController::class)
+        ->post('/flatrate-live-chat/realtime/auth', 'flatrate-live-chat.realtime.auth', RealtimeAuthController::class),
 
     (new Extend\Model(User::class))
         ->relationship('chats', function ($user) {
@@ -73,7 +75,15 @@ return [
             $attributes['flatrate-live-chat.settings.attachments'] = false;
             $attributes['flatrate-live-chat.settings.email_notifications'] = false;
             $attributes['flatrate-live-chat.settings.indexing'] = false;
-            $attributes['flatrate-live-chat.realtime.decision'] = 'PENDING';
+            $attributes['flatrate-live-chat.realtime.decision'] = 'PUSHER_CHANNELS';
+            $attributes['flatrate-live-chat.rollout.profile'] = 'general-live-first';
+            $attributes['flatrate-live-chat.canPreviewHidden'] = resolve(\FlatRate\LiveChat\Auth\ChatAuthorization::class)
+                ->canPreviewHiddenChatRooms($actor);
+
+            $config = resolve(PusherClientConfig::class);
+            foreach ($config->forumAttributes() as $k => $v) {
+                $attributes[$k] = $v;
+            }
             return $attributes;
         }),
 
@@ -89,4 +99,7 @@ return [
         ->register(LiveChatServiceProvider::class),
 
     (new Extend\Event)->subscribe(Listener\PushChatEvents::class),
+
+    (new Extend\Console())
+        ->command(DoctorCommand::class),
 ];
