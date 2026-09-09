@@ -89,7 +89,9 @@ export default class ChatHeader extends Component {
                 <div
                     className="icon"
                     onclick={this.toggleChat.bind(this)}
-                    data-title={app.translator.trans('flatrate-live-chat.forum.toolbar.' + (app.chat.getFrameState('beingShown') ? 'minimize' : 'maximize'))}
+                    data-title={app.translator.trans(
+                        'flatrate-live-chat.forum.toolbar.' + (app.chat.getFrameState('beingShown') ? 'minimize' : 'maximize')
+                    )}
                 >
                     <i className={app.chat.getFrameState('beingShown') ? 'fas fa-window-minimize' : 'fas fa-window-maximize'}></i>
                 </div>

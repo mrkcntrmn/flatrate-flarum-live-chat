@@ -90,7 +90,8 @@ export default class FlatRateRealtimeClient {
             'Content-Type': 'application/json',
             Accept: 'application/json',
         };
-        const token = this.app?.session?.csrfToken || (typeof document !== 'undefined' ? document.querySelector('meta[name="csrf-token"]')?.content : null);
+        const token =
+            this.app?.session?.csrfToken || (typeof document !== 'undefined' ? document.querySelector('meta[name="csrf-token"]')?.content : null);
         if (token) {
             headers['X-CSRF-Token'] = token;
         }
@@ -98,9 +99,7 @@ export default class FlatRateRealtimeClient {
     }
 
     async fetchConnectToken() {
-        const endpoint =
-            this.forumAttr('flatrate-live-chat.realtime.connectTokenEndpoint') ||
-            '/api/flatrate-live-chat/realtime/connect-token';
+        const endpoint = this.forumAttr('flatrate-live-chat.realtime.connectTokenEndpoint') || '/api/flatrate-live-chat/realtime/connect-token';
         const res = await this.postJson(endpoint, {});
         if (!res || !res.token) {
             throw new Error('connect_token_unavailable');
@@ -110,8 +109,7 @@ export default class FlatRateRealtimeClient {
 
     async fetchSubscriptionToken(roomKey) {
         const endpoint =
-            this.forumAttr('flatrate-live-chat.realtime.subscriptionTokenEndpoint') ||
-            '/api/flatrate-live-chat/realtime/subscription-token';
+            this.forumAttr('flatrate-live-chat.realtime.subscriptionTokenEndpoint') || '/api/flatrate-live-chat/realtime/subscription-token';
         const res = await this.postJson(endpoint, { roomKey });
         if (!res || !res.token) {
             throw new Error('subscription_token_unavailable');

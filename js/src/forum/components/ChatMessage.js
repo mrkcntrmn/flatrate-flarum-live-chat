@@ -138,7 +138,9 @@ export default class ChatMessage extends Component {
                 <div class="icon">
                     <i class="fas fa-trash-alt"></i>{' '}
                     <span>
-                        {`(${app.translator.trans('flatrate-live-chat.forum.chat.message.deleted' + (this.model.isDeletedForever ? '_forever' : ''))}`}{' '}
+                        {`(${app.translator.trans(
+                            'flatrate-live-chat.forum.chat.message.deleted' + (this.model.isDeletedForever ? '_forever' : '')
+                        )}`}{' '}
                         {username(this.model.deleted_by())}
                         {')'}
                     </span>

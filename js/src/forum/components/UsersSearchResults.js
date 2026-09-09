@@ -55,7 +55,9 @@ export default class UsersSearchResults {
         if (resultsFind.length > 5) {
             moreText = (
                 <div class="MoreResultsText">
-                    {app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.search.more_results', { more_results: resultsFind.length - 5 })}
+                    {app.translator.trans('flatrate-live-chat.forum.chat.list.add_modal.search.more_results', {
+                        more_results: resultsFind.length - 5,
+                    })}
                 </div>
             );
 
