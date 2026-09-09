@@ -7,6 +7,7 @@ namespace FlatRate\LiveChat\Observability;
 
 /**
  * Structured, metric-friendly realtime logs. Never logs message bodies or secrets.
+ * Prefers Flarum/Monolog when the container is booted; falls back to error_log.
  */
 class RealtimeLogger
 {
@@ -33,6 +34,20 @@ class RealtimeLogger
         if ($line === false) {
             return;
         }
+
+        // Prefer Flarum's Monolog sink (storage/logs/flarum-*.log) when available.
+        try {
+            if (function_exists('resolve')) {
+                $logger = resolve('log');
+                if (is_object($logger) && method_exists($logger, $level)) {
+                    $logger->{$level}($line);
+                    return;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Fall through to error_log.
+        }
+
         error_log($line);
     }
 
