@@ -52,7 +52,7 @@ app.initializers.add('flatrate-live-chat', (app) => {
 
         app.chat = new ChatState();
 
-        // Owned Pusher Channels client — fail closed when not configured.
+        // Owned Centrifugo client — fail closed when not configured.
         app.flatrateLiveRealtime = new FlatRateRealtimeClient({
             app,
             onEvent: (envelope) => {

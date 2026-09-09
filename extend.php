@@ -19,8 +19,10 @@ use FlatRate\LiveChat\Api\Controllers\CreateChatController;
 use FlatRate\LiveChat\Api\Controllers\EditChatController;
 use FlatRate\LiveChat\Api\Controllers\DeleteChatController;
 use FlatRate\LiveChat\Api\Controllers\RealtimeAuthController;
+use FlatRate\LiveChat\Api\Controllers\RealtimeConnectTokenController;
+use FlatRate\LiveChat\Api\Controllers\RealtimeSubscriptionTokenController;
 use FlatRate\LiveChat\Console\DoctorCommand;
-use FlatRate\LiveChat\Realtime\PusherClientConfig;
+use FlatRate\LiveChat\Realtime\CentrifugoClientConfig;
 
 return [
     (new Extend\Frontend('admin'))
@@ -48,7 +50,9 @@ return [
         ->patch('/chatmessages/{id}', 'neonchat.chatmessages.edit', EditMessageController::class)
         ->delete('/chatmessages/{id}', 'neonchat.chatmessages.delete', DeleteMessageController::class)
         ->get('/chat/user/{id}', 'neonchat.chat.user', ShowUserSafeController::class)
-        ->post('/flatrate-live-chat/realtime/auth', 'flatrate-live-chat.realtime.auth', RealtimeAuthController::class),
+        ->post('/flatrate-live-chat/realtime/auth', 'flatrate-live-chat.realtime.auth', RealtimeAuthController::class)
+        ->post('/flatrate-live-chat/realtime/connect-token', 'flatrate-live-chat.realtime.connect-token', RealtimeConnectTokenController::class)
+        ->post('/flatrate-live-chat/realtime/subscription-token', 'flatrate-live-chat.realtime.subscription-token', RealtimeSubscriptionTokenController::class),
 
     (new Extend\Model(User::class))
         ->relationship('chats', function ($user) {
@@ -75,12 +79,12 @@ return [
             $attributes['flatrate-live-chat.settings.attachments'] = false;
             $attributes['flatrate-live-chat.settings.email_notifications'] = false;
             $attributes['flatrate-live-chat.settings.indexing'] = false;
-            $attributes['flatrate-live-chat.realtime.decision'] = 'PUSHER_CHANNELS';
+            $attributes['flatrate-live-chat.realtime.decision'] = 'CENTRIFUGO_SELF_HOSTED';
             $attributes['flatrate-live-chat.rollout.profile'] = 'general-live-first';
             $attributes['flatrate-live-chat.canPreviewHidden'] = resolve(\FlatRate\LiveChat\Auth\ChatAuthorization::class)
                 ->canPreviewHiddenChatRooms($actor);
 
-            $config = resolve(PusherClientConfig::class);
+            $config = resolve(CentrifugoClientConfig::class);
             foreach ($config->forumAttributes() as $k => $v) {
                 $attributes[$k] = $v;
             }

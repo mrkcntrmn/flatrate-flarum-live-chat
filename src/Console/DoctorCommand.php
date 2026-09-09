@@ -6,7 +6,7 @@
 namespace FlatRate\LiveChat\Console;
 
 use FlatRate\LiveChat\Catalog\RoomCatalog;
-use FlatRate\LiveChat\Realtime\PusherClientConfig;
+use FlatRate\LiveChat\Realtime\CentrifugoClientConfig;
 use FlatRate\LiveChat\Rollout\RolloutProfile;
 use Flarum\Console\AbstractCommand;
 
@@ -26,7 +26,7 @@ class DoctorCommand extends AbstractCommand
     {
         $catalog = resolve(RoomCatalog::class);
         $rollout = resolve(RolloutProfile::class);
-        $config = resolve(PusherClientConfig::class);
+        $config = resolve(CentrifugoClientConfig::class);
 
         $rollout->assertValid();
         $expanded = $rollout->expandForRooms($catalog->rooms());
@@ -52,12 +52,15 @@ class DoctorCommand extends AbstractCommand
             'TRANSPORT_DECISION=' . $diag['transportDecision'],
             'TRANSPORT_IMPLEMENTATION_STATUS=' . $diag['transportImplementationStatus'],
             'TRANSPORT_EXTERNAL_QUALIFICATION=' . $diag['transportExternalQualification'],
-            'PRODUCTION_PUSHER_CONFIGURED=false',
-            'PUSHER_SELECTED=false',
+            'PRODUCTION_CENTRIFUGO_CONFIGURED=false',
             'CREDENTIALS_COMPLETE=' . ($diag['credentialsComplete'] ? 'true' : 'false'),
-            'HAS_KEY=' . ($diag['hasKey'] ? 'true' : 'false'),
-            'HAS_SECRET=' . ($diag['hasSecret'] ? 'true' : 'false'),
-            'HAS_APP_ID=' . ($diag['hasAppId'] ? 'true' : 'false'),
+            'HAS_WEBSOCKET_URL=' . ($diag['hasWebsocketUrl'] ? 'true' : 'false'),
+            'HAS_PUBLISH_URL=' . ($diag['hasPublishUrl'] ? 'true' : 'false'),
+            'HAS_EDGE_KEY=' . ($diag['hasEdgeKey'] ? 'true' : 'false'),
+            'HAS_API_KEY=' . ($diag['hasApiKey'] ? 'true' : 'false'),
+            'HAS_JWT_PRIVATE_KEY=' . ($diag['hasJwtPrivateKey'] ? 'true' : 'false'),
+            'URLS_TLS_SAFE=' . ($diag['urlsTlsSafe'] ? 'true' : 'false'),
+            'JWT_ALGORITHM=' . $diag['jwtAlgorithm'],
             'CHAT_ATTACHMENTS_INITIAL=false',
             'CHAT_INDEXING=false',
             'CHAT_EMAIL_NOTIFICATIONS=false',

@@ -54,11 +54,9 @@ export default class ChatState {
 
         this.viewportStates = {};
 
-        // Prefer owned FlatRate realtime client; keep legacy ambient hook only if present.
+        // Owned FlatRate Centrifugo client; subscriptions happen when a chat is selected.
         if (app.session.user && app.flatrateLiveRealtime && app.flatrateLiveRealtime.isConfigured()) {
-            // Subscriptions happen when a chat is selected (per-room private channels).
-        } else if (app.session.user && app.pusher) {
-            app.pusher.then(this.listenSocketChannels.bind(this));
+            // roomKey subscriptions are wired in setCurrentChat.
         }
     }
 
@@ -83,16 +81,16 @@ export default class ChatState {
         }
     }
 
-    subscribeRoomChannel(channelName) {
-        if (app.flatrateLiveRealtime) {
-            return app.flatrateLiveRealtime.subscribe(channelName);
+    subscribeRoomChannel(roomKey) {
+        if (app.flatrateLiveRealtime && roomKey) {
+            return app.flatrateLiveRealtime.subscribe(roomKey);
         }
         return null;
     }
 
-    unsubscribeRoomChannel(channelName) {
-        if (app.flatrateLiveRealtime) {
-            app.flatrateLiveRealtime.unsubscribe(channelName);
+    unsubscribeRoomChannel(roomKey) {
+        if (app.flatrateLiveRealtime && roomKey) {
+            app.flatrateLiveRealtime.unsubscribe(roomKey);
         }
     }
 
@@ -439,8 +437,17 @@ export default class ChatState {
     }
 
     setCurrentChat(model) {
+        const prev = this.curChat;
+        if (prev && prev !== model) {
+            const prevKey = prev.room_key?.() || prev.roomKey?.();
+            if (prevKey) this.unsubscribeRoomChannel(prevKey);
+        }
         this.curChat = model;
         this.saveFrameState('selectedChat', model ? model.id() : null);
+        if (model && app.session.user && app.flatrateLiveRealtime && app.flatrateLiveRealtime.isConfigured()) {
+            const roomKey = model.room_key?.() || model.roomKey?.();
+            if (roomKey) this.subscribeRoomChannel(roomKey);
+        }
     }
 
     getCurrentChat() {

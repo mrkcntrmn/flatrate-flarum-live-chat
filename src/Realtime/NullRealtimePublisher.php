@@ -6,7 +6,7 @@
 namespace FlatRate\LiveChat\Realtime;
 
 /**
- * No-op publisher used when Pusher credentials are incomplete (fail-closed)
+ * No-op publisher used when Centrifugo credentials are incomplete (fail-closed)
  * or when transport is intentionally disabled.
  */
 class NullRealtimePublisher implements RealtimePublisher

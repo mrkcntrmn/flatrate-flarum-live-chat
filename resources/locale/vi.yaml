@@ -1,6 +1,6 @@
 xelson-chat:
   forum:
-    pusher_not_found: Yêu cầu Pusher hoặc Websockets để các cuộc trò chuyện cập nhật theo thời gian thực.
+    realtime_not_found: Thời gian thực không khả dụng cho đến khi Centrifugo được cấu hình.
     index:
       chat_link: Trò chuyện
     toolbar:

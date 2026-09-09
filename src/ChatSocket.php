@@ -5,19 +5,19 @@
 
 namespace FlatRate\LiveChat;
 
+use FlatRate\LiveChat\Realtime\CentrifugoChannelNamer;
 use FlatRate\LiveChat\Realtime\EventEnvelope;
-use FlatRate\LiveChat\Realtime\PerRoomChannelNamer;
 use FlatRate\LiveChat\Realtime\RealtimePublisher;
 
 /**
- * Delegates to RealtimePublisher with per-room isolation.
- * SHARED_PUBLIC_PUSHER_CHANNEL=false — never sendPublic('public', ...).
+ * Delegates to RealtimePublisher with per-room Centrifugo isolation.
+ * SHARED_PUBLIC_REALTIME_CHANNEL=false — never publish to a shared public fanout.
  */
 class ChatSocket
 {
     public function __construct(
         private RealtimePublisher $publisher,
-        private PerRoomChannelNamer $channels
+        private CentrifugoChannelNamer $channels
     ) {
     }
 
@@ -27,7 +27,7 @@ class ChatSocket
         if (!$chat || !$chat->room_key) {
             return;
         }
-        $channel = $this->channels->channelKeyForRoom($chat);
+        $channel = $this->channels->channelForRoom($chat);
         $type = EventEnvelope::mapLegacyEvent((string) $event_id) ?? (string) $event_id;
         $order = null;
         if (isset($options['message']['data']['id'])) {
@@ -46,7 +46,7 @@ class ChatSocket
             'audience' => $chat->audience,
             'title' => $chat->title,
             // Keep legacy response for FakeRealtimePublisher HTTP matrix compatibility,
-            // but EventEnvelope allowlist strips it before Pusher publish.
+            // but EventEnvelope allowlist strips it before Centrifugo publish.
             'response' => $options,
         ]);
     }

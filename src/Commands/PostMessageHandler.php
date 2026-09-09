@@ -15,7 +15,7 @@ use FlatRate\LiveChat\ChatRepository;
 use FlatRate\LiveChat\Event\Message\Saved;
 use FlatRate\LiveChat\Message;
 use FlatRate\LiveChat\MessageValidator;
-use FlatRate\LiveChat\Realtime\PerRoomChannelNamer;
+use FlatRate\LiveChat\Realtime\CentrifugoChannelNamer;
 use FlatRate\LiveChat\Realtime\RealtimePublisher;
 
 class PostMessageHandler
@@ -26,7 +26,7 @@ class PostMessageHandler
         private Dispatcher $events,
         private ChatAuthorization $auth,
         private RealtimePublisher $realtime,
-        private PerRoomChannelNamer $channels
+        private CentrifugoChannelNamer $channels
     ) {
     }
 
@@ -65,7 +65,7 @@ class PostMessageHandler
             new Saved($message, $actor, $command->data, true)
         );
 
-        $channel = $this->channels->channelKeyForRoom($chat);
+        $channel = $this->channels->channelForRoom($chat);
         $this->realtime->publish($channel, 'message.created', [
             'room_key' => $chat->room_key,
             'roomKey' => $chat->room_key,

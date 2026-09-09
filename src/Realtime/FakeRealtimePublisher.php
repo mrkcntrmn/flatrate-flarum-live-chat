@@ -10,7 +10,7 @@ namespace FlatRate\LiveChat\Realtime;
 
 /**
  * Disposable publisher for isolation tests.
- * SHARED_PUBLIC_PUSHER_CHANNEL=false — events are stored per room channel only.
+ * SHARED_PUBLIC_REALTIME_CHANNEL=false — events are stored per room channel only.
  *
  * When FLATRATE_LIVE_CHAT_FAKE_REALTIME_FILE is set, events persist across
  * PHP-FPM/Apache request processes (required for HTTP matrix proofs).
