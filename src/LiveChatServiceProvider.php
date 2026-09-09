@@ -49,7 +49,12 @@ class LiveChatServiceProvider extends AbstractServiceProvider
 
             $config = $container->make(CentrifugoClientConfig::class);
             if ($config->isComplete()) {
-                return new CentrifugoRealtimePublisher($config, $container->make(RealtimeLogger::class));
+                return new CentrifugoRealtimePublisher(
+                    $config,
+                    $container->make(RealtimeLogger::class),
+                    null,
+                    $container->make(CentrifugoChannelNamer::class)
+                );
             }
 
             // Fail closed: no publish when credentials incomplete.

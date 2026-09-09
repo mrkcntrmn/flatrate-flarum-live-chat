@@ -24,6 +24,18 @@ Also kept: `NullRealtimePublisher` (fail-closed default) + `FakeRealtimePublishe
 
 HTTP history remains authoritative; realtime is best-effort acceleration (publish never throws).
 
+Create-message realtime emission is owned solely by `Saved` → `PushChatEvents` → `ChatSocket` (no direct publish from `PostMessageHandler`).
+
+## Event envelope v2
+
+```text
+EventEnvelope::VERSION=2
+```
+
+Each occurrence includes opaque `eventId` (used for Centrifugo `idempotency_key=event:<eventId>` and browser dedupe).
+Legitimate repeated edits of the same message get distinct `eventId`s.
+Package `1.0.0` remains immutable; `1.1.0` introduces v2.
+
 ## Channels
 
 Private Centrifugo channels only:

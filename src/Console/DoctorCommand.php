@@ -12,7 +12,7 @@ use Flarum\Console\AbstractCommand;
 
 /**
  * php flarum flatrate:live-chat:doctor
- * Reports catalog/rollout/transport without secrets.
+ * Reports catalog/rollout/transport without secrets or lifecycle claims.
  */
 class DoctorCommand extends AbstractCommand
 {
@@ -50,9 +50,7 @@ class DoctorCommand extends AbstractCommand
             'MEMBER_VISIBLE_ROOMS=' . $memberVisible,
             'STAFF_PREVIEW_ROOMS=' . $staffPreview,
             'TRANSPORT_DECISION=' . $diag['transportDecision'],
-            'TRANSPORT_IMPLEMENTATION_STATUS=' . $diag['transportImplementationStatus'],
-            'TRANSPORT_EXTERNAL_QUALIFICATION=' . $diag['transportExternalQualification'],
-            'PRODUCTION_CENTRIFUGO_CONFIGURED=false',
+            'RUNTIME_CONFIGURED=' . ($diag['runtimeConfigured'] ? 'true' : 'false'),
             'CREDENTIALS_COMPLETE=' . ($diag['credentialsComplete'] ? 'true' : 'false'),
             'HAS_WEBSOCKET_URL=' . ($diag['hasWebsocketUrl'] ? 'true' : 'false'),
             'HAS_PUBLISH_URL=' . ($diag['hasPublishUrl'] ? 'true' : 'false'),
@@ -61,6 +59,8 @@ class DoctorCommand extends AbstractCommand
             'HAS_JWT_PRIVATE_KEY=' . ($diag['hasJwtPrivateKey'] ? 'true' : 'false'),
             'URLS_TLS_SAFE=' . ($diag['urlsTlsSafe'] ? 'true' : 'false'),
             'JWT_ALGORITHM=' . $diag['jwtAlgorithm'],
+            'JWT_ISSUER=' . $diag['jwtIssuer'],
+            'JWT_AUDIENCE=' . $diag['jwtAudience'],
             'CHAT_ATTACHMENTS_INITIAL=false',
             'CHAT_INDEXING=false',
             'CHAT_EMAIL_NOTIFICATIONS=false',

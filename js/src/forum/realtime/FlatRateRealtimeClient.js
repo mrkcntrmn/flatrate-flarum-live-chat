@@ -7,6 +7,10 @@
 
 function eventDedupeKey(envelope) {
     if (!envelope || typeof envelope !== 'object') return null;
+    if (envelope.eventId) {
+        return String(envelope.eventId);
+    }
+    // Legacy v1 fallback only.
     const order = envelope.order ?? envelope.payload?.order ?? envelope.payload?.messageId;
     return [envelope.type, envelope.roomKey, order].join('|');
 }

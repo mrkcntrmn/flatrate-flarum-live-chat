@@ -24,10 +24,12 @@ class CentrifugoRealtimePublisher implements RealtimePublisher
     public function __construct(
         private CentrifugoClientConfig $config,
         private ?RealtimeLogger $logger = null,
-        ?callable $httpPost = null
+        ?callable $httpPost = null,
+        private ?CentrifugoChannelNamer $channels = null
     ) {
         $this->logger = $logger ?? new RealtimeLogger();
         $this->httpPost = $httpPost;
+        $this->channels = $channels ?? new CentrifugoChannelNamer(new \FlatRate\LiveChat\Auth\ChatAuthorization());
     }
 
     public function publish(string $roomChannelKey, string $event, array $payload): void
@@ -45,12 +47,16 @@ class CentrifugoRealtimePublisher implements RealtimePublisher
     /** @param array<string,mixed> $payload */
     private function publishInternal(string $roomChannelKey, string $event, array $payload): void
     {
-        if (!str_starts_with($roomChannelKey, CentrifugoChannelNamer::PREFIX)) {
+        $type = EventEnvelope::mapLegacyEvent($event) ?? $event;
+        $roomKey = (string) ($payload['room_key'] ?? $payload['roomKey'] ?? '');
+
+        $channelRoomKey = $this->channels->roomKeyFromChannel($roomChannelKey);
+        if ($channelRoomKey === null || $roomKey === '' || $channelRoomKey !== $roomKey) {
             $this->logger->warning('realtime.publish.deny', [
                 'transport' => 'centrifugo',
-                'reason' => 'non_private_or_wrong_prefix',
+                'reason' => 'channel_room_mismatch',
+                'event' => $type,
                 'channelPrefix' => substr($roomChannelKey, 0, 24),
-                'event' => $event,
             ]);
             return;
         }
@@ -59,23 +65,25 @@ class CentrifugoRealtimePublisher implements RealtimePublisher
             $this->logger->warning('realtime.publish.skip', [
                 'transport' => 'centrifugo',
                 'reason' => 'credentials_incomplete',
-                'event' => $event,
+                'event' => $type,
             ]);
             return;
         }
 
-        $type = EventEnvelope::mapLegacyEvent($event) ?? $event;
-        $roomKey = (string) ($payload['room_key'] ?? $payload['roomKey'] ?? '');
-        $envelope = EventEnvelope::make($type, $roomKey, $this->normalizePayload($payload), $payload['order'] ?? null);
+        $injectedEventId = isset($payload['eventId']) ? (string) $payload['eventId'] : null;
+        $envelope = EventEnvelope::make(
+            $type,
+            $roomKey,
+            $this->normalizePayload($payload),
+            isset($payload['order']) ? (int) $payload['order'] : null,
+            $injectedEventId
+        );
 
         $body = [
             'channel' => $roomChannelKey,
             'data' => $envelope,
+            'idempotency_key' => 'event:' . $envelope['eventId'],
         ];
-        $messageId = $envelope['payload']['messageId'] ?? $payload['messageId'] ?? $payload['message_id'] ?? null;
-        if ($messageId !== null && $messageId !== '') {
-            $body['idempotency_key'] = 'msg:' . (string) $messageId . ':' . $type;
-        }
 
         $json = json_encode($body, JSON_UNESCAPED_SLASHES);
         if ($json === false) {
@@ -97,7 +105,7 @@ class CentrifugoRealtimePublisher implements RealtimePublisher
         $url = (string) $this->config->publishApiUrl();
         $ok = $this->postOnce($url, $headers, $json, $type, $roomKey);
         if (!$ok) {
-            // One bounded retry with the same idempotency_key.
+            // One bounded retry: same body (same eventId + idempotency_key).
             $this->postOnce($url, $headers, $json, $type, $roomKey);
         }
     }
@@ -122,10 +130,42 @@ class CentrifugoRealtimePublisher implements RealtimePublisher
 
         $status = (int) ($result['status'] ?? 0);
         $raw = (string) ($result['body'] ?? '');
-        $decoded = json_decode($raw, true);
 
-        // Centrifugo / edge may return HTTP 200 with an error object.
-        if (is_array($decoded) && isset($decoded['error'])) {
+        if ($status < 200 || $status >= 300) {
+            $this->logger->warning('realtime.publish.error', [
+                'transport' => 'centrifugo',
+                'reason' => 'http_status',
+                'event' => $type,
+                'roomKey' => $roomKey,
+                'httpStatus' => $status,
+            ]);
+            return false;
+        }
+
+        if ($raw === '') {
+            $this->logger->warning('realtime.publish.error', [
+                'transport' => 'centrifugo',
+                'reason' => 'empty_2xx_body',
+                'event' => $type,
+                'roomKey' => $roomKey,
+                'httpStatus' => $status,
+            ]);
+            return false;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded) || array_is_list($decoded)) {
+            $this->logger->warning('realtime.publish.error', [
+                'transport' => 'centrifugo',
+                'reason' => 'invalid_json_or_non_object',
+                'event' => $type,
+                'roomKey' => $roomKey,
+                'httpStatus' => $status,
+            ]);
+            return false;
+        }
+
+        if (isset($decoded['error'])) {
             $this->logger->warning('realtime.publish.error', [
                 'transport' => 'centrifugo',
                 'reason' => 'centrifugo_error_object',
@@ -136,10 +176,10 @@ class CentrifugoRealtimePublisher implements RealtimePublisher
             return false;
         }
 
-        if ($status < 200 || $status >= 300) {
+        if (!array_key_exists('result', $decoded)) {
             $this->logger->warning('realtime.publish.error', [
                 'transport' => 'centrifugo',
-                'reason' => 'http_status',
+                'reason' => 'missing_result',
                 'event' => $type,
                 'roomKey' => $roomKey,
                 'httpStatus' => $status,

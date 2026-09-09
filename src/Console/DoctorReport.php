@@ -41,8 +41,6 @@ class DoctorReport
                 fn ($r) => $r['audience'] === 'staff-preview'
             )),
             'transport' => $diag,
-            'productionCentrifugoConfigured' => false,
-            'NEXT_VERSION' => '1.1.0',
         ];
     }
 }

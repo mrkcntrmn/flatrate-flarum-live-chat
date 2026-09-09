@@ -2,6 +2,9 @@ const assert = require('assert');
 
 function eventDedupeKey(envelope) {
   if (!envelope || typeof envelope !== 'object') return null;
+  if (envelope.eventId) {
+    return String(envelope.eventId);
+  }
   const order = envelope.order ?? envelope.payload?.order ?? envelope.payload?.messageId;
   return [envelope.type, envelope.roomKey, order].join('|');
 }
@@ -142,12 +145,31 @@ class FlatRateRealtimeClient {
 
 async function main() {
   // --- dedupe ---
-  const a = eventDedupeKey({ type: 'message.created', roomKey: 'community-general-live', order: 5 });
-  const b = eventDedupeKey({ type: 'message.created', roomKey: 'community-general-live', order: 5 });
-  const c = eventDedupeKey({ type: 'message.created', roomKey: 'community-general-live', order: 6 });
+  const a = eventDedupeKey({
+    eventId: 'e1',
+    type: 'message.edited',
+    roomKey: 'community-general-live',
+    order: 5,
+  });
+  const b = eventDedupeKey({
+    eventId: 'e1',
+    type: 'message.edited',
+    roomKey: 'community-general-live',
+    order: 5,
+  });
+  const c = eventDedupeKey({
+    eventId: 'e2',
+    type: 'message.edited',
+    roomKey: 'community-general-live',
+    order: 5,
+  });
   assert.strictEqual(a, b);
   assert.notStrictEqual(a, c);
-  assert.ok(a.startsWith('message.created|community-general-live|'));
+  assert.strictEqual(a, 'e1');
+
+  // Legacy v1 fallback
+  const legacy = eventDedupeKey({ type: 'message.created', roomKey: 'community-general-live', order: 5 });
+  assert.ok(legacy.startsWith('message.created|community-general-live|'));
 
   // --- channel helpers ---
   assert.strictEqual(channelForRoomKey('community-general-live'), '$flatrate-live-community-general-live');
@@ -203,10 +225,17 @@ async function main() {
     const sub = await client.subscribe('community-general-live');
     assert.ok(sub);
     assert.strictEqual(sub.channel, '$flatrate-live-community-general-live');
-    const envelope = { type: 'message.created', roomKey: 'community-general-live', order: 9 };
+    const envelope = { eventId: 'evt-9', type: 'message.created', roomKey: 'community-general-live', order: 9 };
     sub.emitPublication(envelope);
     sub.emitPublication(envelope);
     assert.strictEqual(events, 1);
+    sub.emitPublication({
+      eventId: 'evt-10',
+      type: 'message.edited',
+      roomKey: 'community-general-live',
+      order: 9,
+    });
+    assert.strictEqual(events, 2);
     client.disconnect();
     assert.strictEqual(client.subscriptions.size, 0);
   }

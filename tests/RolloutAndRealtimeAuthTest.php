@@ -72,8 +72,10 @@ class RolloutAndRealtimeAuthTest extends TestCase
         return $chat;
     }
 
-    private function completeConfig(?string $ws = 'wss://realtime.example.test/connection/websocket', ?string $publish = 'https://realtime.example.test/publish'): CentrifugoClientConfig
-    {
+    private function completeConfig(
+        ?string $ws = 'wss://realtime.flatrate.wiki/connection/websocket',
+        ?string $publish = 'https://realtime.flatrate.wiki/api/publish'
+    ): CentrifugoClientConfig {
         return new CentrifugoClientConfig(
             $ws,
             $publish,
@@ -268,15 +270,18 @@ class RolloutAndRealtimeAuthTest extends TestCase
         $this->assertSame('CENTRIFUGO', $attrs['flatrate-live-chat.realtime.transport']);
         $diag = $cfg->diagnostic();
         $this->assertSame('CENTRIFUGO_SELF_HOSTED', $diag['transportDecision']);
-        $this->assertSame('implemented/complete', $diag['transportImplementationStatus']);
-        $this->assertFalse($diag['productionCentrifugoConfigured']);
+        $this->assertFalse($diag['runtimeConfigured']);
+        $this->assertFalse($diag['credentialsComplete']);
+        $this->assertArrayNotHasKey('productionCentrifugoConfigured', $diag);
+        $this->assertArrayNotHasKey('transportExternalQualification', $diag);
+        $this->assertArrayNotHasKey('NEXT_VERSION', $diag);
     }
 
     public function testCentrifugoTlsRejectsInsecureProductionHost(): void
     {
         $cfg = new CentrifugoClientConfig(
             'ws://realtime.flatrate.wiki/connection/websocket',
-            'http://realtime.flatrate.wiki/publish',
+            'http://realtime.flatrate.wiki/api/publish',
             'edge',
             'api',
             $this->testPrivateKey
@@ -288,16 +293,24 @@ class RolloutAndRealtimeAuthTest extends TestCase
         $this->assertTrue($ok->isComplete());
         $attrs = $ok->forumAttributes();
         $this->assertTrue($attrs['flatrate-live-chat.realtime.connect']);
-        $this->assertSame('wss://realtime.example.test/connection/websocket', $attrs['flatrate-live-chat.realtime.websocketUrl']);
+        $this->assertSame('wss://realtime.flatrate.wiki/connection/websocket', $attrs['flatrate-live-chat.realtime.websocketUrl']);
         $this->assertArrayNotHasKey('flatrate-live-chat.realtime.publishApiUrl', $attrs);
         $this->assertArrayNotHasKey('flatrate-live-chat.realtime.apiKey', $attrs);
+    }
+
+    public function testCentrifugoRejectsWrongHostOrPath(): void
+    {
+        $wrongHost = $this->completeConfig('wss://evil.example/connection/websocket', 'https://realtime.flatrate.wiki/api/publish');
+        $this->assertFalse($wrongHost->isComplete());
+        $wrongPath = $this->completeConfig('wss://realtime.flatrate.wiki/connection/websocket', 'https://realtime.flatrate.wiki/api/broadcast');
+        $this->assertFalse($wrongPath->isComplete());
     }
 
     public function testCentrifugoAllowInsecureLocalhost(): void
     {
         $cfg = new CentrifugoClientConfig(
             'ws://localhost:8000/connection/websocket',
-            'http://127.0.0.1:8000/publish',
+            'http://127.0.0.1:8000/api/publish',
             'edge',
             'api',
             $this->testPrivateKey,
@@ -325,9 +338,22 @@ class RolloutAndRealtimeAuthTest extends TestCase
         $calls = 0;
         $pub = new CentrifugoRealtimePublisher($this->completeConfig(), null, function () use (&$calls) {
             $calls++;
-            return ['status' => 200, 'body' => '{}'];
+            return ['status' => 200, 'body' => '{"result":{}}'];
         });
         $pub->publish('public', 'message.created', ['roomKey' => 'x']);
+        $this->assertSame(0, $calls);
+    }
+
+    public function testCentrifugoPublisherChannelRoomMismatchDenied(): void
+    {
+        $calls = 0;
+        $pub = new CentrifugoRealtimePublisher($this->completeConfig(), null, function () use (&$calls) {
+            $calls++;
+            return ['status' => 200, 'body' => '{"result":{}}'];
+        });
+        $pub->publish('$flatrate-live-toyota-live', 'message.created', ['roomKey' => 'gm-live']);
+        $pub->publish('$flatrate-live-fake-room', 'message.created', ['roomKey' => 'fake-room']);
+        $pub->publish('$flatrate-live-', 'message.created', ['roomKey' => '']);
         $this->assertSame(0, $calls);
     }
 
@@ -344,6 +370,9 @@ class RolloutAndRealtimeAuthTest extends TestCase
             $decoded = json_decode($body, true);
             $this->assertSame('$flatrate-live-community-general-live', $decoded['channel']);
             $this->assertArrayHasKey('idempotency_key', $decoded);
+            $this->assertStringStartsWith('event:', $decoded['idempotency_key']);
+            $this->assertSame(2, $decoded['data']['v']);
+            $this->assertNotEmpty($decoded['data']['eventId']);
             $idx = $i++;
             return ['status' => $statuses[$idx], 'body' => $responses[$idx]];
         });
@@ -351,9 +380,30 @@ class RolloutAndRealtimeAuthTest extends TestCase
             'roomKey' => 'community-general-live',
             'messageId' => 42,
             'order' => 42,
+            'eventId' => 'fixed-event-id-1',
         ]);
         $this->assertCount(2, $bodies);
         $this->assertSame($bodies[0], $bodies[1]);
+        $decoded = json_decode($bodies[0], true);
+        $this->assertSame('event:fixed-event-id-1', $decoded['idempotency_key']);
+        $this->assertSame('fixed-event-id-1', $decoded['data']['eventId']);
+    }
+
+    public function testCentrifugoPublisherMalformed2xxDenied(): void
+    {
+        foreach (['', 'hello', '{}', '{"unexpected":true}'] as $body) {
+            $calls = 0;
+            $pub = new CentrifugoRealtimePublisher($this->completeConfig(), null, function () use (&$calls, $body) {
+                $calls++;
+                return ['status' => 200, 'body' => $body];
+            });
+            $pub->publish('$flatrate-live-toyota-live', 'message.created', [
+                'roomKey' => 'toyota-live',
+                'eventId' => 'e-' . md5($body),
+            ]);
+            // Initial + one retry
+            $this->assertSame(2, $calls, 'body=' . $body);
+        }
     }
 
     public function testCentrifugoPublisherTimeoutNeverThrows(): void
@@ -365,12 +415,43 @@ class RolloutAndRealtimeAuthTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    public function testRepeatedEditsGetDistinctEventIds(): void
+    {
+        $ids = [];
+        $pub = new CentrifugoRealtimePublisher($this->completeConfig(), null, function ($url, $headers, $body) use (&$ids) {
+            $decoded = json_decode($body, true);
+            $ids[] = $decoded['data']['eventId'];
+            return ['status' => 200, 'body' => '{"result":{}}'];
+        });
+        $pub->publish('$flatrate-live-community-general-live', 'message.edited', [
+            'roomKey' => 'community-general-live',
+            'messageId' => 42,
+            'order' => 42,
+        ]);
+        $pub->publish('$flatrate-live-community-general-live', 'message.edited', [
+            'roomKey' => 'community-general-live',
+            'messageId' => 42,
+            'order' => 42,
+        ]);
+        $this->assertCount(2, $ids);
+        $this->assertNotSame($ids[0], $ids[1]);
+    }
+
     public function testNullAndFakePublishersKept(): void
     {
         (new NullRealtimePublisher())->publish('$flatrate-live-x', 'message.created', []);
         $fake = new FakeRealtimePublisher();
         $fake->publish('$flatrate-live-community-general-live', 'message.created', ['roomKey' => 'community-general-live']);
         $this->assertTrue($fake->hasEvent('$flatrate-live-community-general-live', 'message.created'));
+    }
+
+    public function testSingleEmissionAuthorityPostMessageHandlerHasNoDirectPublish(): void
+    {
+        $src = file_get_contents(dirname(__DIR__) . '/src/Commands/PostMessageHandler.php');
+        $this->assertStringNotContainsString('use FlatRate\\LiveChat\\Realtime\\RealtimePublisher', $src);
+        $this->assertStringNotContainsString('CentrifugoChannelNamer', $src);
+        $this->assertDoesNotMatchRegularExpression('/\$this->realtime\s*->\s*publish\s*\(/', $src);
+        $this->assertStringContainsString('new Saved(', $src);
     }
 
     public function testRsaTokenIssuerConnectionAndSubscription(): void
@@ -395,8 +476,8 @@ class RolloutAndRealtimeAuthTest extends TestCase
     public function testRsaTokenIssuerFailsClosedOnBadKey(): void
     {
         $cfg = new CentrifugoClientConfig(
-            'wss://realtime.example.test/connection/websocket',
-            'https://realtime.example.test/publish',
+            'wss://realtime.flatrate.wiki/connection/websocket',
+            'https://realtime.flatrate.wiki/api/publish',
             'edge',
             'api',
             'not-a-pem',
@@ -455,8 +536,9 @@ class RolloutAndRealtimeAuthTest extends TestCase
             'email' => 'secret@example.com',
             'ip' => '1.2.3.4',
             'body' => 'should-not-appear',
-        ], 9);
-        $this->assertSame(1, $env['v']);
+        ], 9, 'deterministic-event-id');
+        $this->assertSame(2, $env['v']);
+        $this->assertSame('deterministic-event-id', $env['eventId']);
         $this->assertSame('message.created', $env['type']);
         $this->assertArrayNotHasKey('email', $env['payload']);
         $this->assertArrayNotHasKey('ip', $env['payload']);
@@ -470,8 +552,9 @@ class RolloutAndRealtimeAuthTest extends TestCase
         $this->assertSame(42, $report['canonicalRoomCount']);
         $this->assertSame(1, $report['memberVisibleRooms']);
         $this->assertSame(41, $report['staffPreviewRooms']);
-        $this->assertFalse($report['productionCentrifugoConfigured']);
-        $this->assertSame('1.1.0', $report['NEXT_VERSION']);
+        $this->assertArrayNotHasKey('productionCentrifugoConfigured', $report);
+        $this->assertArrayNotHasKey('NEXT_VERSION', $report);
+        $this->assertSame('CENTRIFUGO_SELF_HOSTED', $report['transport']['transportDecision']);
         $encoded = json_encode($report);
         $this->assertStringNotContainsString('edge-key', $encoded);
         $this->assertStringNotContainsString('BEGIN PRIVATE KEY', $encoded);

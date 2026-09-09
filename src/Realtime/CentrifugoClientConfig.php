@@ -17,6 +17,13 @@ class CentrifugoClientConfig
     public const DEFAULT_CONNECTION_TTL = 300;
     public const DEFAULT_SUBSCRIPTION_TTL = 300;
 
+    public const EXPECTED_WS_SCHEME = 'wss';
+    public const EXPECTED_WS_HOST = 'realtime.flatrate.wiki';
+    public const EXPECTED_WS_PATH = '/connection/websocket';
+    public const EXPECTED_PUBLISH_SCHEME = 'https';
+    public const EXPECTED_PUBLISH_HOST = 'realtime.flatrate.wiki';
+    public const EXPECTED_PUBLISH_PATH = '/api/publish';
+
     public function __construct(
         private ?string $websocketUrl = null,
         private ?string $publishApiUrl = null,
@@ -135,17 +142,27 @@ class CentrifugoClientConfig
         if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
             return false;
         }
+        if (isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment'])) {
+            return false;
+        }
         $scheme = strtolower((string) $parts['scheme']);
         $host = strtolower((string) $parts['host']);
+        $path = (string) ($parts['path'] ?? '');
 
-        if ($scheme === 'https') {
-            return true;
+        if ($this->allowInsecure && $this->isLocalhostHost($host)) {
+            return $scheme === 'https' || $scheme === 'http';
         }
-        if ($scheme === 'http' && $this->allowInsecure && $this->isLocalhostHost($host)) {
-            return true;
+
+        if ($scheme !== self::EXPECTED_PUBLISH_SCHEME) {
+            return false;
         }
-        // Explicitly reject insecure realtime.flatrate.wiki (and any non-TLS non-local).
-        return false;
+        if ($host !== self::EXPECTED_PUBLISH_HOST) {
+            return false;
+        }
+        if (isset($parts['port'])) {
+            return false;
+        }
+        return $path === self::EXPECTED_PUBLISH_PATH;
     }
 
     public function isWebsocketUrlSafe(string $url): bool
@@ -157,16 +174,27 @@ class CentrifugoClientConfig
         if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
             return false;
         }
+        if (isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment'])) {
+            return false;
+        }
         $scheme = strtolower((string) $parts['scheme']);
         $host = strtolower((string) $parts['host']);
+        $path = (string) ($parts['path'] ?? '');
 
-        if ($scheme === 'wss' || $scheme === 'https') {
-            return true;
+        if ($this->allowInsecure && $this->isLocalhostHost($host)) {
+            return in_array($scheme, ['wss', 'ws', 'https', 'http'], true);
         }
-        if (($scheme === 'ws' || $scheme === 'http') && $this->allowInsecure && $this->isLocalhostHost($host)) {
-            return true;
+
+        if ($scheme !== self::EXPECTED_WS_SCHEME) {
+            return false;
         }
-        return false;
+        if ($host !== self::EXPECTED_WS_HOST) {
+            return false;
+        }
+        if (isset($parts['port'])) {
+            return false;
+        }
+        return $path === self::EXPECTED_WS_PATH;
     }
 
     private function isLocalhostHost(string $host): bool
@@ -273,9 +301,7 @@ class CentrifugoClientConfig
     {
         return [
             'transportDecision' => 'CENTRIFUGO_SELF_HOSTED',
-            'transportImplementationStatus' => 'implemented/complete',
-            'transportExternalQualification' => 'PENDING',
-            'productionCentrifugoConfigured' => false,
+            'runtimeConfigured' => $this->isComplete(),
             'credentialsComplete' => $this->isComplete(),
             'hasWebsocketUrl' => $this->websocketUrl !== null && $this->websocketUrl !== '',
             'hasPublishUrl' => $this->publishApiUrl !== null && $this->publishApiUrl !== '',
