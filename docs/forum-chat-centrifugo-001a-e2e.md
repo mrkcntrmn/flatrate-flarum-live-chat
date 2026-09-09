@@ -97,19 +97,56 @@ Mechanism: rewrite container `/etc/hosts` so `realtime.flatrate.wiki` → `127.0
 
 Disposable also pins Cloudflare **A** records into `/etc/hosts` outside outage windows so Guzzle does not prefer a broken container IPv6 path.
 
-## Client / reconnect / security
+## Client / reconnect / token refresh / security
 
 | Check | Result |
 |-------|--------|
 | Client direct publish | DENY (Centrifugo 103) |
 | Reconnect smoke | PASS |
+| Token refresh (disposable TTL=15s) | PASS — see below |
 | Guest post | 403 |
 | Suspended post | 403 |
 | Member Toyota history | 404 |
 | Staff Toyota history | 200 |
 | PUSHER_RUNTIME_REFERENCE_COUNT | 0 |
 
+## Token refresh acceptance (CENTRIFUGO-R2-TOKEN-REFRESH-A1)
+
+Qualification-only proof against existing disposable Flarum + `realtime.flatrate.wiki`.
+
+```text
+CHAT_TOKEN_REFRESH_TESTED_SHA=93e9524b70a4571d63c56ddb17dd617d7e8a35e2
+DISPOSABLE_TTL_SECONDS=15
+SOURCE_DEFAULT_TTL_UNCHANGED=300
+```
+
+Method:
+
+1. Disposable env only: `CONNECTION_TTL=15`, `SUBSCRIPTION_TTL=15` (force-recreate web).
+2. Real `centrifuge@5.7.3` client with production-shaped `getToken` callbacks hitting Flarum HTTP token endpoints.
+3. Keep connection alive past JWT expiry.
+4. Require distinct connection token fingerprints (≥2 successful mints).
+5. Require distinct subscription token fingerprints (≥2 successful mints).
+6. Post a real General Live message after refresh; same client receives `message.created` v2 without recreating the app.
+
+| Check | Result |
+|-------|--------|
+| TOKEN_REFRESH_PASS | PASS |
+| CONNECTION_TOKEN_REFRESH_PASS | PASS |
+| SUBSCRIPTION_TOKEN_REFRESH_PASS | PASS |
+| POST_REFRESH_EVENT_RECEIVED | PASS |
+| Disposable TTL restored to 300 | PASS |
+| Package source defaults remain 300 | PASS |
+
+Evidence artifacts (untracked secrets never committed):
+
+```text
+/home/ilove/dev/_evidence/forum-chat-centrifugo-001a-r2/token-refresh-a1-results.json
+/home/ilove/dev/_evidence/forum-chat-centrifugo-001a-r2/token-refresh-a1.log
+```
+
 ## Related unit coverage (package CI)
+
 
 Not substituted for live E2E, but exercised on the same SHA:
 
