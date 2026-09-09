@@ -1,6 +1,6 @@
 xelson-chat:
   forum:
-    pusher_not_found: Pusher or Websockets is required for chat to update in real time.
+    realtime_not_found: Realtime is unavailable until Centrifugo is configured.
     index:
       chat_link: Chat
     toolbar:

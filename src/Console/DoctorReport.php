@@ -6,7 +6,7 @@
 namespace FlatRate\LiveChat\Console;
 
 use FlatRate\LiveChat\Catalog\RoomCatalog;
-use FlatRate\LiveChat\Realtime\PusherClientConfig;
+use FlatRate\LiveChat\Realtime\CentrifugoClientConfig;
 use FlatRate\LiveChat\Rollout\RolloutProfile;
 
 class DoctorReport
@@ -14,11 +14,11 @@ class DoctorReport
     public function __construct(
         private ?RoomCatalog $catalog = null,
         private ?RolloutProfile $rollout = null,
-        private ?PusherClientConfig $config = null
+        private ?CentrifugoClientConfig $config = null
     ) {
         $this->catalog = $catalog ?? new RoomCatalog();
         $this->rollout = $rollout ?? new RolloutProfile();
-        $this->config = $config ?? PusherClientConfig::fromEnvironment();
+        $this->config = $config ?? CentrifugoClientConfig::fromEnvironment();
     }
 
     /** @return array<string,mixed> */
@@ -41,8 +41,6 @@ class DoctorReport
                 fn ($r) => $r['audience'] === 'staff-preview'
             )),
             'transport' => $diag,
-            'productionPusherConfigured' => false,
-            'PUSHER_SELECTED' => false,
         ];
     }
 }

@@ -10,7 +10,11 @@ export default class ChatFrame extends Component {
             <div className={classes.join(' ')}>
                 <div className="header">
                     <div className="input-wrapper input--down">
-                        <input id="chat-find" bidi={app.chat.q} placeholder={app.translator.trans('flatrate-live-chat.forum.chat.list.placeholder')} />
+                        <input
+                            id="chat-find"
+                            bidi={app.chat.q}
+                            placeholder={app.translator.trans('flatrate-live-chat.forum.chat.list.placeholder')}
+                        />
                     </div>
                     <div
                         className="icon icon-minimize"

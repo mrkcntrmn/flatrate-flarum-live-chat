@@ -5,7 +5,7 @@ namespace FlatRate\LiveChat\Tests;
 use FlatRate\LiveChat\Api\Throttler\ChatMessage;
 use FlatRate\LiveChat\Message;
 use FlatRate\LiveChat\Auth\ChatAuthorization;
-use FlatRate\LiveChat\Realtime\PerRoomChannelNamer;
+use FlatRate\LiveChat\Realtime\CentrifugoChannelNamer;
 use FlatRate\LiveChat\Chat;
 use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\User\User;
@@ -118,15 +118,16 @@ class FloodgateAndSerializerSafetyTest extends TestCase
         $this->assertStringContainsString('noindex', $src);
         $this->assertStringContainsString("attachments'] = false", $src);
         $this->assertStringContainsString("email_notifications'] = false", $src);
-        $this->assertStringContainsString("'PUSHER_CHANNELS'", $src);
-        $this->assertStringContainsString('flatrate-live-chat/realtime/auth', $src);
+        $this->assertStringContainsString("'CENTRIFUGO_SELF_HOSTED'", $src);
+        $this->assertStringContainsString('flatrate-live-chat/realtime/connect-token', $src);
+        $this->assertStringContainsString('flatrate-live-chat/realtime/subscription-token', $src);
         $this->assertStringContainsString('/live/{roomKey}', $src);
     }
 
     public function testGuestSubscribeDenied(): void
     {
         $auth = new ChatAuthorization();
-        $namer = new PerRoomChannelNamer($auth);
+        $namer = new CentrifugoChannelNamer($auth);
         $guest = new User(null);
         $guest->permissions = [ChatAuthorization::PERM_ENABLED => true];
         $chat = new Chat();

@@ -8,13 +8,14 @@ namespace FlatRate\LiveChat;
 use FlatRate\LiveChat\Auth\ChatAuthorization;
 use FlatRate\LiveChat\Catalog\RoomCatalog;
 use FlatRate\LiveChat\Provisioner\RoomProvisioner;
+use FlatRate\LiveChat\Realtime\CentrifugoChannelNamer;
+use FlatRate\LiveChat\Realtime\CentrifugoClientConfig;
+use FlatRate\LiveChat\Realtime\CentrifugoRealtimePublisher;
 use FlatRate\LiveChat\Realtime\FakeRealtimePublisher;
 use FlatRate\LiveChat\Realtime\NullRealtimePublisher;
-use FlatRate\LiveChat\Realtime\PerRoomChannelNamer;
-use FlatRate\LiveChat\Realtime\PusherChannelAuthorizer;
-use FlatRate\LiveChat\Realtime\PusherClientConfig;
-use FlatRate\LiveChat\Realtime\PusherRealtimePublisher;
 use FlatRate\LiveChat\Realtime\RealtimePublisher;
+use FlatRate\LiveChat\Realtime\RealtimeTokenIssuer;
+use FlatRate\LiveChat\Realtime\RsaRealtimeTokenIssuer;
 use FlatRate\LiveChat\Rollout\RolloutApplicator;
 use FlatRate\LiveChat\Rollout\RolloutProfile;
 use FlatRate\LiveChat\Observability\RealtimeLogger;
@@ -29,11 +30,13 @@ class LiveChatServiceProvider extends AbstractServiceProvider
         $this->container->singleton(RoomCatalog::class);
         $this->container->singleton(RolloutProfile::class);
         $this->container->singleton(RealtimeLogger::class);
-        $this->container->singleton(PusherClientConfig::class, function () {
-            return PusherClientConfig::fromEnvironment();
+        $this->container->singleton(CentrifugoClientConfig::class, function () {
+            return CentrifugoClientConfig::fromEnvironment();
         });
-        $this->container->singleton(PerRoomChannelNamer::class);
-        $this->container->singleton(PusherChannelAuthorizer::class);
+        $this->container->singleton(CentrifugoChannelNamer::class);
+        $this->container->singleton(RealtimeTokenIssuer::class, function (Container $container) {
+            return new RsaRealtimeTokenIssuer($container->make(CentrifugoClientConfig::class));
+        });
 
         $this->container->singleton(RealtimePublisher::class, function (Container $container) {
             $fake = getenv('FLATRATE_LIVE_CHAT_FAKE_REALTIME');
@@ -44,9 +47,14 @@ class LiveChatServiceProvider extends AbstractServiceProvider
                 return new FakeRealtimePublisher();
             }
 
-            $config = $container->make(PusherClientConfig::class);
+            $config = $container->make(CentrifugoClientConfig::class);
             if ($config->isComplete()) {
-                return new PusherRealtimePublisher($config, $container->make(RealtimeLogger::class));
+                return new CentrifugoRealtimePublisher(
+                    $config,
+                    $container->make(RealtimeLogger::class),
+                    null,
+                    $container->make(CentrifugoChannelNamer::class)
+                );
             }
 
             // Fail closed: no publish when credentials incomplete.

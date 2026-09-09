@@ -11,7 +11,7 @@ Derived from [`xelson/flarum-ext-chat`](https://github.com/Xelson/flarum-ext-cha
 | Namespace | `FlatRate\LiveChat\` |
 | Upstream pin | `a7489ac183764eef12969135d6b665ac5eb18272` (`v1.1.5`) |
 | Rollout | `general-live-first` (General Live member-visible; brands staff-preview) |
-| Transport | Pusher Channels (implemented; production credentials not configured) |
+| Transport | Centrifugo self-hosted (implemented; production credentials not configured) |
 
 **Not** an official Neon / Xelson release. Stock Packagist `xelson/flarum-ext-chat` must not be installed on FlatRate production.
 

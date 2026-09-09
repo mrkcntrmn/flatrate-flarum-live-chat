@@ -69,13 +69,13 @@ Reconcile applies rollout visibility/audience without rewriting durable identity
 See `REALTIME.md`.
 
 ```text
-TRANSPORT_IMPLEMENTATION=PUSHER_CHANNELS
-transportDecision=PUSHER_CHANNELS
+NEXT_VERSION=1.1.0
+TRANSPORT_IMPLEMENTATION=CENTRIFUGO_SELF_HOSTED
+transportDecision=CENTRIFUGO_SELF_HOSTED
 transportImplementationStatus=implemented/complete
 transportExternalQualification=PENDING
-productionPusherConfigured=false
-PUSHER_SELECTED=false
-SHARED_PUBLIC_PUSHER_CHANNEL=false
+productionCentrifugoConfigured=false
+SHARED_PUBLIC_REALTIME_CHANNEL=false
 ```
 
 `NullRealtimePublisher` when credentials incomplete; `FakeRealtimePublisher` for

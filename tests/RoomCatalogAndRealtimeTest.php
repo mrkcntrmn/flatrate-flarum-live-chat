@@ -6,8 +6,8 @@ use FlatRate\LiveChat\Auth\ChatAuthorization;
 use FlatRate\LiveChat\Catalog\RoomCatalog;
 use FlatRate\LiveChat\Chat;
 use FlatRate\LiveChat\Provisioner\RoomProvisioner;
+use FlatRate\LiveChat\Realtime\CentrifugoChannelNamer;
 use FlatRate\LiveChat\Realtime\FakeRealtimePublisher;
-use FlatRate\LiveChat\Realtime\PerRoomChannelNamer;
 use Flarum\User\Exception\PermissionDeniedException;
 use Flarum\User\User;
 use PHPUnit\Framework\TestCase;
@@ -74,7 +74,6 @@ class RoomCatalogAndRealtimeTest extends TestCase
         $catalog = new RoomCatalog();
         $toyota = $catalog->findByRoomKey('toyota-live');
         $this->assertSame('toyota', $toyota['scopeKey']);
-        // Simulated display-name drift detection
         $existing = [[
             'id' => 1,
             'room_key' => 'toyota-live',
@@ -86,14 +85,13 @@ class RoomCatalogAndRealtimeTest extends TestCase
         $result = $p->run(RoomProvisioner::MODE_DRY_RUN, $existing);
         $driftKeys = array_column($result['drifted'], 'roomKey');
         $this->assertContains('toyota-live', $driftKeys);
-        // roomKey identity unchanged in catalog
         $this->assertSame('toyota-live', $toyota['roomKey']);
     }
 
     public function testPerRoomRealtimeIsolationToyotaCannotReceiveGm(): void
     {
         $auth = new ChatAuthorization();
-        $namer = new PerRoomChannelNamer($auth);
+        $namer = new CentrifugoChannelNamer($auth);
         $pub = new FakeRealtimePublisher();
 
         $toyota = new Chat();
@@ -103,10 +101,11 @@ class RoomCatalogAndRealtimeTest extends TestCase
         $gm->type = 1;
         $gm->room_key = 'gm-live';
 
-        $toyotaCh = $namer->channelKeyForRoom($toyota);
-        $gmCh = $namer->channelKeyForRoom($gm);
+        $toyotaCh = $namer->channelForRoom($toyota);
+        $gmCh = $namer->channelForRoom($gm);
         $this->assertNotSame($toyotaCh, $gmCh);
-        $this->assertStringStartsWith('private-flatrate-live-', $toyotaCh);
+        $this->assertSame('$flatrate-live-toyota-live', $toyotaCh);
+        $this->assertSame('$flatrate-live-gm-live', $gmCh);
 
         $pub->publish($gmCh, 'message.created', ['room_key' => 'gm-live']);
         $this->assertTrue($pub->hasEvent($gmCh, 'message.created'));
@@ -117,7 +116,7 @@ class RoomCatalogAndRealtimeTest extends TestCase
     public function testUnauthorizedSubscribeFailsForGuest(): void
     {
         $auth = new ChatAuthorization();
-        $namer = new PerRoomChannelNamer($auth);
+        $namer = new CentrifugoChannelNamer($auth);
         $guest = new User(null);
         $guest->permissions = [ChatAuthorization::PERM_ENABLED => true];
         $chat = new Chat();
@@ -132,6 +131,6 @@ class RoomCatalogAndRealtimeTest extends TestCase
         $socket = file_get_contents(dirname(__DIR__) . '/src/ChatSocket.php');
         $this->assertStringNotContainsString('function sendPublic', $socket);
         $this->assertStringNotContainsString("trigger('public'", $socket);
-        $this->assertStringContainsString('SHARED_PUBLIC_PUSHER_CHANNEL=false', $socket);
+        $this->assertStringContainsString('SHARED_PUBLIC_REALTIME_CHANNEL=false', $socket);
     }
 }

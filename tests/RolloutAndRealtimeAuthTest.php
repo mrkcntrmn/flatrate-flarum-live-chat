@@ -7,22 +7,40 @@ use FlatRate\LiveChat\Catalog\RoomCatalog;
 use FlatRate\LiveChat\Chat;
 use FlatRate\LiveChat\Console\DoctorReport;
 use FlatRate\LiveChat\Provisioner\RoomProvisioner;
+use FlatRate\LiveChat\Realtime\CentrifugoChannelNamer;
+use FlatRate\LiveChat\Realtime\CentrifugoClientConfig;
+use FlatRate\LiveChat\Realtime\CentrifugoRealtimePublisher;
 use FlatRate\LiveChat\Realtime\EventEnvelope;
 use FlatRate\LiveChat\Realtime\FakeRealtimePublisher;
 use FlatRate\LiveChat\Realtime\NullRealtimePublisher;
-use FlatRate\LiveChat\Realtime\PerRoomChannelNamer;
-use FlatRate\LiveChat\Realtime\PusherClientConfig;
-use FlatRate\LiveChat\Realtime\PusherRealtimePublisher;
+use FlatRate\LiveChat\Realtime\RsaRealtimeTokenIssuer;
 use FlatRate\LiveChat\Rollout\RolloutApplicator;
 use FlatRate\LiveChat\Rollout\RolloutProfile;
 use FlatRate\LiveChat\Rollout\RoomAudience;
 use FlatRate\LiveChat\Rollout\RoomVisibility;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use Flarum\User\Exception\PermissionDeniedException;
 use Flarum\User\User;
 use PHPUnit\Framework\TestCase;
 
 class RolloutAndRealtimeAuthTest extends TestCase
 {
+    private ?string $testPrivateKey = null;
+    private ?string $testPublicKey = null;
+
+    protected function setUp(): void
+    {
+        $res = openssl_pkey_new([
+            'private_key_bits' => 2048,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        ]);
+        $this->assertNotFalse($res);
+        openssl_pkey_export($res, $this->testPrivateKey);
+        $details = openssl_pkey_get_details($res);
+        $this->testPublicKey = $details['key'];
+    }
+
     private function member(): User
     {
         $u = new User(10);
@@ -52,6 +70,26 @@ class RolloutAndRealtimeAuthTest extends TestCase
         $chat->visibility = $vis;
         $chat->audience = $aud;
         return $chat;
+    }
+
+    private function completeConfig(
+        ?string $ws = 'wss://realtime.flatrate.wiki/connection/websocket',
+        ?string $publish = 'https://realtime.flatrate.wiki/api/publish'
+    ): CentrifugoClientConfig {
+        return new CentrifugoClientConfig(
+            $ws,
+            $publish,
+            'edge-key',
+            'api-key',
+            $this->testPrivateKey,
+            CentrifugoClientConfig::JWT_ALGORITHM,
+            CentrifugoClientConfig::DEFAULT_ISSUER,
+            CentrifugoClientConfig::DEFAULT_AUDIENCE,
+            300,
+            300,
+            false,
+            false
+        );
     }
 
     public function testGeneralLiveFirstProfile(): void
@@ -144,7 +182,7 @@ class RolloutAndRealtimeAuthTest extends TestCase
     public function testGuestDeniedRealtimeSubscribe(): void
     {
         $auth = new ChatAuthorization();
-        $namer = new PerRoomChannelNamer($auth);
+        $namer = new CentrifugoChannelNamer($auth);
         $guest = new User(null);
         $guest->permissions = [ChatAuthorization::PERM_ENABLED => true];
         $general = $this->room('community-general-live', RoomVisibility::VISIBLE, RoomAudience::MEMBERS);
@@ -152,15 +190,22 @@ class RolloutAndRealtimeAuthTest extends TestCase
         $namer->assertCanSubscribe($guest, $general);
     }
 
-    public function testChannelPrefixPrivateFlatrateLive(): void
+    public function testCentrifugoChannelNaming(): void
     {
-        $namer = new PerRoomChannelNamer(new ChatAuthorization());
+        $namer = new CentrifugoChannelNamer(new ChatAuthorization());
         $chat = $this->room('toyota-live', RoomVisibility::HIDDEN, RoomAudience::STAFF_PREVIEW);
-        $ch = $namer->channelKeyForRoom($chat);
-        $this->assertStringStartsWith('private-flatrate-live-', $ch);
+        $ch = $namer->channelForRoom($chat);
+        $this->assertSame('$flatrate-live-toyota-live', $ch);
         $this->assertSame('toyota-live', $namer->roomKeyFromChannel($ch));
+        $this->assertSame(
+            '$flatrate-live-community-general-live',
+            $namer->channelForRoomKey('community-general-live')
+        );
         $gm = $this->room('gm-live', RoomVisibility::HIDDEN, RoomAudience::STAFF_PREVIEW);
-        $this->assertNotSame($ch, $namer->channelKeyForRoom($gm));
+        $this->assertNotSame($ch, $namer->channelForRoom($gm));
+        $this->assertNull($namer->roomKeyFromChannel('private-flatrate-live-toyota-live'));
+        $this->assertNull($namer->roomKeyFromChannel('$flatrate-live-not-a-real-room'));
+        $this->assertNull($namer->roomKeyFromChannel('$flatrate-live-'));
     }
 
     public function testVisibilityTransitionPreservesIdentity(): void
@@ -189,7 +234,6 @@ class RolloutAndRealtimeAuthTest extends TestCase
                 $this->assertSame(RoomVisibility::HIDDEN, $u['to']['visibility']);
             }
         }
-        // Catalog identity unchanged
         $toyota = $catalog->findByRoomKey('toyota-live');
         $this->assertSame('toyota-live', $toyota['roomKey']);
         $this->assertSame('board', $toyota['scopeType']);
@@ -215,41 +259,273 @@ class RolloutAndRealtimeAuthTest extends TestCase
         $this->assertContains('community-general-live', $driftKeys);
     }
 
-    public function testPusherConfigFailClosed(): void
+    public function testCentrifugoConfigFailClosed(): void
     {
-        $cfg = new PusherClientConfig(null, null, null, 'mt1');
+        $cfg = new CentrifugoClientConfig();
         $this->assertFalse($cfg->isComplete());
-        $this->assertFalse($cfg->productionPusherConfigured());
         $attrs = $cfg->forumAttributes();
         $this->assertFalse($attrs['flatrate-live-chat.realtime.connect']);
-        $this->assertArrayNotHasKey('flatrate-live-chat.realtime.key', $attrs);
+        $this->assertArrayNotHasKey('flatrate-live-chat.realtime.websocketUrl', $attrs);
+        $this->assertArrayNotHasKey('flatrate-live-chat.realtime.edgeKey', $attrs);
+        $this->assertSame('CENTRIFUGO', $attrs['flatrate-live-chat.realtime.transport']);
         $diag = $cfg->diagnostic();
-        $this->assertSame('PUSHER_CHANNELS', $diag['transportDecision']);
-        $this->assertSame('implemented/complete', $diag['transportImplementationStatus']);
-        $this->assertFalse($diag['PUSHER_SELECTED']);
+        $this->assertSame('CENTRIFUGO_SELF_HOSTED', $diag['transportDecision']);
+        $this->assertFalse($diag['runtimeConfigured']);
+        $this->assertFalse($diag['credentialsComplete']);
+        $this->assertArrayNotHasKey('productionCentrifugoConfigured', $diag);
+        $this->assertArrayNotHasKey('transportExternalQualification', $diag);
+        $this->assertArrayNotHasKey('NEXT_VERSION', $diag);
     }
 
-    public function testPusherPublisherSkipsWithoutCredentials(): void
+    public function testCentrifugoTlsRejectsInsecureProductionHost(): void
     {
-        $pub = new PusherRealtimePublisher(new PusherClientConfig());
-        $pub->publish('private-flatrate-live-abc', 'message.created', ['roomKey' => 'toyota-live']);
-        $this->addToAssertionCount(1); // no throw
+        $cfg = new CentrifugoClientConfig(
+            'ws://realtime.flatrate.wiki/connection/websocket',
+            'http://realtime.flatrate.wiki/api/publish',
+            'edge',
+            'api',
+            $this->testPrivateKey
+        );
+        $this->assertFalse($cfg->urlsAreTlsSafe());
+        $this->assertFalse($cfg->isComplete());
+
+        $ok = $this->completeConfig();
+        $this->assertTrue($ok->isComplete());
+        $attrs = $ok->forumAttributes();
+        $this->assertTrue($attrs['flatrate-live-chat.realtime.connect']);
+        $this->assertSame('wss://realtime.flatrate.wiki/connection/websocket', $attrs['flatrate-live-chat.realtime.websocketUrl']);
+        $this->assertArrayNotHasKey('flatrate-live-chat.realtime.publishApiUrl', $attrs);
+        $this->assertArrayNotHasKey('flatrate-live-chat.realtime.apiKey', $attrs);
     }
 
-    public function testPusherPublisherRejectsPublicChannel(): void
+    public function testCentrifugoRejectsWrongHostOrPath(): void
     {
-        $cfg = new PusherClientConfig('k', 's', '1', 'mt1');
-        $pub = new PusherRealtimePublisher($cfg);
-        $pub->publish('public', 'message.created', ['roomKey' => 'x']);
+        $wrongHost = $this->completeConfig('wss://evil.example/connection/websocket', 'https://realtime.flatrate.wiki/api/publish');
+        $this->assertFalse($wrongHost->isComplete());
+        $wrongPath = $this->completeConfig('wss://realtime.flatrate.wiki/connection/websocket', 'https://realtime.flatrate.wiki/api/broadcast');
+        $this->assertFalse($wrongPath->isComplete());
+    }
+
+    public function testCentrifugoAllowInsecureLocalhost(): void
+    {
+        $cfg = new CentrifugoClientConfig(
+            'ws://localhost:8000/connection/websocket',
+            'http://127.0.0.1:8000/api/publish',
+            'edge',
+            'api',
+            $this->testPrivateKey,
+            CentrifugoClientConfig::JWT_ALGORITHM,
+            CentrifugoClientConfig::DEFAULT_ISSUER,
+            CentrifugoClientConfig::DEFAULT_AUDIENCE,
+            300,
+            300,
+            false,
+            true
+        );
+        $this->assertTrue($cfg->urlsAreTlsSafe());
+        $this->assertTrue($cfg->isComplete());
+    }
+
+    public function testCentrifugoPublisherSkipsWithoutCredentials(): void
+    {
+        $pub = new CentrifugoRealtimePublisher(new CentrifugoClientConfig());
+        $pub->publish('$flatrate-live-toyota-live', 'message.created', ['roomKey' => 'toyota-live']);
         $this->addToAssertionCount(1);
+    }
+
+    public function testCentrifugoPublisherRejectsPublicChannel(): void
+    {
+        $calls = 0;
+        $pub = new CentrifugoRealtimePublisher($this->completeConfig(), null, function () use (&$calls) {
+            $calls++;
+            return ['status' => 200, 'body' => '{"result":{}}'];
+        });
+        $pub->publish('public', 'message.created', ['roomKey' => 'x']);
+        $this->assertSame(0, $calls);
+    }
+
+    public function testCentrifugoPublisherChannelRoomMismatchDenied(): void
+    {
+        $calls = 0;
+        $pub = new CentrifugoRealtimePublisher($this->completeConfig(), null, function () use (&$calls) {
+            $calls++;
+            return ['status' => 200, 'body' => '{"result":{}}'];
+        });
+        $pub->publish('$flatrate-live-toyota-live', 'message.created', ['roomKey' => 'gm-live']);
+        $pub->publish('$flatrate-live-fake-room', 'message.created', ['roomKey' => 'fake-room']);
+        $pub->publish('$flatrate-live-', 'message.created', ['roomKey' => '']);
+        $this->assertSame(0, $calls);
+    }
+
+    public function testCentrifugoPublisherSuccessAndJsonErrorAndRetry(): void
+    {
+        $bodies = [];
+        $statuses = [200, 200];
+        $responses = ['{"error":{"code":100}}', '{"result":{}}'];
+        $i = 0;
+        $pub = new CentrifugoRealtimePublisher($this->completeConfig(), null, function ($url, $headers, $body) use (&$i, &$bodies, $statuses, $responses) {
+            $bodies[] = $body;
+            $this->assertSame('edge-key', $headers['X-FlatRate-Realtime-Key']);
+            $this->assertSame('api-key', $headers['X-API-Key']);
+            $decoded = json_decode($body, true);
+            $this->assertSame('$flatrate-live-community-general-live', $decoded['channel']);
+            $this->assertArrayHasKey('idempotency_key', $decoded);
+            $this->assertStringStartsWith('event:', $decoded['idempotency_key']);
+            $this->assertSame(2, $decoded['data']['v']);
+            $this->assertNotEmpty($decoded['data']['eventId']);
+            $idx = $i++;
+            return ['status' => $statuses[$idx], 'body' => $responses[$idx]];
+        });
+        $pub->publish('$flatrate-live-community-general-live', 'message.created', [
+            'roomKey' => 'community-general-live',
+            'messageId' => 42,
+            'order' => 42,
+            'eventId' => 'fixed-event-id-1',
+        ]);
+        $this->assertCount(2, $bodies);
+        $this->assertSame($bodies[0], $bodies[1]);
+        $decoded = json_decode($bodies[0], true);
+        $this->assertSame('event:fixed-event-id-1', $decoded['idempotency_key']);
+        $this->assertSame('fixed-event-id-1', $decoded['data']['eventId']);
+    }
+
+    public function testCentrifugoPublisherMalformed2xxDenied(): void
+    {
+        foreach (['', 'hello', '{}', '{"unexpected":true}'] as $body) {
+            $calls = 0;
+            $pub = new CentrifugoRealtimePublisher($this->completeConfig(), null, function () use (&$calls, $body) {
+                $calls++;
+                return ['status' => 200, 'body' => $body];
+            });
+            $pub->publish('$flatrate-live-toyota-live', 'message.created', [
+                'roomKey' => 'toyota-live',
+                'eventId' => 'e-' . md5($body),
+            ]);
+            // Initial + one retry
+            $this->assertSame(2, $calls, 'body=' . $body);
+        }
+    }
+
+    public function testCentrifugoPublisherTimeoutNeverThrows(): void
+    {
+        $pub = new CentrifugoRealtimePublisher($this->completeConfig(), null, function () {
+            throw new \RuntimeException('timeout');
+        });
+        $pub->publish('$flatrate-live-toyota-live', 'message.created', ['roomKey' => 'toyota-live', 'messageId' => 1]);
+        $this->addToAssertionCount(1);
+    }
+
+    public function testRepeatedEditsGetDistinctEventIds(): void
+    {
+        $ids = [];
+        $pub = new CentrifugoRealtimePublisher($this->completeConfig(), null, function ($url, $headers, $body) use (&$ids) {
+            $decoded = json_decode($body, true);
+            $ids[] = $decoded['data']['eventId'];
+            return ['status' => 200, 'body' => '{"result":{}}'];
+        });
+        $pub->publish('$flatrate-live-community-general-live', 'message.edited', [
+            'roomKey' => 'community-general-live',
+            'messageId' => 42,
+            'order' => 42,
+        ]);
+        $pub->publish('$flatrate-live-community-general-live', 'message.edited', [
+            'roomKey' => 'community-general-live',
+            'messageId' => 42,
+            'order' => 42,
+        ]);
+        $this->assertCount(2, $ids);
+        $this->assertNotSame($ids[0], $ids[1]);
     }
 
     public function testNullAndFakePublishersKept(): void
     {
-        (new NullRealtimePublisher())->publish('private-flatrate-live-x', 'message.created', []);
+        (new NullRealtimePublisher())->publish('$flatrate-live-x', 'message.created', []);
         $fake = new FakeRealtimePublisher();
-        $fake->publish('private-flatrate-live-x', 'message.created', ['roomKey' => 'community-general-live']);
-        $this->assertTrue($fake->hasEvent('private-flatrate-live-x', 'message.created'));
+        $fake->publish('$flatrate-live-community-general-live', 'message.created', ['roomKey' => 'community-general-live']);
+        $this->assertTrue($fake->hasEvent('$flatrate-live-community-general-live', 'message.created'));
+    }
+
+    public function testSingleEmissionAuthorityPostMessageHandlerHasNoDirectPublish(): void
+    {
+        $src = file_get_contents(dirname(__DIR__) . '/src/Commands/PostMessageHandler.php');
+        $this->assertStringNotContainsString('use FlatRate\\LiveChat\\Realtime\\RealtimePublisher', $src);
+        $this->assertStringNotContainsString('CentrifugoChannelNamer', $src);
+        $this->assertDoesNotMatchRegularExpression('/\$this->realtime\s*->\s*publish\s*\(/', $src);
+        $this->assertStringContainsString('new Saved(', $src);
+    }
+
+    public function testRsaTokenIssuerConnectionAndSubscription(): void
+    {
+        $cfg = $this->completeConfig();
+        $issuer = new RsaRealtimeTokenIssuer($cfg);
+        $conn = $issuer->issueConnectionToken('10');
+        $this->assertNotEmpty($conn['token']);
+        $this->assertGreaterThan(time(), $conn['expiresAt']);
+
+        $decoded = JWT::decode($conn['token'], new Key($this->testPublicKey, 'RS256'));
+        $this->assertSame('10', $decoded->sub);
+        $this->assertSame('flatrate-forum', $decoded->iss);
+        $this->assertSame('flatrate-realtime', $decoded->aud);
+        $this->assertObjectNotHasProperty('channel', $decoded);
+
+        $sub = $issuer->issueSubscriptionToken('10', '$flatrate-live-community-general-live');
+        $subDecoded = JWT::decode($sub['token'], new Key($this->testPublicKey, 'RS256'));
+        $this->assertSame('$flatrate-live-community-general-live', $subDecoded->channel);
+    }
+
+    public function testRsaTokenIssuerFailsClosedOnBadKey(): void
+    {
+        $cfg = new CentrifugoClientConfig(
+            'wss://realtime.flatrate.wiki/connection/websocket',
+            'https://realtime.flatrate.wiki/api/publish',
+            'edge',
+            'api',
+            'not-a-pem',
+            CentrifugoClientConfig::JWT_ALGORITHM,
+            CentrifugoClientConfig::DEFAULT_ISSUER,
+            CentrifugoClientConfig::DEFAULT_AUDIENCE,
+            300,
+            300,
+            false,
+            false
+        );
+        // isComplete is true structurally, but encode must fail closed.
+        $issuer = new RsaRealtimeTokenIssuer($cfg);
+        $this->expectException(PermissionDeniedException::class);
+        $issuer->issueConnectionToken('10');
+    }
+
+    public function testRsaTokenIssuerRejectsNonPrivateChannel(): void
+    {
+        $issuer = new RsaRealtimeTokenIssuer($this->completeConfig());
+        $this->expectException(PermissionDeniedException::class);
+        $issuer->issueSubscriptionToken('10', 'public-channel');
+    }
+
+    public function testConnectTokenAuthMatrixGates(): void
+    {
+        $auth = new ChatAuthorization();
+        $guest = new User(null);
+        $this->expectException(PermissionDeniedException::class);
+        $auth->assertNotGuest($guest);
+    }
+
+    public function testSubscriptionAuthMatrixMemberHiddenDenied(): void
+    {
+        $auth = new ChatAuthorization();
+        $member = $this->member();
+        $toyota = $this->room('toyota-live', RoomVisibility::HIDDEN, RoomAudience::STAFF_PREVIEW);
+        $this->expectException(PermissionDeniedException::class);
+        $auth->assertCanSubscribeRealtime($member, $toyota);
+    }
+
+    public function testSubscriptionAuthMatrixMemberGeneralAllowed(): void
+    {
+        $auth = new ChatAuthorization();
+        $namer = new CentrifugoChannelNamer($auth);
+        $general = $this->room('community-general-live', RoomVisibility::VISIBLE, RoomAudience::MEMBERS);
+        $channel = $namer->assertCanSubscribe($this->member(), $general);
+        $this->assertSame('$flatrate-live-community-general-live', $channel);
     }
 
     public function testEventEnvelopeAllowlist(): void
@@ -260,8 +536,9 @@ class RolloutAndRealtimeAuthTest extends TestCase
             'email' => 'secret@example.com',
             'ip' => '1.2.3.4',
             'body' => 'should-not-appear',
-        ], 9);
-        $this->assertSame(1, $env['v']);
+        ], 9, 'deterministic-event-id');
+        $this->assertSame(2, $env['v']);
+        $this->assertSame('deterministic-event-id', $env['eventId']);
         $this->assertSame('message.created', $env['type']);
         $this->assertArrayNotHasKey('email', $env['payload']);
         $this->assertArrayNotHasKey('ip', $env['payload']);
@@ -275,10 +552,13 @@ class RolloutAndRealtimeAuthTest extends TestCase
         $this->assertSame(42, $report['canonicalRoomCount']);
         $this->assertSame(1, $report['memberVisibleRooms']);
         $this->assertSame(41, $report['staffPreviewRooms']);
-        $this->assertFalse($report['productionPusherConfigured']);
-        $this->assertFalse($report['PUSHER_SELECTED']);
+        $this->assertArrayNotHasKey('productionCentrifugoConfigured', $report);
+        $this->assertArrayNotHasKey('NEXT_VERSION', $report);
+        $this->assertSame('CENTRIFUGO_SELF_HOSTED', $report['transport']['transportDecision']);
         $encoded = json_encode($report);
-        $this->assertStringNotContainsString('app_secret', $encoded);
-        $this->assertStringNotContainsString('PUSHER_APP_SECRET', $encoded);
+        $this->assertStringNotContainsString('edge-key', $encoded);
+        $this->assertStringNotContainsString('BEGIN PRIVATE KEY', $encoded);
+        $this->assertStringNotContainsString('api-key', $encoded);
+        $this->assertStringNotContainsString('pusher', strtolower($encoded));
     }
 }

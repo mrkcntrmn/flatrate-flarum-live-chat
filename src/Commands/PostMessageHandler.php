@@ -15,18 +15,18 @@ use FlatRate\LiveChat\ChatRepository;
 use FlatRate\LiveChat\Event\Message\Saved;
 use FlatRate\LiveChat\Message;
 use FlatRate\LiveChat\MessageValidator;
-use FlatRate\LiveChat\Realtime\PerRoomChannelNamer;
-use FlatRate\LiveChat\Realtime\RealtimePublisher;
 
+/**
+ * Persist then dispatch Saved. Realtime publication is owned solely by
+ * PushChatEvents → ChatSocket (one emission authority).
+ */
 class PostMessageHandler
 {
     public function __construct(
         private MessageValidator $validator,
         private ChatRepository $chats,
         private Dispatcher $events,
-        private ChatAuthorization $auth,
-        private RealtimePublisher $realtime,
-        private PerRoomChannelNamer $channels
+        private ChatAuthorization $auth
     ) {
     }
 
@@ -61,20 +61,10 @@ class PostMessageHandler
 
         $chat->users()->updateExistingPivot($actor->id, ['readed_at' => Carbon::now()]);
 
+        // Domain event → PushChatEvents → ChatSocket → RealtimePublisher (best-effort).
         $this->events->dispatch(
             new Saved($message, $actor, $command->data, true)
         );
-
-        $channel = $this->channels->channelKeyForRoom($chat);
-        $this->realtime->publish($channel, 'message.created', [
-            'room_key' => $chat->room_key,
-            'roomKey' => $chat->room_key,
-            'message_id' => $message->id,
-            'messageId' => $message->id,
-            'user_id' => $senderId,
-            'userId' => $senderId,
-            'order' => $message->id,
-        ]);
 
         return $message;
     }
