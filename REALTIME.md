@@ -7,6 +7,7 @@ transportDecision=CENTRIFUGO_SELF_HOSTED
 transportImplementationStatus=implemented/complete
 transportExternalQualification=PENDING
 productionCentrifugoConfigured=false
+PUSHER_SELECTED=false
 SHARED_PUBLIC_REALTIME_CHANNEL=false
 ```
 

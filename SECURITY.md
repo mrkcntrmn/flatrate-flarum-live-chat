@@ -15,6 +15,7 @@ transportDecision=CENTRIFUGO_SELF_HOSTED
 transportImplementationStatus=implemented/complete
 transportExternalQualification=PENDING
 productionCentrifugoConfigured=false
+PUSHER_SELECTED=false
 ROLLOUT_PROFILE=general-live-first
 DISPOSABLE_RUNTIME_PASS=true
 ```

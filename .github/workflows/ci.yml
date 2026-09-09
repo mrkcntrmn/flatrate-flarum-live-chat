@@ -87,17 +87,23 @@ jobs:
           PY
       - name: Transport decision guard
         run: |
-          grep -q 'TRANSPORT_IMPLEMENTATION=PUSHER_CHANNELS' REALTIME.md ARCHITECTURE.md
+          grep -q 'TRANSPORT_IMPLEMENTATION=CENTRIFUGO_SELF_HOSTED' REALTIME.md ARCHITECTURE.md SECURITY.md
           grep -q 'PUSHER_SELECTED=false' REALTIME.md SECURITY.md
-          grep -q 'productionPusherConfigured=false' REALTIME.md
-          grep -q 'private-flatrate-live-' src/Realtime/PerRoomChannelNamer.php
+          grep -q 'productionCentrifugoConfigured=false' REALTIME.md SECURITY.md
+          grep -q '\$flatrate-live-' src/Realtime/CentrifugoChannelNamer.php
           ! grep -R --include='*.php' -n "trigger('public'" src/
           ! grep -R --include='*.php' -n 'sendPublic' src/
-          test -f src/Realtime/PusherRealtimePublisher.php
-          test -f src/Realtime/PusherChannelAuthorizer.php
-          test -f src/Realtime/PusherClientConfig.php
+          ! test -f src/Realtime/PusherRealtimePublisher.php
+          ! test -f src/Realtime/PusherChannelAuthorizer.php
+          ! test -f src/Realtime/PusherClientConfig.php
+          test -f src/Realtime/CentrifugoRealtimePublisher.php
+          test -f src/Realtime/CentrifugoClientConfig.php
+          test -f src/Realtime/CentrifugoChannelNamer.php
+          test -f src/Realtime/RsaRealtimeTokenIssuer.php
           test -f src/Realtime/NullRealtimePublisher.php
           test -f src/Realtime/FakeRealtimePublisher.php
+          ! grep -R -n -i 'pusher' --include='*.php' --include='*.js' src js/src
+          ! grep -n -i 'pusher' extend.php composer.json js/package.json
           echo transport_guard_ok
 
   flarum-resolve:
