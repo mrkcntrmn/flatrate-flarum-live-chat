@@ -8,6 +8,9 @@ namespace FlatRate\LiveChat\Realtime;
 /**
  * Fail-closed Centrifugo client/server config.
  * Never exposes edgeKey, apiKey, privateKey, or publish URL to the forum frontend.
+ *
+ * Production (PikaPods) supports zero-custom-env via canonical URL defaults and
+ * durable secret files under /data/flatrate-live-chat/secrets.
  */
 class CentrifugoClientConfig
 {
@@ -24,6 +27,12 @@ class CentrifugoClientConfig
     public const EXPECTED_PUBLISH_HOST = 'realtime.flatrate.wiki';
     public const EXPECTED_PUBLISH_PATH = '/api/publish';
 
+    public const DEFAULT_WEBSOCKET_URL = 'wss://realtime.flatrate.wiki/connection/websocket';
+    public const DEFAULT_PUBLISH_URL = 'https://realtime.flatrate.wiki/api/publish';
+
+    public const URL_SOURCE_ENV = 'env';
+    public const URL_SOURCE_DEFAULT = 'default';
+
     public function __construct(
         private ?string $websocketUrl = null,
         private ?string $publishApiUrl = null,
@@ -36,27 +45,48 @@ class CentrifugoClientConfig
         private int $connectionTokenTtl = self::DEFAULT_CONNECTION_TTL,
         private int $subscriptionTokenTtl = self::DEFAULT_SUBSCRIPTION_TTL,
         private bool $forceDisabled = false,
-        private bool $allowInsecure = false
+        private bool $allowInsecure = false,
+        private string $websocketUrlSource = self::URL_SOURCE_ENV,
+        private string $publishUrlSource = self::URL_SOURCE_ENV,
+        private string $edgeKeySource = CentrifugoSecretResolver::SOURCE_MISSING,
+        private string $apiKeySource = CentrifugoSecretResolver::SOURCE_MISSING,
+        private string $jwtPrivateKeySource = CentrifugoSecretResolver::SOURCE_MISSING
     ) {
     }
 
-    public static function fromEnvironment(): self
+    /**
+     * @param string|null $defaultSecretDirectory Override canonical /data path (tests only).
+     */
+    public static function fromEnvironment(?string $defaultSecretDirectory = null): self
     {
         $disabled = self::env('FLATRATE_LIVE_CHAT_CENTRIFUGO_DISABLED');
         $forceDisabled = ($disabled === '1' || $disabled === 'true');
         $insecure = self::env('FLATRATE_LIVE_CHAT_ALLOW_INSECURE_REALTIME');
         $allowInsecure = ($insecure === '1' || $insecure === 'true');
 
-        $jwtKey = self::env('FLATRATE_LIVE_CHAT_CENTRIFUGO_JWT_PRIVATE_KEY');
-        if ($jwtKey === null || $jwtKey === '') {
-            $path = self::env('FLATRATE_LIVE_CHAT_CENTRIFUGO_JWT_PRIVATE_KEY_FILE');
-            if ($path !== null && $path !== '' && is_readable($path)) {
-                $contents = file_get_contents($path);
-                $jwtKey = $contents !== false ? trim($contents) : null;
-            }
+        $resolver = new CentrifugoSecretResolver(
+            $defaultSecretDirectory ?? CentrifugoSecretResolver::DEFAULT_SECRET_DIRECTORY
+        );
+        $edge = $resolver->resolveEdgeKey();
+        $api = $resolver->resolveApiKey();
+        $jwt = $resolver->resolveJwtPrivateKey();
+
+        $wsEnv = self::env('FLATRATE_LIVE_CHAT_CENTRIFUGO_WS_URL');
+        if ($wsEnv !== null && $wsEnv !== '') {
+            $websocketUrl = $wsEnv;
+            $wsSource = self::URL_SOURCE_ENV;
         } else {
-            // Support escaped newlines in env values.
-            $jwtKey = str_replace(["\\n", "\r\n"], "\n", $jwtKey);
+            $websocketUrl = self::DEFAULT_WEBSOCKET_URL;
+            $wsSource = self::URL_SOURCE_DEFAULT;
+        }
+
+        $publishEnv = self::env('FLATRATE_LIVE_CHAT_CENTRIFUGO_PUBLISH_URL');
+        if ($publishEnv !== null && $publishEnv !== '') {
+            $publishUrl = $publishEnv;
+            $publishSource = self::URL_SOURCE_ENV;
+        } else {
+            $publishUrl = self::DEFAULT_PUBLISH_URL;
+            $publishSource = self::URL_SOURCE_DEFAULT;
         }
 
         $issuer = self::env('FLATRATE_LIVE_CHAT_CENTRIFUGO_JWT_ISSUER') ?: self::DEFAULT_ISSUER;
@@ -65,18 +95,23 @@ class CentrifugoClientConfig
         $subTtl = (int) (self::env('FLATRATE_LIVE_CHAT_CENTRIFUGO_SUBSCRIPTION_TTL') ?: self::DEFAULT_SUBSCRIPTION_TTL);
 
         return new self(
-            self::env('FLATRATE_LIVE_CHAT_CENTRIFUGO_WS_URL'),
-            self::env('FLATRATE_LIVE_CHAT_CENTRIFUGO_PUBLISH_URL'),
-            self::env('FLATRATE_LIVE_CHAT_CENTRIFUGO_EDGE_KEY'),
-            self::env('FLATRATE_LIVE_CHAT_CENTRIFUGO_API_KEY'),
-            $jwtKey,
+            $websocketUrl,
+            $publishUrl,
+            $edge['value'],
+            $api['value'],
+            $jwt['value'],
             self::JWT_ALGORITHM,
             $issuer,
             $audience,
             $connTtl > 0 ? $connTtl : self::DEFAULT_CONNECTION_TTL,
             $subTtl > 0 ? $subTtl : self::DEFAULT_SUBSCRIPTION_TTL,
             $forceDisabled,
-            $allowInsecure
+            $allowInsecure,
+            $wsSource,
+            $publishSource,
+            $edge['source'],
+            $api['source'],
+            $jwt['source']
         );
     }
 
@@ -95,6 +130,11 @@ class CentrifugoClientConfig
     public function isComplete(): bool
     {
         if ($this->forceDisabled) {
+            return false;
+        }
+        if ($this->edgeKeySource === CentrifugoSecretResolver::SOURCE_INVALID_FILE
+            || $this->apiKeySource === CentrifugoSecretResolver::SOURCE_INVALID_FILE
+            || $this->jwtPrivateKeySource === CentrifugoSecretResolver::SOURCE_INVALID_FILE) {
             return false;
         }
         if ($this->websocketUrl === null || $this->websocketUrl === '') {
@@ -265,8 +305,33 @@ class CentrifugoClientConfig
         return $this->forceDisabled;
     }
 
+    public function websocketUrlSource(): string
+    {
+        return $this->websocketUrlSource;
+    }
+
+    public function publishUrlSource(): string
+    {
+        return $this->publishUrlSource;
+    }
+
+    public function edgeKeySource(): string
+    {
+        return $this->edgeKeySource;
+    }
+
+    public function apiKeySource(): string
+    {
+        return $this->apiKeySource;
+    }
+
+    public function jwtPrivateKeySource(): string
+    {
+        return $this->jwtPrivateKeySource;
+    }
+
     /**
-     * Safe forum attributes — never edgeKey, apiKey, privateKey, publish URL.
+     * Safe forum attributes — never edgeKey, apiKey, privateKey, publish URL, paths, or sources.
      *
      * @return array<string,mixed>
      */
@@ -293,12 +358,16 @@ class CentrifugoClientConfig
     }
 
     /**
-     * Diagnostic summary without secrets.
+     * Diagnostic summary without secrets or filesystem paths.
      *
      * @return array<string,mixed>
      */
     public function diagnostic(): array
     {
+        $defaultFileMode = $this->edgeKeySource === CentrifugoSecretResolver::SOURCE_DEFAULT_FILE
+            && $this->apiKeySource === CentrifugoSecretResolver::SOURCE_DEFAULT_FILE
+            && $this->jwtPrivateKeySource === CentrifugoSecretResolver::SOURCE_DEFAULT_FILE;
+
         return [
             'transportDecision' => 'CENTRIFUGO_SELF_HOSTED',
             'runtimeConfigured' => $this->isComplete(),
@@ -316,6 +385,12 @@ class CentrifugoClientConfig
             'urlsTlsSafe' => $this->urlsAreTlsSafe(),
             'allowInsecure' => $this->allowInsecure,
             'forceDisabled' => $this->forceDisabled,
+            'websocketUrlSource' => $this->websocketUrlSource,
+            'publishUrlSource' => $this->publishUrlSource,
+            'edgeKeySource' => $this->edgeKeySource,
+            'apiKeySource' => $this->apiKeySource,
+            'jwtPrivateKeySource' => $this->jwtPrivateKeySource,
+            'secretMode' => $defaultFileMode ? 'file-fallback' : 'mixed-or-env',
         ];
     }
 }

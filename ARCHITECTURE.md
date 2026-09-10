@@ -69,11 +69,15 @@ Reconcile applies rollout visibility/audience without rewriting durable identity
 See `REALTIME.md`.
 
 ```text
-NEXT_VERSION=1.1.0
+NEXT_VERSION=1.1.1
+SOURCE_IMPLEMENTED_TARGET=1.1.1
+RC_DISTRIBUTED=false
+STABLE_RELEASED=1.1.0
+PRODUCTION_DEPLOYED=false
 TRANSPORT_IMPLEMENTATION=CENTRIFUGO_SELF_HOSTED
 transportDecision=CENTRIFUGO_SELF_HOSTED
-transportImplementationStatus=implemented/complete
-transportExternalQualification=PENDING
+transportImplementationStatus=stable-distributed-qualified (1.1.0); 1.1.1 source in progress
+transportExternalQualification=PASS (infra); admin egress probe for in-pod reachability
 productionCentrifugoConfigured=false
 SHARED_PUBLIC_REALTIME_CHANNEL=false
 ```

@@ -5,3 +5,8 @@ js/dist
 /vendor/
 .phpunit.result.cache
 node_modules/
+# Local developer secret fixtures (never commit real credentials)
+/data/
+**/flatrate-live-chat/secrets/
+*.pem
+!tests/fixtures/**/*.pem
