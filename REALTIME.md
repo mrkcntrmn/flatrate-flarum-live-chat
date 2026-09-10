@@ -1,15 +1,21 @@
 # Realtime — FlatRate Live Chat
 
 ```text
-NEXT_VERSION=1.1.0
+NEXT_VERSION=1.1.1
+SOURCE_IMPLEMENTED_TARGET=1.1.1
+RC_DISTRIBUTED=false
+STABLE_RELEASED=1.1.0
+PRODUCTION_DEPLOYED=false
 TRANSPORT_IMPLEMENTATION=CENTRIFUGO_SELF_HOSTED
 transportDecision=CENTRIFUGO_SELF_HOSTED
-transportImplementationStatus=implemented/complete
-transportExternalQualification=PENDING
+transportImplementationStatus=stable-distributed-qualified (1.1.0); 1.1.1 source in progress
+transportExternalQualification=PASS (infra); PikaPods in-pod egress via admin probe (1.1.1)
 productionCentrifugoConfigured=false
 PUSHER_SELECTED=false
 SHARED_PUBLIC_REALTIME_CHANNEL=false
 ```
+
+Immutable releases: `1.0.0`, `1.1.0-rc.1`, `1.1.0`. This document describes **source** work toward `1.1.1`. It does not claim RC/stable Packagist publication or production deploy.
 
 ## Architecture
 
@@ -17,63 +23,105 @@ Self-hosted Centrifugo via owned classes (explicit deps `firebase/php-jwt` + `gu
 
 - `CentrifugoRealtimePublisher`
 - `CentrifugoClientConfig`
+- `CentrifugoSecretResolver`
 - `CentrifugoChannelNamer`
 - `RealtimeTokenIssuer` / `RsaRealtimeTokenIssuer`
+- `RealtimeEgressProbe` (admin-only fixed-target healthz)
 
 Also kept: `NullRealtimePublisher` (fail-closed default) + `FakeRealtimePublisher` (tests/disposable).
 
 HTTP history remains authoritative; realtime is best-effort acceleration (publish never throws).
 
-Create-message realtime emission is owned solely by `Saved` → `PushChatEvents` → `ChatSocket` (no direct publish from `PostMessageHandler`).
+## Production configuration model (PikaPods / zero-custom-env)
 
-## Event envelope v2
-
-```text
-EventEnvelope::VERSION=2
-```
-
-Each occurrence includes opaque `eventId` (used for Centrifugo `idempotency_key=event:<eventId>` and browser dedupe).
-Legitimate repeated edits of the same message get distinct `eventId`s.
-Package `1.0.0` remains immutable; `1.1.0` introduces v2.
-
-## Channels
-
-Private Centrifugo channels only:
+PikaPods does **not** provide arbitrary custom environment variables. Production must work with:
 
 ```text
-$flatrate-live-<roomKey>
+ZERO custom PikaPods environment variables
 ```
 
-Example: `$flatrate-live-community-general-live`
+### Canonical non-secret defaults
 
-Server builds channel names from `roomKey`. Clients send `roomKey` only — never arbitrary channel strings. Strict parse rejects unknown roomKeys.
+When URL env vars are absent:
 
-## Auth / tokens
+```text
+DEFAULT_WEBSOCKET_URL=
+wss://realtime.flatrate.wiki/connection/websocket
+
+DEFAULT_PUBLISH_URL=
+https://realtime.flatrate.wiki/api/publish
+
+issuer=flatrate-forum
+audience=flatrate-realtime
+connection TTL=300
+subscription TTL=300
+JWT algorithm=RS256
+```
+
+Strict host/path/TLS validation is unchanged.
+
+### Canonical durable secret files
+
+Operator-provisioned only (never created or committed by the package):
+
+```text
+/data/flatrate-live-chat/secrets/centrifugo-edge-key
+/data/flatrate-live-chat/secrets/centrifugo-api-key
+/data/flatrate-live-chat/secrets/centrifugo-jwt-private-key.pem
+```
+
+Preferred modes: directory `0700`, files `0600` (never world-readable/writable). Runtime operability uses `is_readable()`.
+
+### Secret precedence (fail-closed)
+
+For each secret (edge key, API key, JWT private key):
+
+```text
+1. direct environment value
+2. explicit *_FILE environment path
+3. canonical /data fallback file
+4. missing → fail closed
+```
+
+If an explicit `*_FILE` path is set but invalid/unreadable, do **not** silently fall through to the canonical file.
+
+Optional file-path env vars (generic Docker/K8s mounts — **not** the PikaPods dependency):
+
+```text
+FLATRATE_LIVE_CHAT_CENTRIFUGO_EDGE_KEY_FILE
+FLATRATE_LIVE_CHAT_CENTRIFUGO_API_KEY_FILE
+FLATRATE_LIVE_CHAT_CENTRIFUGO_JWT_PRIVATE_KEY_FILE
+```
+
+### Generic env / secret-mount deployment
+
+Platforms that inject env still work: direct `EDGE_KEY` / `API_KEY` / `JWT_PRIVATE_KEY` (and optional URL overrides) retain precedence over files.
+
+## Admin egress probe
+
+```text
+GET /api/flatrate-live-chat/realtime/egress-probe
+```
+
+- Authenticated **admin-only**
+- Read-only; no body; no client-supplied URL (hardcoded `https://realtime.flatrate.wiki/healthz`)
+- TLS verify on; redirects disabled; connect ≤2s; total ≤5s
+- Sanitized JSON only (`ok`, `reachable`, `httpStatus`, `tlsVerified`, `durationMs`, or `category`)
+- `Cache-Control: no-store`
+- No secrets, IPs, bodies, headers, or exception strings
+
+## Tokens / channels / envelope
+
+Unchanged from `1.1.0`:
 
 ```text
 POST /api/flatrate-live-chat/realtime/connect-token
 POST /api/flatrate-live-chat/realtime/subscription-token
 ```
 
-- Guests / suspended denied (403)
-- Subscription body: `{ "roomKey": "..." }` only (reject `channel` params)
-- Ordinary member + hidden brand room → 404
-- RS256 JWTs: connection claims `sub,iss,aud,exp`; subscription adds exact `channel`
-- Cache-Control: no-store
-- Legacy `POST .../realtime/auth` → 410 Gone
+Private channels `$flatrate-live-<roomKey>`; envelope v2; forum attributes never expose edge/API/JWT/publish URL/paths/sources.
 
-## Events
-
-Versioned FlatRate envelope published as Centrifugo publication data:
-
-- `message.created` / `message.edited` / `message.deleted` / `room.updated`
-- Allowlisted payload only (no IP / email / secrets / message body)
-
-Ordering by persisted message id (`order`). Client connects / token-refreshes / subscribes by roomKey with multi-tab dedupe. Client publish is disabled.
-
-## Credentials
-
-Disposable/local env vars (never committed):
+## Disposable env (optional overrides)
 
 ```text
 FLATRATE_LIVE_CHAT_CENTRIFUGO_WS_URL
@@ -81,24 +129,12 @@ FLATRATE_LIVE_CHAT_CENTRIFUGO_PUBLISH_URL
 FLATRATE_LIVE_CHAT_CENTRIFUGO_EDGE_KEY
 FLATRATE_LIVE_CHAT_CENTRIFUGO_API_KEY
 FLATRATE_LIVE_CHAT_CENTRIFUGO_JWT_PRIVATE_KEY
-FLATRATE_LIVE_CHAT_CENTRIFUGO_JWT_PRIVATE_KEY_FILE
-FLATRATE_LIVE_CHAT_CENTRIFUGO_JWT_ISSUER          # default flatrate-forum
-FLATRATE_LIVE_CHAT_CENTRIFUGO_JWT_AUDIENCE        # default flatrate-realtime
-FLATRATE_LIVE_CHAT_CENTRIFUGO_CONNECTION_TTL      # default 300
-FLATRATE_LIVE_CHAT_CENTRIFUGO_SUBSCRIPTION_TTL    # default 300
+FLATRATE_LIVE_CHAT_CENTRIFUGO_*_FILE
 FLATRATE_LIVE_CHAT_CENTRIFUGO_DISABLED
-FLATRATE_LIVE_CHAT_ALLOW_INSECURE_REALTIME        # localhost http/ws tests only
-FLATRATE_LIVE_CHAT_FAKE_REALTIME                  # FakeRealtimePublisher
+FLATRATE_LIVE_CHAT_ALLOW_INSECURE_REALTIME
+FLATRATE_LIVE_CHAT_FAKE_REALTIME
 ```
 
-Publish edge headers: `X-FlatRate-Realtime-Key` + `X-API-Key`. TLS required for non-localhost (`https` publish, `wss`/`https` websocket). Forum attributes expose only transport/connect/configured/websocketUrl/token endpoints — never edgeKey, apiKey, privateKey, or publish URL.
+## Historical note
 
-## Frontend
-
-JS dependency: `centrifuge` (v5.x CommonJS/ESM; webpack 4 / Flarum bundling). If a newer major fails to bundle, pin the last webpack-4-compatible release here.
-
-## Historical note (superseded)
-
-Pusher Channels (`pusher/pusher-php-server`, `pusher-js`, hashed `private-flatrate-live-<sha256>` channels) was implemented in CHAT-001C as a transport candidate but **never production-configured** and is fully removed in CENTRIFUGO-001A. Do not restore Pusher credentials or Packagist publish for transport.
-
-CHAT-CENTRIFUGO-001A does **not** authorize production Centrifugo credentials, tags, or Packagist publish. Keep `1.0.0` immutable; next release target is `1.1.0`.
+Pusher Channels was never production-configured and is removed. Keep `1.0.0` / `1.1.0` immutable.

@@ -56,6 +56,18 @@ class ChatAuthorization
     }
 
     /**
+     * Admin-only gate for operational probes (not merely "logged in").
+     */
+    public function assertAdmin(User $actor): void
+    {
+        $this->assertNotGuest($actor);
+        $this->assertNotSuspended($actor);
+        if (!$actor->isAdmin()) {
+            throw new PermissionDeniedException();
+        }
+    }
+
+    /**
      * Centralized staff-preview gate: admin + moderator.
      * Suspended users are denied even if they hold moderator permission.
      */
