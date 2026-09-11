@@ -409,6 +409,92 @@ class ProductionRoomReconcileApiTest extends TestCase
         $this->assertSame('Mutated Title', $this->store[0]['title']);
     }
 
+    public function testCanonicalTypeDriftFailClosed(): void
+    {
+        $service = $this->service();
+
+        // General Live type=0
+        $this->store = $this->buildExact42();
+        foreach ($this->store as $i => $row) {
+            if ($row['room_key'] === 'community-general-live') {
+                $this->store[$i]['type'] = 0;
+                break;
+            }
+        }
+        $preview = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_REVIEW_REQUIRED, $preview['classification']);
+        $this->assertSame(1, $preview['driftedCount']);
+        $writesBefore = $this->writeCalls;
+        $result = $service->reconcile([
+            'expectedCatalogSha256' => $preview['catalogSha256'],
+            'expectedStateSha256' => $preview['stateSha256'],
+            'expectedExistingCanonicalCount' => $preview['existingCanonicalCount'],
+            'confirm' => $this->snapshot->expectedConfirmation($preview['stateSha256']),
+        ]);
+        $this->assertSame(409, $result['status']);
+        $this->assertSame(ProductionRoomReconcileService::ERR_REQUIRES_REVIEW, $result['body']['code']);
+        $this->assertFalse($result['body']['writesApplied']);
+        $this->assertSame(0, $result['body']['createdCount']);
+        $this->assertSame(0, $result['body']['updatedCount']);
+        $this->assertSame($writesBefore, $this->writeCalls);
+
+        // Brand room type=0
+        $this->store = $this->buildExact42();
+        foreach ($this->store as $i => $row) {
+            if ($row['room_key'] === 'toyota-live') {
+                $this->store[$i]['type'] = 0;
+                break;
+            }
+        }
+        $brandPreview = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_REVIEW_REQUIRED, $brandPreview['classification']);
+        $this->assertSame(1, $brandPreview['driftedCount']);
+        $writesBefore = $this->writeCalls;
+        $brandResult = $service->reconcile([
+            'expectedCatalogSha256' => $brandPreview['catalogSha256'],
+            'expectedStateSha256' => $brandPreview['stateSha256'],
+            'expectedExistingCanonicalCount' => $brandPreview['existingCanonicalCount'],
+            'confirm' => $this->snapshot->expectedConfirmation($brandPreview['stateSha256']),
+        ]);
+        $this->assertSame(409, $brandResult['status']);
+        $this->assertSame(ProductionRoomReconcileService::ERR_REQUIRES_REVIEW, $brandResult['body']['code']);
+        $this->assertFalse($brandResult['body']['writesApplied']);
+        $this->assertSame(0, $brandResult['body']['createdCount']);
+        $this->assertSame(0, $brandResult['body']['updatedCount']);
+        $this->assertSame($writesBefore, $this->writeCalls);
+
+        // Same room: bad type + bad title counts once
+        $this->store = $this->buildExact42();
+        foreach ($this->store as $i => $row) {
+            if ($row['room_key'] === 'toyota-live') {
+                $this->store[$i]['type'] = 0;
+                $this->store[$i]['title'] = 'Mutated Toyota';
+                break;
+            }
+        }
+        $doublePreview = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_REVIEW_REQUIRED, $doublePreview['classification']);
+        $this->assertSame(1, $doublePreview['driftedCount']);
+
+        // Valid exact 42 remains ALREADY_RECONCILED no-op
+        $this->store = $this->buildExact42();
+        $validPreview = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_ALREADY_RECONCILED, $validPreview['classification']);
+        $this->assertSame(0, $validPreview['driftedCount']);
+        $writesBefore = $this->writeCalls;
+        $noop = $service->reconcile([
+            'expectedCatalogSha256' => $validPreview['catalogSha256'],
+            'expectedStateSha256' => $validPreview['stateSha256'],
+            'expectedExistingCanonicalCount' => 42,
+            'confirm' => $this->snapshot->expectedConfirmation($validPreview['stateSha256']),
+        ]);
+        $this->assertSame(200, $noop['status']);
+        $this->assertFalse($noop['body']['writesApplied']);
+        $this->assertSame(0, $noop['body']['createdCount']);
+        $this->assertSame(0, $noop['body']['updatedCount']);
+        $this->assertSame($writesBefore, $this->writeCalls);
+    }
+
     public function testTransactionRollbackOnWriteFailure(): void
     {
         $service = $this->service();

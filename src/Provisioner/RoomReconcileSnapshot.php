@@ -145,7 +145,26 @@ final class RoomReconcileSnapshot
 
         $missing = count($diff['missing']);
         $extra = count($diff['extra']);
-        $drifted = count($diff['drifted']);
+
+        // Production classification is stricter than RoomProvisioner drift:
+        // canonical keyed rooms must keep type=1. Do not auto-repair type.
+        $driftedKeys = [];
+        foreach ($diff['drifted'] as $entry) {
+            $key = (string) ($entry['roomKey'] ?? '');
+            if ($key !== '') {
+                $driftedKeys[$key] = true;
+            }
+        }
+        foreach ($keyedRows as $row) {
+            $key = (string) ($row['room_key'] ?? $row['roomKey'] ?? '');
+            if ($key === '' || !isset($catalogKeys[$key])) {
+                continue;
+            }
+            if ((int) ($row['type'] ?? 0) !== 1) {
+                $driftedKeys[$key] = true;
+            }
+        }
+        $drifted = count($driftedKeys);
 
         $classification = self::CLASS_REVIEW_REQUIRED;
         if ($existingCanonical === 0 && $missing === 42 && $extra === 0 && $drifted === 0) {
