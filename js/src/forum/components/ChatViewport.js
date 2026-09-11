@@ -316,9 +316,7 @@ export default class ChatViewport extends Component {
                 }
 
                 if (model.unreaded()) {
-                    const anchor = app.chat.getChatMessages(
-                        (mdl) => mdl.chat() == model && mdl.created_at() > model.readed_at()
-                    )[0];
+                    const anchor = app.chat.getChatMessages((mdl) => mdl.chat() == model && mdl.created_at() > model.readed_at())[0];
                     this.scrollToAnchor(anchor);
                 } else {
                     state.scroll.autoScroll = true;
