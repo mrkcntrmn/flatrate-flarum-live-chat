@@ -8,6 +8,7 @@ import ChatWelcome from './ChatWelcome';
 import Message from '../models/Message';
 import timedRedraw from '../utils/timedRedraw';
 import { processVisibleUnread } from '../utils/processVisibleUnread';
+import { startInitialHistoryFetch, settleInitialHistoryFetch } from '../utils/chatMessagesFetchLifecycle';
 
 export default class ChatViewport extends Component {
     oninit(vnode) {
@@ -285,24 +286,36 @@ export default class ChatViewport extends Component {
     }
 
     reloadMessages() {
-        if (!this.state.messagesFetched) {
-            let query;
-            if (this.model.unreaded()) {
-                query = this.model.readed_at()?.toISOString() ?? new Date(0).toISOString();
-                this.state.scroll.autoScroll = false;
-            }
+        if (!startInitialHistoryFetch(this.state)) {
+            return;
+        }
 
-            app.chat.apiFetchChatMessages(this.model, query).then(() => {
+        let query;
+        if (this.model.unreaded()) {
+            query = this.model.readed_at()?.toISOString() ?? new Date(0).toISOString();
+            this.state.scroll.autoScroll = false;
+        }
+
+        const pending = app.chat.apiFetchChatMessages(this.model, query);
+        if (!pending || typeof pending.then !== 'function') {
+            settleInitialHistoryFetch(this.state, { ok: false });
+            return;
+        }
+
+        pending.then(
+            () => {
+                settleInitialHistoryFetch(this.state, { ok: true });
                 if (this.model.unreaded()) {
                     let anchor = app.chat.getChatMessages((mdl) => mdl.chat() == this.model && mdl.created_at() > this.model.readed_at())[0];
                     this.scrollToAnchor(anchor);
                 } else this.state.scroll.autoScroll = true;
 
                 m.redraw();
-            });
-
-            this.state.messagesFetched = true;
-        }
+            },
+            () => {
+                settleInitialHistoryFetch(this.state, { ok: false });
+            }
+        );
     }
 
     nearBottom() {
