@@ -11,7 +11,6 @@ use FlatRate\LiveChat\ChatRepository;
 use Flarum\Api\Controller\AbstractListController;
 use Flarum\Http\RequestUtil;
 use Flarum\User\Exception\PermissionDeniedException;
-use Illuminate\Support\Collection;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
 
@@ -47,8 +46,8 @@ class ListLiveChatsController extends AbstractListController
         }
 
         $include = $this->extractInclude($request);
-        $rows = $this->chats->listLiveDirectory($actor);
 
-        return (new Collection($rows))->load($include);
+        // Must remain Eloquent\Collection — Support\Collection has no load().
+        return $this->chats->listLiveDirectory($actor)->load($include);
     }
 }

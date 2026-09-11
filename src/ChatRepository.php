@@ -9,6 +9,7 @@ use FlatRate\LiveChat\Auth\ChatAuthorization;
 use FlatRate\LiveChat\Rollout\RoomAudience;
 use FlatRate\LiveChat\Rollout\RoomVisibility;
 use Flarum\User\User;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ChatRepository
@@ -67,9 +68,9 @@ class ChatRepository
      * Live Chats directory: General (if authorized) first, then active
      * subscriptions that remain visible under current policy.
      *
-     * @return list<Chat>
+     * @return EloquentCollection<int, Chat>
      */
-    public function listLiveDirectory(User $actor): array
+    public function listLiveDirectory(User $actor): EloquentCollection
     {
         $general = $this->queryVisible($actor)
             ->with(['last_message'])
@@ -97,14 +98,28 @@ class ChatRepository
             })
             ->values();
 
-        $out = [];
-        if ($general) {
-            $out[] = $general;
+        return $this->assembleLiveDirectory($general, $subscribed);
+    }
+
+    /**
+     * Keep Eloquent collection identity through the API serializer boundary.
+     *
+     * @param EloquentCollection<int, Chat> $subscribed
+     * @return EloquentCollection<int, Chat>
+     */
+    public function assembleLiveDirectory(?Chat $general, EloquentCollection $subscribed): EloquentCollection
+    {
+        $items = [];
+        if ($general !== null) {
+            $items[] = $general;
         }
         foreach ($subscribed as $chat) {
-            $out[] = $chat;
+            if ($general !== null && (int) $chat->id === (int) $general->id) {
+                continue;
+            }
+            $items[] = $chat;
         }
 
-        return $out;
+        return new EloquentCollection($items);
     }
 }
