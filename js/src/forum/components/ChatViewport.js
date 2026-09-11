@@ -241,9 +241,7 @@ export default class ChatViewport extends Component {
             wrapper,
             model: this.model,
             currentChat: app.chat.getCurrentChat(),
-            messages: app.chat.getChatMessages(
-                (mdl) => mdl.chat() == this.model && mdl.created_at() >= this.model.readed_at() && !mdl.isReaded
-            ),
+            messages: app.chat.getChatMessages((mdl) => mdl.chat() == this.model && mdl.created_at() >= this.model.readed_at() && !mdl.isReaded),
             autoScroll: !!this.state.scroll.autoScroll,
             apiReadChat: app.chat.apiReadChat.bind(app.chat),
             findMessageEl: (id) => document.querySelector(`.message-wrapper[data-id="${id}"`),

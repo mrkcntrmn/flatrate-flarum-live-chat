@@ -2,15 +2,7 @@
  * Page-era unread processing for a mounted ChatViewport.
  * Does not consult legacy floating-frame beingShown / chatIsShown().
  */
-export function processVisibleUnread({
-    wrapper,
-    model,
-    currentChat,
-    messages,
-    autoScroll,
-    apiReadChat,
-    findMessageEl,
-}) {
+export function processVisibleUnread({ wrapper, model, currentChat, messages, autoScroll, apiReadChat, findMessageEl }) {
     if (!(wrapper && model && model.unreaded() && currentChat === model)) {
         return { processed: 0, gated: true };
     }
