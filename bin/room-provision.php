@@ -1,12 +1,17 @@
 #!/usr/bin/env php
 <?php
 /**
- * Room provision CLI for disposable Flarum runtimes.
+ * Room provision CLI for disposable / operator shell environments.
  *
  * Usage (from Flarum root with extension enabled):
  *   php vendor/flatrate/flarum-live-chat/bin/room-provision.php validate|dry-run|reconcile
  *
- * Reconcile requires FLATRATE_LIVE_CHAT_ALLOW_WRITES=1 (disposable only).
+ * Reconcile requires FLATRATE_LIVE_CHAT_ALLOW_WRITES=1 (disposable/test only).
+ *
+ * Production PikaPods has no supported app shell — use the admin HTTP API:
+ *   GET  /api/flatrate-live-chat/admin/rooms/reconcile-preview
+ *   POST /api/flatrate-live-chat/admin/rooms/reconcile
+ * Do not treat this CLI as the production reconcile path.
  */
 
 use FlatRate\LiveChat\Catalog\RoomCatalog;

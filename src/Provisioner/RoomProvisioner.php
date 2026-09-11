@@ -13,7 +13,11 @@ use FlatRate\LiveChat\Rollout\RoomVisibility;
 
 /**
  * validate / dry-run / reconcile for canonical rooms.
- * Disposable only — defaults to dry-run. No production credentials.
+ *
+ * Defaults to dry-run (`allowWrites=false`). CLI reconcile is for disposable /
+ * operator shell environments only (`FLATRATE_LIVE_CHAT_ALLOW_WRITES=1`).
+ * Production PikaPods uses the admin HTTP reconcile API, which constructs a
+ * provisioner with writes enabled only inside that trusted controller path.
  * Reconcile always targets CANONICAL_ROOM_COUNT=42.
  */
 class RoomProvisioner

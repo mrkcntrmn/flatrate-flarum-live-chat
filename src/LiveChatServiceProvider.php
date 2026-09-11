@@ -7,7 +7,9 @@ namespace FlatRate\LiveChat;
 
 use FlatRate\LiveChat\Auth\ChatAuthorization;
 use FlatRate\LiveChat\Catalog\RoomCatalog;
+use FlatRate\LiveChat\Provisioner\ProductionRoomReconcileService;
 use FlatRate\LiveChat\Provisioner\RoomProvisioner;
+use FlatRate\LiveChat\Provisioner\RoomReconcileSnapshot;
 use FlatRate\LiveChat\Realtime\CentrifugoChannelNamer;
 use FlatRate\LiveChat\Realtime\CentrifugoClientConfig;
 use FlatRate\LiveChat\Realtime\CentrifugoRealtimePublisher;
@@ -62,6 +64,14 @@ class LiveChatServiceProvider extends AbstractServiceProvider
             // Fail closed: no publish when credentials incomplete.
             return new NullRealtimePublisher();
         });
+
+        $this->container->singleton(RoomReconcileSnapshot::class, function (Container $container) {
+            return new RoomReconcileSnapshot(
+                $container->make(RoomCatalog::class),
+                $container->make(RolloutProfile::class)
+            );
+        });
+        $this->container->singleton(ProductionRoomReconcileService::class);
 
         $this->container->bind(RoomProvisioner::class, function (Container $container) {
             $allow = getenv('FLATRATE_LIVE_CHAT_ALLOW_WRITES');
