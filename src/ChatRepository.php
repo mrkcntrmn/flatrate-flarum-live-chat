@@ -9,6 +9,7 @@ use FlatRate\LiveChat\Auth\ChatAuthorization;
 use FlatRate\LiveChat\Rollout\RoomAudience;
 use FlatRate\LiveChat\Rollout\RoomVisibility;
 use Flarum\User\User;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ChatRepository
@@ -61,5 +62,64 @@ class ChatRepository
             throw (new ModelNotFoundException())->setModel(Chat::class, [$roomKey]);
         }
         return $chat;
+    }
+
+    /**
+     * Live Chats directory: General (if authorized) first, then active
+     * subscriptions that remain visible under current policy.
+     *
+     * @return EloquentCollection<int, Chat>
+     */
+    public function listLiveDirectory(User $actor): EloquentCollection
+    {
+        $general = $this->queryVisible($actor)
+            ->with(['last_message'])
+            ->where('room_key', 'community-general-live')
+            ->first();
+
+        $subscribed = $this->queryVisible($actor)
+            ->where('room_key', '!=', 'community-general-live')
+            ->whereExists(function ($q) use ($actor) {
+                $q->selectRaw('1')
+                    ->from('neonchat_chat_user')
+                    ->whereColumn('neonchat_chat_user.chat_id', 'neonchat_chats.id')
+                    ->where('neonchat_chat_user.user_id', $actor->id)
+                    ->whereNull('neonchat_chat_user.removed_at');
+            })
+            ->with(['last_message'])
+            ->get()
+            ->sort(function (Chat $a, Chat $b) {
+                $aId = $a->last_message ? (int) $a->last_message->id : 0;
+                $bId = $b->last_message ? (int) $b->last_message->id : 0;
+                if ($aId !== $bId) {
+                    return $bId <=> $aId;
+                }
+                return strcmp((string) $a->title, (string) $b->title);
+            })
+            ->values();
+
+        return $this->assembleLiveDirectory($general, $subscribed);
+    }
+
+    /**
+     * Keep Eloquent collection identity through the API serializer boundary.
+     *
+     * @param EloquentCollection<int, Chat> $subscribed
+     * @return EloquentCollection<int, Chat>
+     */
+    public function assembleLiveDirectory(?Chat $general, EloquentCollection $subscribed): EloquentCollection
+    {
+        $items = [];
+        if ($general !== null) {
+            $items[] = $general;
+        }
+        foreach ($subscribed as $chat) {
+            if ($general !== null && (int) $chat->id === (int) $general->id) {
+                continue;
+            }
+            $items[] = $chat;
+        }
+
+        return new EloquentCollection($items);
     }
 }

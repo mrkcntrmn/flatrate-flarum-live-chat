@@ -241,6 +241,21 @@ async function main() {
   }
 
   console.log('js_realtime_centrifugo_ok');
+
+  // --- CHAT-UI-001 R2 scroll-owner source contracts ---
+  {
+    const fs = require('fs');
+    const path = require('path');
+    const src = fs.readFileSync(path.join(__dirname, '../src/forum/components/ChatViewport.js'), 'utf8');
+    assert.ok(!src.includes('document.documentElement'));
+    assert.ok(!src.includes('window.addEventListener'));
+    assert.ok(src.includes('this.scrollElement = vnode.dom'));
+    assert.ok(src.includes("this.scrollElement.addEventListener('scroll'"));
+    assert.ok(src.includes('this.scrollElement.removeEventListener'));
+    assert.ok(src.includes('e?.currentTarget || this.getChatWrapper()'));
+    assert.ok(src.includes('chatWrapper.scrollHeight <= chatWrapper.clientHeight + 200'));
+    console.log('js_viewport_scroll_owner_ok');
+  }
 }
 
 main().catch((err) => {

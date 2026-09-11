@@ -1,5 +1,16 @@
 xelson-chat:
   forum:
+    nav:
+      live_chats: Live Chats
+    live_chats:
+      title: Live Chats
+      general_heading: FlatRate.wiki General
+      general_label: FlatRate.wiki General
+      general_unavailable: General Live is not available yet.
+      subscriptions_heading: Your Live Chats
+      no_subscriptions: No other live chats yet.
+      error: Could not load live chats.
+      retry: Try again
     realtime_not_found: Realtime is unavailable until Centrifugo is configured.
     index:
       chat_link: Chat
@@ -143,3 +154,4 @@ xelson-chat:
         title: Display
         minimize: Minimize initially
         censor: Censoring messages for unauthorized users
+      live_chats_navigation: Show Live Chats navigation

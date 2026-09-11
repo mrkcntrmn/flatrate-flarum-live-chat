@@ -334,7 +334,7 @@ export default class ChatState {
     }
 
     renderChatMessage(model, content) {
-        let element = model instanceof Model ? document.querySelector(`.NeonChatFrame .message-wrapper[data-id="${model.id()}"] .message`) : model;
+        let element = model instanceof Model ? document.querySelector(`.ChatPage .message-wrapper[data-id="${model.id()}"] .message`) : model;
 
         if (element) {
             s9e.TextFormatter.preview(content, element);

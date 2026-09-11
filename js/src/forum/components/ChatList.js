@@ -1,13 +1,15 @@
 import Component from 'flarum/Component';
-import ChatCreateModal from './ChatCreateModal';
 import ChatPreview from './ChatPreview';
+import Link from 'flarum/components/Link';
 
-export default class ChatFrame extends Component {
+/**
+ * Room list used by Live Chats directory contexts.
+ * Floating-frame minimize/pin controls removed.
+ */
+export default class ChatList extends Component {
     view(vnode) {
-        const classes = ['ChatList'];
-        if (app.chat.getFrameState('beingShownChatsList') || this.attrs.inPage) classes.push('toggled');
         return (
-            <div className={classes.join(' ')}>
+            <div className="ChatList toggled">
                 <div className="header">
                     <div className="input-wrapper input--down">
                         <input
@@ -16,64 +18,20 @@ export default class ChatFrame extends Component {
                             placeholder={app.translator.trans('flatrate-live-chat.forum.chat.list.placeholder')}
                         />
                     </div>
-                    <div
-                        className="icon icon-minimize"
-                        onclick={this.toggleChat.bind(this)}
-                        data-title={app.translator.trans(
-                            'flatrate-live-chat.forum.toolbar.' + (app.chat.getFrameState('beingShown') ? 'minimize' : 'maximize')
-                        )}
-                    >
-                        <i className={app.chat.getFrameState('beingShown') ? 'fas fa-window-minimize' : 'fas fa-window-maximize'}></i>
-                    </div>
-                    {this.attrs.inPage ? (
-                        ''
-                    ) : (
-                        <div
-                            className="ToggleButton icon icon-toggle"
-                            onclick={this.toggleChatsList.bind(this)}
-                            data-title={app.translator.trans(
-                                'flatrate-live-chat.forum.chat.list.' + (app.chat.getFrameState('beingShownChatsList') ? 'unpin' : 'pin')
-                            )}
-                        >
-                            <i className="fas fa-paperclip"></i>
-                        </div>
-                    )}
                 </div>
-                <div className="list">
-                    {this.content()}
-                    {app.session.user && app.chat.getPermissions().create.chat ? (
-                        <div class="panel-add" onclick={() => app.modal.show(ChatCreateModal)}></div>
-                    ) : null}
-                </div>
+                <div className="list">{this.content()}</div>
             </div>
         );
     }
 
     content() {
-        return app.chat.getChatsSortedByLastUpdate().map((model) => (
-            <div onclick={this.onChatPreviewClicked.bind(this, model)}>
-                <ChatPreview key={model.id()} model={model} />
-            </div>
-        ));
-    }
-
-    onChatPreviewClicked(model, e) {
-        e.redraw = false;
-        if (app.screen() == 'phone') app.chat.toggleChatsList();
-        app.chat.onChatChanged(model);
-    }
-
-    toggleChatsList(e) {
-        app.chat.toggleChatsList();
-
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    toggleChat(e) {
-        app.chat.toggleChat();
-
-        e.preventDefault();
-        e.stopPropagation();
+        return app.chat.getChatsSortedByLastUpdate().map((model) => {
+            const roomKey = model.room_key?.() || model.roomKey?.();
+            return (
+                <Link href={roomKey ? app.route('flatrate-live-chat.live', { roomKey }) : '#'} key={model.id()}>
+                    <ChatPreview model={model} />
+                </Link>
+            );
+        });
     }
 }

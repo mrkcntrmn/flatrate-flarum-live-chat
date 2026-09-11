@@ -30,6 +30,12 @@ app.initializers.add('flatrate-live-chat', (app) => {
             label: app.translator.trans('flatrate-live-chat.admin.settings.display.censor'),
             type: 'switch',
         })
+        .registerSetting({
+            setting: 'flatrate-live-chat.live_chats_navigation_enabled',
+            label: app.translator.trans('flatrate-live-chat.admin.settings.live_chats_navigation'),
+            type: 'boolean',
+            default: false,
+        })
         .registerPermission(
             {
                 icon: 'fas fa-eye',
