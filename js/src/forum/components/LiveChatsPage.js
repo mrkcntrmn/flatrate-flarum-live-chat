@@ -66,7 +66,9 @@ export default class LiveChatsPage extends Page {
                             {general ? (
                                 this.roomCard(general)
                             ) : (
-                                <p className="LiveChatsPage-empty">{app.translator.trans('flatrate-live-chat.forum.live_chats.general_unavailable')}</p>
+                                <p className="LiveChatsPage-empty">
+                                    {app.translator.trans('flatrate-live-chat.forum.live_chats.general_unavailable')}
+                                </p>
                             )}
                         </section>
 
