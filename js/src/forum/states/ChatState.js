@@ -7,6 +7,7 @@ import Link from 'flarum/components/Link';
 import * as resources from '../resources';
 import ViewportState from './ViewportState';
 import { throttle } from 'flarum/utils/throttleDebounce';
+import { runChatMessagesFetch } from '../utils/chatMessagesFetchLifecycle';
 
 var refAudio = new Audio();
 refAudio.src = resources.base64AudioNotificationRef;
@@ -279,28 +280,17 @@ export default class ChatState {
     }
 
     apiFetchChatMessages(model, query, options = {}) {
-        let viewport = this.getViewportState(model);
-        let self = this;
+        const viewport = this.getViewportState(model);
+        const self = this;
 
-        if (viewport.loading || viewport.loadingQueries[query]) return;
-
-        viewport.loading = true;
-        viewport.loadingQueries[query] = true;
-
-        return app.store.find('chatmessages', { chat_id: model.id(), query }).then((r) => {
-            if (r.length) {
-                r.map((model) => {
-                    if (options.withFlash) model.isNeedToFlash = true;
-                    self.insertChatMessage(model);
-                });
-                if (options.notify) this.messageNotify(r[0]);
-
-                viewport.loading = false;
-                viewport.loadingQueries[query] = false;
-                //viewport.scroll.autoScroll = false;
-
-                m.redraw();
-            }
+        return runChatMessagesFetch({
+            viewport,
+            query,
+            options,
+            findMessages: () => app.store.find('chatmessages', { chat_id: model.id(), query }),
+            insertMessage: (message) => self.insertChatMessage(message),
+            notifyMessage: (message) => self.messageNotify(message),
+            redraw: () => m.redraw(),
         });
     }
 

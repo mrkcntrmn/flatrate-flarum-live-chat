@@ -15,7 +15,7 @@
     "build": "webpack --mode production",
     "format": "prettier --write src",
     "format-check": "prettier --check src",
-    "test": "node tests/realtime-client.test.js && node tests/check-unreaded-gate.test.js"
+    "test": "node tests/realtime-client.test.js && node tests/check-unreaded-gate.test.js && node tests/message-fetch-lifecycle.test.js"
   },
   "husky": {
     "hooks": {
