@@ -33,8 +33,19 @@ Suspended users are denied posting and realtime subscription even if staff.
 ## Visibility transitions
 
 Changing visibility/audience must **not** change `roomKey` / id / scope / messages.
-Provisioner reconcile still targets 42 rooms idempotently and may apply rollout
-dimensions without rewriting durable identity.
+
+CLI provisioner reconcile (disposable shells) targets 42 rooms and may apply
+rollout dimensions without rewriting durable identity.
+
+Production reconcile uses admin HTTP endpoints only:
+
+```text
+GET  /api/flatrate-live-chat/admin/rooms/reconcile-preview
+POST /api/flatrate-live-chat/admin/rooms/reconcile
+```
+
+Production path is fail-closed: initial 0→42 create or already-reconciled no-op.
+Partial, extra, or drifted states require human review (no auto-heal).
 
 ## Routes
 

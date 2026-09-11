@@ -61,7 +61,21 @@ Canonical family: `/live/{roomKey}` (examples: `/live/community-general-live`, `
 
 `Provisioner\RoomProvisioner` modes: `validate` | `dry-run` | `reconcile`.
 
-Default `allowWrites=false` (DRY_RUN_ONLY). Reconcile requires explicit allowWrites for disposable runtimes only (`FLATRATE_LIVE_CHAT_ALLOW_WRITES=1`).
+Default `allowWrites=false` (DRY_RUN_ONLY). CLI reconcile requires explicit
+`FLATRATE_LIVE_CHAT_ALLOW_WRITES=1` for disposable/operator shell environments.
+
+Production PikaPods has no supported app shell. Use the admin-only HTTP API:
+
+```text
+GET  /api/flatrate-live-chat/admin/rooms/reconcile-preview
+POST /api/flatrate-live-chat/admin/rooms/reconcile
+```
+
+That path binds catalog/state SHA + confirmation, creates 0→42 in one DB
+transaction, fail-closes on partial/extra/drift, and no-ops when already
+reconciled. It constructs a write-enabled provisioner only inside the trusted
+controller — the service-provider default remains `allowWrites=false`.
+
 Reconcile applies rollout visibility/audience without rewriting durable identity.
 
 ## Realtime boundary
