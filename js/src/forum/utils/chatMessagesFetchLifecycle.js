@@ -1,6 +1,7 @@
 /**
  * Shared HTTP message-fetch lock lifecycle.
- * Locks must release on nonempty success, empty success, and rejection.
+ * Locks must release on nonempty success, empty success, async rejection,
+ * and synchronous request-factory throw.
  */
 export function runChatMessagesFetch({ viewport, query, findMessages, insertMessage, notifyMessage, options = {}, redraw = () => {} }) {
     if (viewport.loading || viewport.loadingQueries[query]) {
@@ -16,7 +17,15 @@ export function runChatMessagesFetch({ viewport, query, findMessages, insertMess
         redraw();
     };
 
-    return findMessages().then(
+    let pending;
+    try {
+        pending = findMessages();
+    } catch (error) {
+        unlock();
+        return Promise.reject(error);
+    }
+
+    return Promise.resolve(pending).then(
         (r) => {
             if (r.length) {
                 r.forEach((message) => {

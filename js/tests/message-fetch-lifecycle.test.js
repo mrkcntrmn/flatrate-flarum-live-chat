@@ -204,6 +204,7 @@ async function main() {
     const dup = { messagesFetched: false };
     assert.strictEqual(startInitialHistoryFetch(dup), true);
     assert.strictEqual(startInitialHistoryFetch(dup), false);
+    console.log('DUPLICATE_INITIAL_LOAD_GUARD_TEST=PASS');
   }
 
   // stale lock poison would block second call — prove unlock clears loadingQueries key
@@ -230,6 +231,155 @@ async function main() {
     await second;
   }
 
+  // synchronous findMessages throw unlocks
+  {
+    const viewport = makeViewport();
+    const err = new Error('sync-fetch-failure');
+    let rejected = null;
+    try {
+      await runChatMessagesFetch({
+        viewport,
+        query: undefined,
+        findMessages: () => {
+          throw err;
+        },
+        insertMessage: () => {},
+        notifyMessage: () => {},
+        redraw: () => {},
+      });
+    } catch (e) {
+      rejected = e;
+    }
+    assert.strictEqual(rejected, err);
+    assert.strictEqual(viewport.loading, false);
+    assert.strictEqual(Object.keys(viewport.loadingQueries).length, 0);
+    console.log('SYNCHRONOUS_FETCH_THROW_UNLOCK_TEST=PASS');
+  }
+
+  // Cross-room async settlement isolation (reloadMessages identity capture)
+  {
+    const reloadFn = viewportSrc.match(/reloadMessages\(\)\s*\{[\s\S]*?\n    \}/)?.[0] || '';
+    assert.ok(reloadFn.includes('const model = this.model'));
+    assert.ok(reloadFn.includes('const state = this.state'));
+    assert.ok(reloadFn.includes('this.model !== model || this.state !== state'));
+    assert.ok(!/settleInitialHistoryFetch\(this\.state/.test(reloadFn));
+    assert.ok(!/startInitialHistoryFetch\(this\.state\)/.test(reloadFn));
+    assert.ok(!/apiFetchChatMessages\(this\.model/.test(reloadFn));
+    assert.ok(/apiFetchChatMessages\(model, query\)/.test(reloadFn));
+    assert.ok(/settleInitialHistoryFetch\(state, \{ ok: false \}\)/.test(reloadFn));
+    assert.ok(/settleInitialHistoryFetch\(state, \{ ok: true \}\)/.test(reloadFn));
+
+    const Astate = { messagesFetched: false, scroll: { autoScroll: true } };
+    const Bstate = { messagesFetched: false, scroll: { autoScroll: true } };
+    const Amodel = {
+      id: () => 'A',
+      unreaded: () => 0,
+      readed_at: () => null,
+    };
+    const Bmodel = {
+      id: () => 'B',
+      unreaded: () => 0,
+      readed_at: () => null,
+    };
+
+    // Simulate captured reloadMessages for A then B, with A rejecting after switch
+    let component = { model: Amodel, state: Astate, scrollToAnchorCalls: [] };
+    component.scrollToAnchor = (anchor) => component.scrollToAnchorCalls.push(anchor);
+
+    function simulateReloadMessages(comp, fetchFactory) {
+      const model = comp.model;
+      const state = comp.state;
+      if (!model || !state) return null;
+      if (!startInitialHistoryFetch(state)) return null;
+      let query;
+      if (model.unreaded()) {
+        query = model.readed_at()?.toISOString() ?? new Date(0).toISOString();
+        state.scroll.autoScroll = false;
+      }
+      const pending = fetchFactory(model, query);
+      if (!pending || typeof pending.then !== 'function') {
+        settleInitialHistoryFetch(state, { ok: false });
+        return null;
+      }
+      return pending.then(
+        () => {
+          settleInitialHistoryFetch(state, { ok: true });
+          if (comp.model !== model || comp.state !== state) {
+            return { stale: true, model, state };
+          }
+          if (model.unreaded()) {
+            comp.scrollToAnchor({ room: model.id() });
+          } else {
+            state.scroll.autoScroll = true;
+          }
+          return { stale: false, model, state };
+        },
+        () => {
+          settleInitialHistoryFetch(state, { ok: false });
+          return { failed: true, model, state };
+        }
+      );
+    }
+
+    let rejectA;
+    const aPending = simulateReloadMessages(component, () => new Promise((_, reject) => { rejectA = reject; }));
+    assert.strictEqual(Astate.messagesFetched, true);
+
+    component.model = Bmodel;
+    component.state = Bstate;
+    const bPending = simulateReloadMessages(component, async () => []);
+    assert.strictEqual(Bstate.messagesFetched, true);
+
+    rejectA(new Error('A failed'));
+    await aPending;
+    assert.strictEqual(Astate.messagesFetched, false);
+    assert.strictEqual(Bstate.messagesFetched, true);
+    assert.strictEqual(Bstate.scroll.autoScroll, true);
+    console.log('CROSS_ROOM_FAILURE_STATE_ISOLATION_TEST=PASS');
+    console.log('OTHER_ROOM_STATE_UNCHANGED_ON_FAILURE_TEST=PASS');
+
+    assert.strictEqual(startInitialHistoryFetch(Astate), true);
+    console.log('FAILED_ROOM_RETRY_AFTER_SWITCH_TEST=PASS');
+
+    // Stale A success must not UI-affect B
+    const A2 = { messagesFetched: false, scroll: { autoScroll: false } };
+    const B2 = { messagesFetched: false, scroll: { autoScroll: false } };
+    const A2model = { id: () => 'A2', unreaded: () => 2, readed_at: () => new Date(0) };
+    const B2model = { id: () => 'B2', unreaded: () => 0, readed_at: () => null };
+    component = { model: A2model, state: A2, scrollToAnchorCalls: [] };
+    component.scrollToAnchor = (anchor) => component.scrollToAnchorCalls.push(anchor);
+
+    let resolveA2;
+    const a2Pending = simulateReloadMessages(component, () => new Promise((resolve) => { resolveA2 = resolve; }));
+    component.model = B2model;
+    component.state = B2;
+    startInitialHistoryFetch(B2);
+    B2.scroll.autoScroll = false;
+
+    resolveA2([]);
+    const a2Result = await a2Pending;
+    assert.strictEqual(a2Result.stale, true);
+    assert.strictEqual(A2.messagesFetched, true);
+    assert.strictEqual(B2.messagesFetched, true);
+    assert.strictEqual(B2.scroll.autoScroll, false);
+    assert.strictEqual(component.scrollToAnchorCalls.length, 0);
+    console.log('STALE_SUCCESS_UI_SIDE_EFFECT_GUARD_TEST=PASS');
+
+    // Current-room success still applies UI
+    const Cstate = { messagesFetched: false, scroll: { autoScroll: false } };
+    const Cmodel = { id: () => 'C', unreaded: () => 0, readed_at: () => null };
+    component = { model: Cmodel, state: Cstate, scrollToAnchorCalls: [] };
+    component.scrollToAnchor = (anchor) => component.scrollToAnchorCalls.push(anchor);
+    const cResult = await simulateReloadMessages(component, async () => [{ id: () => 'c1' }]);
+    assert.strictEqual(cResult.stale, false);
+    assert.strictEqual(Cstate.messagesFetched, true);
+    assert.strictEqual(Cstate.scroll.autoScroll, true);
+    console.log('CURRENT_ROOM_SUCCESS_TEST=PASS');
+
+    await bPending;
+  }
+
+  console.log('MESSAGE_FETCH_TEST_RETAINED=true');
   console.log('js_message_fetch_lifecycle_ok');
 }
 
