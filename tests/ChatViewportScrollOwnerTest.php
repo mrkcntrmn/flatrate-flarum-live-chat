@@ -78,6 +78,18 @@ class ChatViewportScrollOwnerTest extends TestCase
         $this->assertStringNotContainsString('70vh', $page);
     }
 
+    public function testCheckUnreadedDoesNotUseLegacyChatIsShownGate(): void
+    {
+        $src = $this->viewportSrc();
+        $this->assertMatchesRegularExpression('/checkUnreaded\(\)\s*\{[\s\S]*?processVisibleUnread\(/', $src);
+        if (preg_match('/checkUnreaded\(\)\s*\{([\s\S]*?)\n    \}/', $src, $m) !== 1) {
+            $this->fail('checkUnreaded() not found');
+        }
+        $this->assertStringNotContainsString('chatIsShown', $m[1]);
+        $this->assertStringContainsString('getCurrentChat()', $m[1]);
+        $this->assertStringNotContainsString('chatIsShown()', $src); // no remaining read-path usage in viewport
+    }
+
     public function testDirectoryEloquentCollectionFixPreserved(): void
     {
         $controller = file_get_contents(dirname(__DIR__) . '/src/Api/Controllers/ListLiveChatsController.php');

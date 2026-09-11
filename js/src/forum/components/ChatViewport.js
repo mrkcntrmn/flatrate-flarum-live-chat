@@ -7,6 +7,7 @@ import ChatEventMessage from './ChatEventMessage';
 import ChatWelcome from './ChatWelcome';
 import Message from '../models/Message';
 import timedRedraw from '../utils/timedRedraw';
+import { processVisibleUnread } from '../utils/processVisibleUnread';
 
 export default class ChatViewport extends Component {
     oninit(vnode) {
@@ -231,26 +232,25 @@ export default class ChatViewport extends Component {
     }
 
     checkUnreaded() {
-        let wrapper = this.getChatWrapper();
-        if (wrapper && this.model && this.model.unreaded() && app.chat.chatIsShown()) {
-            let list = app.chat.getChatMessages((mdl) => mdl.chat() == this.model && mdl.created_at() >= this.model.readed_at() && !mdl.isReaded);
+        if (!this.model || !this.model.unreaded()) {
+            return;
+        }
 
-            for (const message of list) {
-                let msg = document.querySelector(`.message-wrapper[data-id="${message.id()}"`);
-                if (msg && wrapper.scrollTop + wrapper.clientHeight >= msg.offsetTop) {
-                    message.isReaded = true;
+        const wrapper = this.getChatWrapper();
+        const result = processVisibleUnread({
+            wrapper,
+            model: this.model,
+            currentChat: app.chat.getCurrentChat(),
+            messages: app.chat.getChatMessages(
+                (mdl) => mdl.chat() == this.model && mdl.created_at() >= this.model.readed_at() && !mdl.isReaded
+            ),
+            autoScroll: !!this.state.scroll.autoScroll,
+            apiReadChat: app.chat.apiReadChat.bind(app.chat),
+            findMessageEl: (id) => document.querySelector(`.message-wrapper[data-id="${id}"`),
+        });
 
-                    if (this.state.scroll.autoScroll && app.chat.getCurrentChat() == this.model) {
-                        app.chat.apiReadChat(this.model, new Date());
-                        this.model.pushAttributes({ unreaded: 0 });
-                    } else {
-                        app.chat.apiReadChat(this.model, message);
-                        this.model.pushAttributes({ unreaded: this.model.unreaded() - 1 });
-                    }
-
-                    m.redraw();
-                }
-            }
+        if (result.processed > 0) {
+            m.redraw();
         }
     }
 
