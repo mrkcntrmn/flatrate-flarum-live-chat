@@ -1,19 +1,13 @@
 import { extend } from 'flarum/extend';
 import Application from 'flarum/Application';
-import ChatFrame from './components/ChatFrame';
 
 import Chat from './models/Chat';
 import Message from './models/Message';
 import User from 'flarum/models/User';
 import Model from 'flarum/Model';
 import ChatState from './states/ChatState';
-import addChatPage from './addChatPage';
+import addLiveChatsNavigation from './addLiveChatsNavigation';
 import FlatRateRealtimeClient from './realtime/FlatRateRealtimeClient';
-
-const chat = document.createElement('div');
-chat.setAttribute('id', 'chat');
-
-document.body.append(chat);
 
 app.initializers.add('flatrate-live-chat', (app) => {
     app.store.models.chats = Chat;
@@ -45,7 +39,7 @@ app.initializers.add('flatrate-live-chat', (app) => {
         },
     });
 
-    addChatPage();
+    addLiveChatsNavigation();
 
     extend(Application.prototype, 'mount', function () {
         if (!app.forum.attribute('flatrate-live-chat.permissions.enabled')) return;
@@ -64,8 +58,6 @@ app.initializers.add('flatrate-live-chat', (app) => {
         if (app.session.user && app.flatrateLiveRealtime.isConfigured()) {
             app.flatrateLiveRealtime.connect();
         }
-
-        m.mount(document.getElementById('chat'), ChatFrame);
 
         if ('Notification' in window && app.chat.getFrameState('notify')) Notification.requestPermission();
 

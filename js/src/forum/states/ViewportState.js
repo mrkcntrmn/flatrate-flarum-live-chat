@@ -71,7 +71,7 @@ export default class ViewportState {
     }
 
     getChatInput() {
-        return document.querySelector('.NeonChatFrame #chat-input');
+        return document.querySelector('.ChatPage #chat-input') || document.querySelector('#chat-input');
     }
 
     messageSend() {

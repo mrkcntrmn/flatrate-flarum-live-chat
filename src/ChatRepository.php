@@ -62,4 +62,49 @@ class ChatRepository
         }
         return $chat;
     }
+
+    /**
+     * Live Chats directory: General (if authorized) first, then active
+     * subscriptions that remain visible under current policy.
+     *
+     * @return list<Chat>
+     */
+    public function listLiveDirectory(User $actor): array
+    {
+        $general = $this->queryVisible($actor)
+            ->with(['last_message'])
+            ->where('room_key', 'community-general-live')
+            ->first();
+
+        $subscribed = $this->queryVisible($actor)
+            ->where('room_key', '!=', 'community-general-live')
+            ->whereExists(function ($q) use ($actor) {
+                $q->selectRaw('1')
+                    ->from('neonchat_chat_user')
+                    ->whereColumn('neonchat_chat_user.chat_id', 'neonchat_chats.id')
+                    ->where('neonchat_chat_user.user_id', $actor->id)
+                    ->whereNull('neonchat_chat_user.removed_at');
+            })
+            ->with(['last_message'])
+            ->get()
+            ->sort(function (Chat $a, Chat $b) {
+                $aId = $a->last_message ? (int) $a->last_message->id : 0;
+                $bId = $b->last_message ? (int) $b->last_message->id : 0;
+                if ($aId !== $bId) {
+                    return $bId <=> $aId;
+                }
+                return strcmp((string) $a->title, (string) $b->title);
+            })
+            ->values();
+
+        $out = [];
+        if ($general) {
+            $out[] = $general;
+        }
+        foreach ($subscribed as $chat) {
+            $out[] = $chat;
+        }
+
+        return $out;
+    }
 }

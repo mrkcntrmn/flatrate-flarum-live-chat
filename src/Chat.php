@@ -79,16 +79,48 @@ class Chat extends AbstractModel
 
     /**
      * Explicit join only — never called from read/list paths.
+     * Reactivates a previously removed membership (subscribe / post).
      */
     public function ensureMembership(User $user)
     {
+        if (!$user->id || (int) $this->type !== 1) {
+            return $this->getChatUser($user);
+        }
+
         $chatUser = $this->getChatUser($user);
-        if (!$chatUser && $user->id && (int) $this->type === 1) {
-            $now = Carbon::now();
+        $now = Carbon::now();
+        if (!$chatUser) {
             $this->users()->attach($user->id, ['readed_at' => $now, 'joined_at' => $now]);
-            $chatUser = ChatUser::build($this->id, $user->id, $now, $now);
+            return ChatUser::build($this->id, $user->id, $now, $now);
+        }
+        if ($chatUser->removed_at) {
+            $chatUser->removed_at = null;
+            $chatUser->removed_by = null;
+            $chatUser->save();
         }
         return $chatUser;
+    }
+
+    /**
+     * Active subscription create/reactivate (idempotent).
+     */
+    public function subscribe(User $user)
+    {
+        return $this->ensureMembership($user);
+    }
+
+    /**
+     * Soft-unsubscribe via removed_at. Idempotent. Does not delete messages.
+     */
+    public function unsubscribe(User $user): void
+    {
+        $chatUser = $this->getChatUser($user);
+        if (!$chatUser || $chatUser->removed_at) {
+            return;
+        }
+        $chatUser->removed_at = Carbon::now();
+        $chatUser->removed_by = $user->id;
+        $chatUser->save();
     }
 
     public function creator()
