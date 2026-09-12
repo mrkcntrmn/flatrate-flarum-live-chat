@@ -1,70 +1,64 @@
 .ChatHeader {
+    display: flex;
+    align-items: center;
     width: 100%;
-    height: 35px;
-    background-color: @color-hr;
+    min-height: 48px;
+    box-sizing: border-box;
+    padding: 0 4px;
+    background: var(--control-bg, @control-bg);
+    color: var(--heading-color, @heading-color);
+    border-bottom: 1px solid var(--control-bg, fade(@muted-color, 20%));
     position: relative;
     z-index: 1;
-    .user-select(none);
 
-    .window-buttons {
-        position: absolute;
-        right: 0;
-        top: 0;
-    }
+    .ChatHeader-back {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        color: inherit;
+        text-decoration: none;
+        flex: 0 0 auto;
 
-    .icon {
-        display: inline-block;
-        width: 28px;
-        line-height: 35px;
-        color: #adb0b5;
-        vertical-align: middle;
-        text-align: center;
-        font-size: 12pt;
-        cursor: pointer;
-        position: relative;
-
-        &:hover {
-            color: #fff;
-        }
-
-        &.toggle-chat
-        {
-            @media @tablet-up
-            {
-                display: none;   
-            }
-            width: 40px;
-            margin-right: -15px;
-            position: relative;
-
-            .unreaded {
-                top: -6px;
-                right: 0;
-            }
+        &:hover,
+        &:focus {
+            color: var(--link-color, @primary-color);
         }
     }
 
-    h2 {
-        display: inline-block;
-        color: #fff;
-        font-size: 18px;
-        font-weight: 100;
-        line-height: 35px;
-        vertical-align: middle;
-        margin: 0 0px 0px 15px;
-        max-width: 150px;
+    .ChatHeader-title {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin: 0 8px;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.3;
+        color: inherit;
+        white-space: nowrap;
+        overflow: hidden;
         text-overflow: ellipsis;
     }
 
-    p {
-        display: inline-block;
-        position: relative;
-        float: right;
-        margin: 0;
-        padding: 0;
+    .ChatHeader-overflow {
+        flex: 0 0 auto;
+        margin-left: auto;
+    }
 
-        img {
-            height: 20px;
+    .ChatHeader-overflowToggle {
+        min-width: 44px;
+        min-height: 44px;
+        color: inherit;
+
+        .Button-label {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
         }
     }
 }

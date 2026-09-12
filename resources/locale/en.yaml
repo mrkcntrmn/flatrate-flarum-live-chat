@@ -1,14 +1,13 @@
-xelson-chat:
+flatrate-live-chat:
   forum:
     nav:
-      live_chats: Live Chats
+      live_chats: Live Chat
     live_chats:
-      title: Live Chats
-      general_heading: FlatRate.wiki General
-      general_label: FlatRate.wiki General
-      general_unavailable: General Live is not available yet.
-      subscriptions_heading: Your Live Chats
-      no_subscriptions: No other live chats yet.
+      title: Live Chat
+      general_label: FlatRate.wiki Live
+      empty: Live Chat isn't available yet.
+      new_messages: New messages
+      jump_latest: Jump to latest
       error: Could not load live chats.
       retry: Try again
     realtime_not_found: Realtime is unavailable until Centrifugo is configured.
@@ -22,12 +21,17 @@ xelson-chat:
       disable_notifications: Disable notifications
       minimize: Minimize
       maximize: Maximize
+      more: More
+      back: Back
       chat:
-        settings: Chat settings
+        settings: Room settings
+        info: Room info
     chat:
       welcome:
-        header: Welcome to Neon Chat!
-        subheader: Please select a chat on the left for the conversation
+        header: Welcome to Live Chat
+        subheader: Choose a room to join the conversation.
+      send: Send
+      cancel_edit: Cancel
       moder: Moderator
       kick: Kick
       leave: Leave
@@ -93,7 +97,7 @@ xelson-chat:
             failed: No matching users found
             invited: Invited
             more_results: And {more_results} more...
-      placeholder: Type your message...
+      placeholder: Type a message…
       message:
         actions:
           hide: Hide
@@ -154,4 +158,4 @@ xelson-chat:
         title: Display
         minimize: Minimize initially
         censor: Censoring messages for unauthorized users
-      live_chats_navigation: Show Live Chats navigation
+      live_chats_navigation: Show Live Chat navigation

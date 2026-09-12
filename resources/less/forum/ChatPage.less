@@ -10,7 +10,14 @@
     }
 
     #chat-input {
-        color: #000;
+        color: inherit;
+    }
+
+    .ChatPage-main {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        flex: 1 1 auto;
     }
 
     &--fullscreen,
@@ -83,22 +90,13 @@
 }
 
 .LiveChatsPage {
-    max-width: 720px;
+    max-width: 760px;
     margin: 1.5rem auto;
     padding: 0 1rem;
 
     &-title {
         font-size: 1.75rem;
         margin-bottom: 1.25rem;
-    }
-
-    &-section {
-        margin-bottom: 2rem;
-
-        h2 {
-            font-size: 1.1rem;
-            margin-bottom: 0.75rem;
-        }
     }
 
     &-list {
@@ -112,62 +110,61 @@
     }
 
     &-cardLink {
-        display: block;
-        padding: 0.85rem 1rem;
-        border: 1px solid var(--control-bg, #e5e7eb);
-        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 44px;
+        padding: 14px 16px;
+        border: 1px solid var(--control-bg, fade(@muted-color, 25%));
+        border-radius: var(--border-radius, 8px);
+        background: var(--body-bg, transparent);
         text-decoration: none;
         color: inherit;
+        box-sizing: border-box;
+
+        &:hover,
+        &:focus {
+            border-color: var(--primary-color, @primary-color);
+        }
+    }
+
+    &-primary {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 4px;
     }
 
     &-cardTitle {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex: 1 1 auto;
+        min-width: 0;
         font-weight: 600;
-        margin-bottom: 0.35rem;
-    }
-
-    &-unread {
-        background: var(--primary-color, #e74c3c);
-        color: #fff;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        padding: 0.1rem 0.45rem;
-    }
-
-    &-cardMeta {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.75rem;
-        font-size: 0.9rem;
-        opacity: 0.85;
-    }
-
-    &-preview {
+        white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    &-time {
+        flex: 0 0 auto;
+        font-size: 0.85rem;
+        color: var(--muted-color, @muted-color);
         white-space: nowrap;
     }
 
-    &-scope {
-        margin-top: 0.25rem;
-        font-size: 0.75rem;
-        opacity: 0.65;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
+    &-secondary {
+        min-width: 0;
+    }
+
+    &-preview {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.9rem;
+        color: var(--muted-color, @muted-color);
     }
 
     &-empty {
-        opacity: 0.75;
+        color: var(--muted-color, @muted-color);
     }
-}
-
-.FlatRateLiveChatsNav-badge {
-    margin-left: 0.35rem;
-    background: var(--primary-color, #e74c3c);
-    color: #fff;
-    border-radius: 999px;
-    font-size: 0.7rem;
-    padding: 0.05rem 0.4rem;
 }

@@ -1,4 +1,4 @@
-xelson-chat:
+flatrate-live-chat:
   forum:
     realtime_not_found: Thời gian thực không khả dụng cho đến khi Centrifugo được cấu hình.
     index:

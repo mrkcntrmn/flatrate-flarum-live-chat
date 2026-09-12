@@ -32,31 +32,34 @@
         color: #ff94c1 !important;
     }
 
-    .scroller {
-        width: 40px;
-        height: 40px;
+    .scroller,
+    .ChatViewport-scroller {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 44px;
+        padding: 0 14px;
         position: absolute;
-        background: @color-hr;
-        opacity: 0.7;
+        right: 16px;
+        bottom: 64px;
+        border: 0;
+        background: var(--primary-color, @primary-color);
         color: #fff;
-        right: 30px;
-        bottom: 55px;
-        border-radius: 100px;
-        line-height: 40px;
-        font-size: 30px;
-        text-align: center;
+        border-radius: 999px;
+        font-size: 14px;
+        line-height: 1;
         cursor: pointer;
-        .transition(background .1s);
+        .transition(opacity .1s);
+        opacity: 0.92;
 
-        &:hover {
-            opacity: 1.0;
+        &:hover,
+        &:focus {
+            opacity: 1;
         }
 
-        .loading {
-            position: absolute;
-            top: 425px;
-            float: left;
-            right: 15px;
+        i {
+            font-size: 14px;
         }
     }
 
@@ -87,12 +90,9 @@
         .message-wrapper,
         .message-wrapper--loading {
             display: block;
-            padding: 3px 3px 3px 15px;
+            padding: 8px 12px 8px 16px;
             position: relative;
-
-            &.odd {
-                background-color: @color-message-odd;
-            }
+            background: transparent;
 
             &.editing {
 
@@ -215,8 +215,8 @@
 
                     .name {
                         display: inline;
-                        color: #000;
-                        font-weight: bold;
+                        color: var(--heading-color, @heading-color);
+                        font-weight: 600;
                         cursor: pointer;
                     }
 
@@ -274,7 +274,7 @@
 
                         .timestamp {
                             display: inline;
-                            color: #7c7c7c;
+                            color: var(--muted-color, @muted-color);
                             cursor: pointer;
                             padding-right: 5px;
                             text-align: right;

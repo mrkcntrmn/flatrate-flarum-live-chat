@@ -114,4 +114,48 @@ class LiveChatsUiContractTest extends TestCase
         $auth = new ChatAuthorization();
         $this->assertTrue(method_exists($auth, 'assertAdmin'));
     }
+
+    public function testLiveChatSingularCopyAndCanonicalRoomLabel(): void
+    {
+        $en = file_get_contents(dirname(__DIR__) . '/resources/locale/en.yaml');
+        $this->assertStringContainsString("live_chats: Live Chat", $en);
+        $this->assertStringContainsString('title: Live Chat', $en);
+        $this->assertStringContainsString('general_label: FlatRate.wiki Live', $en);
+        $this->assertStringContainsString("empty: Live Chat isn't available yet.", $en);
+        $this->assertStringNotContainsString('Live Chats', $en);
+        $this->assertStringNotContainsString('FlatRate.wiki General', $en);
+        $this->assertStringNotContainsString('Your Live Chats', $en);
+        $this->assertStringNotContainsString('Welcome to Neon Chat!', $en);
+    }
+
+    public function testDirectoryHasNoUnreadBadgeScopeOrSectionHeadings(): void
+    {
+        $page = file_get_contents(dirname(__DIR__) . '/js/src/forum/components/LiveChatsPage.js');
+        $nav = file_get_contents(dirname(__DIR__) . '/js/src/forum/addLiveChatsNavigation.js');
+        $less = file_get_contents(dirname(__DIR__) . '/resources/less/forum/ChatPage.less');
+
+        $this->assertStringNotContainsString('LiveChatsPage-unread', $page);
+        $this->assertStringNotContainsString('scope_key', $page);
+        $this->assertStringNotContainsString('general_heading', $page);
+        $this->assertStringNotContainsString('subscriptions_heading', $page);
+        $this->assertStringNotContainsString('Your Rooms', $page);
+        $this->assertStringNotContainsString('Your Live Chats', $page);
+        $this->assertStringNotContainsString('FlatRateLiveChatsNav-badge', $nav);
+        $this->assertStringNotContainsString('getUnreadedTotal', $nav);
+        $this->assertStringNotContainsString('LiveChatsPage-unread', $less);
+        $this->assertStringNotContainsString('FlatRateLiveChatsNav-badge', $less);
+    }
+
+    public function testPrimaryRoomKeyUnchangedAndDisplayHelperIsPresentationOnly(): void
+    {
+        $helper = file_get_contents(dirname(__DIR__) . '/js/src/forum/utils/liveChatPresentation.js');
+        $this->assertStringContainsString("PRIMARY_ROOM_KEY = 'community-general-live'", $helper);
+        $this->assertStringContainsString('export function displayRoomTitle', $helper);
+        $this->assertStringNotContainsString('pushAttributes', $helper);
+        $this->assertStringNotContainsString('.save(', $helper);
+        $this->assertDoesNotMatchRegularExpression('/\broom_key\s*=(?!=)/', $helper);
+
+        $model = file_get_contents(dirname(__DIR__) . '/js/src/forum/models/Chat.js');
+        $this->assertStringContainsString("room_key: Model.attribute('room_key')", $model);
+    }
 }
