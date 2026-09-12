@@ -152,7 +152,8 @@ class LiveChatsUiContractTest extends TestCase
         $this->assertStringContainsString("PRIMARY_ROOM_KEY = 'community-general-live'", $helper);
         $this->assertStringContainsString('export function displayRoomTitle', $helper);
         $this->assertStringNotContainsString('pushAttributes', $helper);
-        $this->assertStringNotContainsString('room_key =', $helper);
+        $this->assertStringNotContainsString('.save(', $helper);
+        $this->assertDoesNotMatchRegularExpression('/\broom_key\s*=(?!=)/', $helper);
 
         $model = file_get_contents(dirname(__DIR__) . '/js/src/forum/models/Chat.js');
         $this->assertStringContainsString("room_key: Model.attribute('room_key')", $model);
