@@ -100,11 +100,20 @@ export default class ChatViewport extends Component {
         return app.chat.getChatMessages().map((model) => this.componentChatMessage(model));
     }
 
+    hasNewMessageState() {
+        return !!(this.state.newPushedPosts || (this.model && this.model.unreaded && this.model.unreaded() > 0));
+    }
+
     componentScroller() {
+        const label = this.hasNewMessageState()
+            ? app.translator.trans('flatrate-live-chat.forum.live_chats.new_messages')
+            : app.translator.trans('flatrate-live-chat.forum.live_chats.jump_latest');
+
         return (
-            <div className="scroller" onclick={this.fastScroll.bind(this)}>
+            <button type="button" className="scroller ChatViewport-scroller" onclick={this.fastScroll.bind(this)}>
+                <span className="ChatViewport-scrollerLabel">{label}</span>
                 <i class="fas fa-angle-down"></i>
-            </div>
+            </button>
         );
     }
 
@@ -123,13 +132,10 @@ export default class ChatViewport extends Component {
     }
 
     isFastScrollAvailable() {
+        if (this.nearBottom()) return false;
+        if (this.hasNewMessageState()) return true;
         let chatWrapper = this.getChatWrapper();
-        return (
-            (this.state.newPushedPosts ||
-                this.model.unreaded() >= 30 ||
-                (chatWrapper && chatWrapper.scrollHeight > 2000 && chatWrapper.scrollTop < chatWrapper.scrollHeight - 2000)) &&
-            !this.nearBottom()
-        );
+        return !!(chatWrapper && chatWrapper.scrollHeight > 2000 && chatWrapper.scrollTop < chatWrapper.scrollHeight - 2000);
     }
 
     fastScroll(e) {

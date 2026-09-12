@@ -2,6 +2,7 @@ import Component from 'flarum/Component';
 import Button from 'flarum/components/Button';
 import ChatEditModal from './ChatEditModal';
 import { throttle } from 'flarum/utils/throttleDebounce';
+import extractText from 'flarum/utils/extractText';
 
 export default class ChatInput extends Component {
     oninit(vnode) {
@@ -50,12 +51,17 @@ export default class ChatInput extends Component {
     }
 
     view() {
+        const canPost = app.chat.getPermissions().post && !this.model.removed_at();
+        const remaining = this.messageCharLimit - (this.state.input.messageLength || 0);
+        const showCounter = remaining < 100;
+        const sendLabel = extractText(app.translator.trans('flatrate-live-chat.forum.chat.send'));
+
         return (
             <div className="ChatInput input-wrapper">
                 <textarea
                     id="chat-input"
                     maxlength={this.messageCharLimit}
-                    disabled={!app.chat.getPermissions().post || this.model.removed_at()}
+                    disabled={!canPost}
                     placeholder={this.inputPlaceholder}
                     onkeypress={this.inputPressEnter.bind(this)}
                     oninput={this.inputProcess.bind(this)}
@@ -66,9 +72,12 @@ export default class ChatInput extends Component {
                     onupdate={() => this.saveDraft.apply(this)}
                 />
                 {this.state.messageEditing ? (
-                    <div className="icon edit" onclick={this.state.messageEditEnd.bind(this.state)}>
-                        <i class="fas fa-times"></i>
-                    </div>
+                    <Button
+                        className="Button Button--icon Button--flat ChatInput-cancel"
+                        icon="fas fa-times"
+                        onclick={this.state.messageEditEnd.bind(this.state)}
+                        aria-label={extractText(app.translator.trans('flatrate-live-chat.forum.chat.cancel_edit'))}
+                    />
                 ) : null}
                 {this.model.removed_at() && this.model.removed_by() === parseInt(app.session.user.id()) ? (
                     <Button className="Button Button--primary ButtonRejoin" onclick={() => app.modal.show(ChatEditModal, { model: this.model })}>
@@ -76,10 +85,17 @@ export default class ChatInput extends Component {
                     </Button>
                 ) : (
                     [
-                        <div className="icon send" onclick={this.inputPressButton.bind(this)}>
-                            <i class="fas fa-angle-double-right"></i>
+                        <Button
+                            className="Button Button--icon Button--primary ChatInput-send"
+                            icon="fas fa-paper-plane"
+                            disabled={!canPost}
+                            onclick={this.inputPressButton.bind(this)}
+                            title={sendLabel}
+                            aria-label={sendLabel}
+                        />,
+                        <div id="chat-limiter" className={'ChatInput-limiter' + (showCounter ? ' reaching-limit' : '')} hidden={!showCounter}>
+                            {remaining}
                         </div>,
-                        <div id="chat-limiter"></div>,
                     ]
                 )}
             </div>
@@ -87,12 +103,12 @@ export default class ChatInput extends Component {
     }
 
     updateLimit() {
-        const limiter = this.element.querySelector('#chat-limiter');
+        const limiter = this.element && this.element.querySelector('#chat-limiter');
+        const remaining = this.messageCharLimit - (this.state.input.messageLength || 0);
         if (!limiter) return;
-
-        let charsTyped = this.messageCharLimit - (this.state.input.messageLength || 0);
-        limiter.innerText = charsTyped + '/' + this.messageCharLimit;
-        limiter.className = charsTyped < 100 ? 'reaching-limit' : '';
+        limiter.innerText = String(remaining);
+        limiter.hidden = remaining >= 100;
+        limiter.className = remaining < 100 ? 'ChatInput-limiter reaching-limit' : 'ChatInput-limiter';
     }
 
     saveDraft(text = this.state.input.content()) {

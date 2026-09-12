@@ -21,7 +21,8 @@ spl_autoload_register(function ($class) {
     return false;
 }, true, true);
 
-$autoload = dirname(__DIR__) . '/vendor/autoload.php';
+$vendorDir = getenv('COMPOSER_VENDOR_DIR') ?: (dirname(__DIR__) . '/vendor');
+$autoload = rtrim($vendorDir, '/') . '/autoload.php';
 if (!file_exists($autoload)) {
     fwrite(STDERR, "Run composer install before phpunit\n");
     exit(1);

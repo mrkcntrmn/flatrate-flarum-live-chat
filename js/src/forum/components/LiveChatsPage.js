@@ -2,14 +2,7 @@ import Page from 'flarum/common/components/Page';
 import LoadingIndicator from 'flarum/components/LoadingIndicator';
 import Link from 'flarum/components/Link';
 import Button from 'flarum/components/Button';
-
-function displayTitle(chat) {
-    const key = chat.room_key?.() || chat.roomKey?.();
-    if (key === 'community-general-live') {
-        return app.translator.trans('flatrate-live-chat.forum.live_chats.general_label');
-    }
-    return chat.title();
-}
+import { displayRoomTitle, formatDirectoryTime, orderLiveDirectoryRooms, roomKeyOf } from '../utils/liveChatPresentation';
 
 export default class LiveChatsPage extends Page {
     oninit(vnode) {
@@ -42,8 +35,7 @@ export default class LiveChatsPage extends Page {
     }
 
     view() {
-        const general = this.rooms.find((c) => (c.room_key?.() || c.roomKey?.()) === 'community-general-live');
-        const others = this.rooms.filter((c) => (c.room_key?.() || c.roomKey?.()) !== 'community-general-live');
+        const rooms = orderLiveDirectoryRooms(this.rooms);
 
         return (
             <div className="LiveChatsPage container">
@@ -59,36 +51,19 @@ export default class LiveChatsPage extends Page {
                     </div>
                 ) : null}
 
-                {!this.loading && !this.error ? (
-                    <div>
-                        <section className="LiveChatsPage-section">
-                            <h2>{app.translator.trans('flatrate-live-chat.forum.live_chats.general_heading')}</h2>
-                            {general ? (
-                                <ul className="LiveChatsPage-list">{this.roomCard(general)}</ul>
-                            ) : (
-                                <p className="LiveChatsPage-empty">
-                                    {app.translator.trans('flatrate-live-chat.forum.live_chats.general_unavailable')}
-                                </p>
-                            )}
-                        </section>
+                {!this.loading && !this.error && rooms.length === 0 ? (
+                    <p className="LiveChatsPage-empty">{app.translator.trans('flatrate-live-chat.forum.live_chats.empty')}</p>
+                ) : null}
 
-                        <section className="LiveChatsPage-section">
-                            <h2>{app.translator.trans('flatrate-live-chat.forum.live_chats.subscriptions_heading')}</h2>
-                            {others.length === 0 ? (
-                                <p className="LiveChatsPage-empty">{app.translator.trans('flatrate-live-chat.forum.live_chats.no_subscriptions')}</p>
-                            ) : (
-                                <ul className="LiveChatsPage-list">{others.map((chat) => this.roomCard(chat))}</ul>
-                            )}
-                        </section>
-                    </div>
+                {!this.loading && !this.error && rooms.length > 0 ? (
+                    <ul className="LiveChatsPage-list">{rooms.map((chat) => this.roomCard(chat))}</ul>
                 ) : null}
             </div>
         );
     }
 
     roomCard(chat) {
-        const roomKey = chat.room_key?.() || chat.roomKey?.();
-        const unread = chat.unreaded?.() || 0;
+        const roomKey = roomKeyOf(chat);
         const last = chat.last_message?.();
         const preview = last ? last.message?.() || last.content?.() || '' : app.translator.trans('flatrate-live-chat.forum.chat.list.preview.empty');
         const when = last && last.created_at ? last.created_at() : null;
@@ -96,15 +71,17 @@ export default class LiveChatsPage extends Page {
         return (
             <li className="LiveChatsPage-card" key={chat.id()}>
                 <Link href={app.route('flatrate-live-chat.live', { roomKey })} className="LiveChatsPage-cardLink">
-                    <div className="LiveChatsPage-cardTitle">
-                        <span>{displayTitle(chat)}</span>
-                        {unread ? <span className="LiveChatsPage-unread">{unread}</span> : null}
+                    <div className="LiveChatsPage-primary">
+                        <span className="LiveChatsPage-cardTitle">{displayRoomTitle(chat)}</span>
+                        {when ? (
+                            <time className="LiveChatsPage-time" datetime={when.toISOString?.() || when}>
+                                {formatDirectoryTime(when)}
+                            </time>
+                        ) : null}
                     </div>
-                    <div className="LiveChatsPage-cardMeta">
+                    <div className="LiveChatsPage-secondary">
                         <span className="LiveChatsPage-preview">{preview}</span>
-                        {when ? <time datetime={when.toISOString?.() || when}>{when.toLocaleString?.() || String(when)}</time> : null}
                     </div>
-                    {chat.scope_key?.() ? <div className="LiveChatsPage-scope">{chat.scope_key()}</div> : null}
                 </Link>
             </li>
         );

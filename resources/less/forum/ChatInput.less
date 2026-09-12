@@ -1,80 +1,57 @@
 .ChatInput {
+    display: flex;
+    align-items: flex-end;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 8px;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: var(--body-bg, @body-bg);
+
     #chat-input {
+        flex: 1 1 auto;
+        width: 100%;
+        min-width: 0;
         resize: none;
-        width: 70%;
-        border-radius: 8px;
-        background-color: #e5e9ec;
-        border: none;
-        margin: 5px 5px 5px 15px;
+        border-radius: var(--border-radius, 8px);
+        background-color: var(--control-bg, @control-bg);
+        color: var(--text-color, @text-color);
+        border: 1px solid var(--control-bg, transparent);
+        margin: 0;
         outline: none;
-        padding: 3px 8px;
-        color: #000;
+        padding: 10px 12px;
+        min-height: 44px;
+        box-sizing: border-box;
+        line-height: 1.4;
 
-        &:focus::placeholder {
-            color: #adadad
-        }
-
-        &:focus:-moz-placeholder {
-            color: #adadad
-        }
-
-        &:focus::-moz-placeholder {
-            color: #adadad
-        }
-
-        &:focus:-ms-input-placeholder {
-            color: #adadad
-        }
-
-        &:focus::-webkit-input-placeholder {
-            color: #adadad
+        &:focus {
+            border-color: var(--primary-color, @primary-color);
         }
     }
 
-    .ButtonRejoin
-    {
-        margin: 5px 5px 5px 15px;
-        vertical-align: top;
+    .ButtonRejoin {
+        margin: 0;
+        min-height: 44px;
     }
 
-    .icon {
-        display: inline-block;
-        height: 100%;
-        vertical-align: top;
-        text-align: center;
-        font-size: 17pt;
-        padding: 0px 3px;
-        cursor: pointer;
-
-        .user-select(none);
-
-        &.send {
-            color: #d2d1d1;
-
-            &:hover {
-                color: #65e2ba
-            }
-        }
-
-        &.edit {
-            color: #d2d1d1;
-
-            &:hover {
-                color: #fbcc48
-            }
-        }
+    .ChatInput-send,
+    .ChatInput-cancel {
+        flex: 0 0 auto;
+        min-width: 44px;
+        min-height: 44px;
     }
 
+    .ChatInput-limiter,
     #chat-limiter {
-        display: inline-block;
+        flex: 0 0 auto;
+        align-self: center;
         text-align: center;
-        line-height: 29px;
-        color: #adadad;
-        float: right;
-        padding: 2px 8px;
+        color: var(--muted-color, @muted-color);
+        padding: 0 4px;
+        min-width: 2ch;
     }
 
     .reaching-limit {
-        color: #ff5757 !important;
+        color: var(--muted-color, @muted-color);
+        font-weight: 600;
     }
 }

@@ -6,7 +6,7 @@ import ChatPage from './components/ChatPage';
 
 /**
  * Direct Messages uses HeaderSecondary priority 5.
- * Live Chats uses priority 4 so it sorts immediately below DM.
+ * Live Chat uses priority 4 so it sorts immediately below DM.
  */
 export const LIVE_CHATS_HEADER_PRIORITY = 4;
 export const DIRECT_MESSAGES_HEADER_PRIORITY = 5;
@@ -38,13 +38,10 @@ export default function addLiveChatsNavigation() {
         if (!app.forum.attribute('flatrate-live-chat.live_chats_navigation_enabled')) return;
         if (!app.forum.attribute('flatrate-live-chat.permissions.enabled')) return;
 
-        const unread = app.chat && typeof app.chat.getUnreadedTotal === 'function' ? app.chat.getUnreadedTotal() : 0;
-
         items.add(
             'LiveChats',
             <LinkButton href={app.route('flatrate-live-chat.index')} icon="fas fa-comments" className="FlatRateLiveChatsNav">
                 {app.translator.trans('flatrate-live-chat.forum.nav.live_chats')}
-                {unread ? <span className="FlatRateLiveChatsNav-badge">{unread}</span> : null}
             </LinkButton>,
             LIVE_CHATS_HEADER_PRIORITY
         );
