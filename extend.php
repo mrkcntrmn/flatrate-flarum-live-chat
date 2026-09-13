@@ -9,6 +9,8 @@ use Flarum\Extend;
 use Flarum\Api\Serializer\ForumSerializer;
 use Flarum\Frontend\Document;
 use Flarum\User\User;
+use FlatRate\LiveChat\Seo\ChatIndexingPolicy;
+use Psr\Http\Message\ServerRequestInterface as Request;
 use FlatRate\LiveChat\Api\Controllers\PostMessageController;
 use FlatRate\LiveChat\Api\Controllers\FetchMessageController;
 use FlatRate\LiveChat\Api\Controllers\EditMessageController;
@@ -40,8 +42,12 @@ return [
         ->route('/chat', 'chat')
         ->route('/live', 'flatrate-live-chat.index')
         ->route('/live/{roomKey}', 'flatrate-live-chat.live')
-        ->content(function (Document $document) {
-            // CHAT_INDEXING=false
+        ->content(function (Document $document, Request $request) {
+            // CHAT_INDEXING=false — chat surfaces only, not public forum pages.
+            // Flarum 1.8 Frontend::populate() invokes content($document, $request).
+            if (!ChatIndexingPolicy::shouldNoIndexPath($request->getUri()->getPath())) {
+                return;
+            }
             $document->head[] = '<meta name="robots" content="noindex, nofollow">';
         }),
 
