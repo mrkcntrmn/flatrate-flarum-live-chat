@@ -20,8 +20,10 @@ export default class ViewportState {
     messagesFetched = false;
 
     constructor(params) {
-        if (params.model) {
-            this.initChatStorage(params.model);
+        this.model = params.model;
+
+        if (this.model) {
+            this.initChatStorage(this.model);
 
             this.input.content(this.getChatStorageValue('draft'));
         }
@@ -78,14 +80,9 @@ export default class ViewportState {
         const text = this.input.content();
 
         if (text && text.trim().length > 0 && !this.loadingSend) {
-            if (this.input.writingPreview) {
-                this.input.writingPreview = false;
+            const content = text.trim();
 
-                this.messagePost(this.input.previewModel);
-                app.chat.insertChatMessage(Object.assign(this.input.previewModel, {}));
-
-                this.inputClear();
-            } else if (this.messageEditing) {
+            if (this.messageEditing) {
                 let model = this.messageEditing;
                 if (model.content.trim() !== model.oldContent.trim()) {
                     model.oldContent = model.content;
@@ -93,12 +90,27 @@ export default class ViewportState {
                 }
                 this.messageEditEnd();
                 this.inputClear();
+            } else {
+                const model = this.createOutgoingMessage(content);
+                this.messagePost(model);
+                app.chat.insertChatMessage(model);
+                this.inputClear();
             }
         }
     }
 
+    createOutgoingMessage(content) {
+        const model = app.store.createRecord('chatmessages');
+        model.pushData({
+            id: 0,
+            attributes: { message: ' ', created_at: 0 },
+            relationships: { user: app.session.user, chat: this.model },
+        });
+        Object.assign(model, { isEditing: false, isNeedToFlash: true, content });
+        return model;
+    }
+
     messageEdit(model) {
-        if (this.input.writingPreview) this.input.instance.inputPreviewEnd();
         if (this.messageEditing) this.messageEditEnd();
 
         model.isEditing = true;

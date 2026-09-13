@@ -40,7 +40,11 @@ export default function addLiveChatsNavigation() {
 
         items.add(
             'LiveChats',
-            <LinkButton href={app.route('flatrate-live-chat.index')} icon="fas fa-comments" className="FlatRateLiveChatsNav">
+            <LinkButton
+                href={app.route('flatrate-live-chat.index')}
+                icon="fas fa-comments"
+                className="Button Button--link FlatRateLiveChatsNav"
+            >
                 {app.translator.trans('flatrate-live-chat.forum.nav.live_chats')}
             </LinkButton>,
             LIVE_CHATS_HEADER_PRIORITY

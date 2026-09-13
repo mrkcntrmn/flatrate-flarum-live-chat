@@ -76,7 +76,8 @@ async function main() {
   const nav = read('js/src/forum/addLiveChatsNavigation.js');
   assert.ok(!nav.includes('FlatRateLiveChatsNav-badge'));
   assert.ok(!nav.includes('getUnreadedTotal'));
-  assert.ok(nav.includes("icon=\"fas fa-comments\""));
+  assert.ok(nav.includes('icon="fas fa-comments"'));
+  assert.ok(nav.includes('className="Button Button--link FlatRateLiveChatsNav"'));
 
   const header = read('js/src/forum/components/ChatHeader.js');
   assert.ok(header.includes('displayRoomTitle'));
@@ -90,6 +91,23 @@ async function main() {
   assert.ok(input.includes('<Button'));
   assert.ok(!input.includes('fa-angle-double-right'));
   assert.ok(input.includes('remaining < 100'));
+  assert.ok(!input.includes('inputPreviewStart'));
+  assert.ok(!input.includes('inputPreviewEnd'));
+  assert.ok(!input.includes('previewModel'));
+  assert.ok(!input.includes('writingPreview'));
+
+  const viewportState = read('js/src/forum/states/ViewportState.js');
+  assert.ok(viewportState.includes('createOutgoingMessage(content)'));
+  assert.ok(viewportState.includes("app.store.createRecord('chatmessages')"));
+  assert.ok(viewportState.includes('app.chat.insertChatMessage(model)'));
+  assert.ok(!viewportState.includes('previewModel'));
+  assert.ok(!viewportState.includes('writingPreview'));
+
+  const inputLess = read('resources/less/forum/ChatInput.less');
+  assert.ok(inputLess.includes('.ChatInput-send.Button--primary'));
+  assert.ok(inputLess.includes('flex: 0 0 44px'));
+  assert.ok(inputLess.includes('padding: 0'));
+  assert.ok(inputLess.includes('display: inline-block'));
 
   const viewport = read('js/src/forum/components/ChatViewport.js');
   assert.ok(viewport.includes('live_chats.new_messages'));
