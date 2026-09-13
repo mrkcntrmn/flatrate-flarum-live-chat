@@ -116,6 +116,13 @@ class FloodgateAndSerializerSafetyTest extends TestCase
     {
         $src = file_get_contents(dirname(__DIR__) . '/extend.php');
         $this->assertStringContainsString('noindex', $src);
+        $this->assertStringContainsString('ChatIndexingPolicy::shouldNoIndexPath', $src);
+        $this->assertStringContainsString('Document $document, Request $request', $src);
+        $this->assertDoesNotMatchRegularExpression(
+            '/->content\(function \(Document \$document\) \{\s*\/\/ CHAT_INDEXING=false\s*\$document->head\[\] = \'<meta name="robots" content="noindex, nofollow">\';\s*\}\)/',
+            $src,
+            'chat noindex must not be injected on every forum frontend document'
+        );
         $this->assertStringContainsString("attachments'] = false", $src);
         $this->assertStringContainsString("email_notifications'] = false", $src);
         $this->assertStringContainsString("'CENTRIFUGO_SELF_HOSTED'", $src);
