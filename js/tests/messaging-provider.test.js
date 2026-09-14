@@ -1,0 +1,205 @@
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.join(__dirname, '../..');
+
+function read(rel) {
+  return fs.readFileSync(path.join(root, rel), 'utf8');
+}
+
+function makeChat({ roomKey, title, unreaded = 0, createdAt = null, type = 1 } = {}) {
+  return {
+    type: () => type,
+    room_key: () => roomKey,
+    title: () => title,
+    unreaded: () => unreaded,
+    last_message: () =>
+      createdAt
+        ? {
+            created_at: () => createdAt,
+            message: () => 'secret body should not be copied',
+            content: () => 'secret preview should not be copied',
+          }
+        : null,
+  };
+}
+
+async function main() {
+  global.app = {
+    translator: {
+      trans(key) {
+        if (key === 'flatrate-live-chat.forum.live_chats.general_label') return 'FlatRate.wiki Live';
+        return key;
+      },
+    },
+    forum: {
+      attribute(name) {
+        if (name === 'apiUrl') return 'https://forum.example/api';
+        if (name === 'flatrateMessagingUiEnabled') return false;
+        return null;
+      },
+    },
+    routes: {},
+    route(name) {
+      if (name === 'flatrate-messaging.index') return '/messages';
+      return '/' + name;
+    },
+    chat: { chats: [] },
+  };
+
+  const { messagingUiEnabled, liveIndexRedirectHref, liveRoomRedirectHref } = await import(
+    pathToFileURL(path.join(__dirname, '../src/forum/utils/messagingUiEnabled.js')).href
+  );
+  const { normalizeLiveConversation, normalizeLiveDirectory } = await import(
+    pathToFileURL(path.join(__dirname, '../src/forum/utils/normalizeLiveConversation.js')).href
+  );
+  const { createLiveMessagingProvider } = await import(pathToFileURL(path.join(__dirname, '../src/forum/liveMessagingProvider.js')).href);
+
+  const createdAt = new Date('2026-09-14T15:00:00.000Z');
+  const row = normalizeLiveConversation(
+    makeChat({ roomKey: 'community-general-live', title: 'General Live', unreaded: 3, createdAt })
+  );
+  assert.strictEqual(row.id, 'live:community-general-live');
+  assert.strictEqual(row.kind, 'live');
+  assert.strictEqual(row.key, 'community-general-live');
+  assert.strictEqual(row.roomKey, 'community-general-live');
+  assert.strictEqual(row.title, 'FlatRate.wiki Live');
+  assert.strictEqual(row.activityAt, '2026-09-14T15:00:00.000Z');
+  assert.strictEqual(row.unreadCount, 3);
+  assert.strictEqual(row.isPublic, true);
+  assert.strictEqual(row.userId, null);
+  assert.ok(!('body' in row));
+  assert.ok(!('preview' in row));
+  assert.ok(!('message' in row));
+  assert.ok(!Object.keys(row).some((k) => /body|preview|message/i.test(k)));
+  console.log('LIVE_ROW_NAMESPACED_NO_BODY=PASS');
+
+  const hiddenCatalogKeys = ['hidden-brand-live', 'staff-only-live', 'neon-secret-live'];
+  const listed = normalizeLiveDirectory([makeChat({ roomKey: 'toyota-live', title: 'Toyota Live', unreaded: 1 })]);
+  assert.strictEqual(listed.length, 1);
+  assert.strictEqual(listed[0].id, 'live:toyota-live');
+  for (const key of hiddenCatalogKeys) {
+    assert.ok(!listed.some((r) => r.roomKey === key || r.key === key || r.id === 'live:' + key));
+  }
+  assert.deepStrictEqual(normalizeLiveDirectory([]), []);
+  assert.ok(!normalizeLiveDirectory([]).some((r) => r.roomKey === 'community-general-live'));
+  console.log('HIDDEN_ROOM_ISOLATION=PASS');
+
+  const payloadRooms = [makeChat({ roomKey: 'community-general-live', title: 'General', unreaded: 2 })];
+  const storeModels = [
+    ...payloadRooms,
+    makeChat({ roomKey: 'hidden-brand-live', title: 'Should not list', unreaded: 9 }),
+    makeChat({ roomKey: null, title: 'DM', unreaded: 4, type: 0 }),
+  ];
+  const mockApp = {
+    forum: { attribute: (name) => (name === 'apiUrl' ? 'https://forum.example/api' : null) },
+    request: async ({ method, url }) => {
+      assert.strictEqual(method, 'GET');
+      assert.strictEqual(url, 'https://forum.example/api/flatrate-live-chat/live-chats');
+      return { data: payloadRooms };
+    },
+    store: {
+      pushPayload(payload) {
+        assert.ok(payload);
+        return payloadRooms;
+      },
+    },
+    chat: {
+      chats: [
+        makeChat({ roomKey: 'community-general-live', title: 'General', unreaded: 2 }),
+        makeChat({ roomKey: 'hidden-brand-live', title: 'Hidden', unreaded: 9 }),
+        makeChat({ roomKey: '', title: 'DM', unreaded: 11, type: 0 }),
+      ],
+      apiFetchChats: async () => {},
+    },
+  };
+
+  const provider = createLiveMessagingProvider({ app: mockApp });
+  assert.strictEqual(provider.schemaVersion, 1);
+  assert.strictEqual(provider.kind, 'live');
+  const conversations = await provider.listConversations();
+  assert.strictEqual(conversations.length, 1);
+  assert.strictEqual(conversations[0].id, 'live:community-general-live');
+  for (const key of hiddenCatalogKeys) {
+    assert.ok(!conversations.some((r) => r.roomKey === key));
+  }
+  assert.ok(!conversations.some((r) => 'body' in r || 'preview' in r));
+  assert.strictEqual(provider.getUnreadTotal(), 2);
+  mockApp.chat.chats[0] = makeChat({ roomKey: 'community-general-live', title: 'General', unreaded: 0 });
+  assert.strictEqual(provider.getUnreadTotal(), 0);
+  console.log('LIVE_PROVIDER_PASS=PASS');
+
+  global.app.forum.attribute = (name) => name === 'flatrateMessagingUiEnabled';
+  assert.strictEqual(messagingUiEnabled(), true);
+  global.app.forum.attribute = () => false;
+  assert.strictEqual(messagingUiEnabled(), false);
+  global.app.forum.attribute = () => null;
+  assert.strictEqual(messagingUiEnabled(), false);
+
+  global.app.routes = {};
+  assert.strictEqual(liveIndexRedirectHref(), '/messages?filter=live');
+  assert.strictEqual(liveRoomRedirectHref('toyota-live'), '/messages/live/toyota-live');
+  global.app.routes = { 'flatrate-messaging.index': { path: '/messages' } };
+  assert.strictEqual(liveIndexRedirectHref(), '/messages?filter=live');
+
+  const nav = read('js/src/forum/addLiveChatsNavigation.js');
+  assert.ok(nav.includes('if (messagingUiEnabled()) return;'));
+  assert.ok(nav.includes("items.add(\n            'LiveChats'"));
+  assert.ok(nav.includes('icon="fas fa-comments"'));
+  assert.ok(nav.includes("path: '/live'"));
+  assert.ok(nav.includes("path: '/live/:roomKey'"));
+  assert.ok(nav.includes('liveIndexRedirectHref()'));
+  assert.ok(nav.includes('liveRoomRedirectHref('));
+  assert.ok(nav.includes('{ replace: true }'));
+  assert.ok(nav.includes("component: shell ? RedirectLiveIndex : LiveChatsPage"));
+  assert.ok(nav.includes("component: shell ? RedirectLiveRoom : ChatPage"));
+  assert.ok(!nav.includes('FlatRateLiveChatsNav-badge'));
+  assert.ok(!nav.includes('getUnreadedTotal'));
+
+  const index = read('js/src/forum/index.js');
+  assert.ok(index.includes("import registerLiveMessagingProvider from './registerLiveMessagingProvider';"));
+  assert.ok(index.includes('addLiveChatsNavigation();'));
+  assert.ok(index.includes('registerLiveMessagingProvider();'));
+
+  const register = read('js/src/forum/registerLiveMessagingProvider.js');
+  assert.ok(register.includes('app.flatRateMessagingSources'));
+  assert.ok(register.includes('app.flatRateMessagingSources.live'));
+  assert.ok(register.includes('embedded: true'));
+  assert.ok(register.includes('backToLive: false'));
+  assert.ok(register.includes('LiveConversationView'));
+  assert.ok(!register.includes('room-catalog.json'));
+  assert.ok(!register.includes('resources/room-catalog'));
+
+  const providerSrc = read('js/src/forum/liveMessagingProvider.js');
+  assert.ok(providerSrc.includes("url: a.forum.attribute('apiUrl') + '/flatrate-live-chat/live-chats'"));
+  assert.ok(providerSrc.includes('pushPayload'));
+  assert.ok(providerSrc.includes('normalizeLiveDirectory'));
+  assert.ok(!providerSrc.includes('room-catalog.json'));
+  assert.ok(!providerSrc.includes('resources/room-catalog'));
+
+  const chatPage = read('js/src/forum/components/ChatPage.js');
+  assert.ok(chatPage.includes('LiveConversationView'));
+  assert.ok(chatPage.includes('IndexPage'));
+  assert.ok(chatPage.includes('embedded={false}'));
+
+  const view = read('js/src/forum/components/LiveConversationView.js');
+  assert.ok(!view.includes('IndexPage'));
+  assert.ok(view.includes('ChatHeader'));
+  assert.ok(view.includes('ChatViewport'));
+  assert.ok(view.includes('embedded'));
+  assert.ok(view.includes('live_chats.unavailable'));
+  assert.ok(!view.includes('room-catalog.json'));
+
+  const helper = read('js/src/forum/utils/messagingUiEnabled.js');
+  assert.ok(helper.includes("return !!app.forum?.attribute?.('flatrateMessagingUiEnabled');"));
+
+  console.log('MESSAGING_PROVIDER_CONTRACT=PASS');
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

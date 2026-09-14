@@ -7,6 +7,7 @@ import User from 'flarum/models/User';
 import Model from 'flarum/Model';
 import ChatState from './states/ChatState';
 import addLiveChatsNavigation from './addLiveChatsNavigation';
+import registerLiveMessagingProvider from './registerLiveMessagingProvider';
 import FlatRateRealtimeClient from './realtime/FlatRateRealtimeClient';
 
 app.initializers.add('flatrate-live-chat', (app) => {
@@ -40,6 +41,7 @@ app.initializers.add('flatrate-live-chat', (app) => {
     });
 
     addLiveChatsNavigation();
+    registerLiveMessagingProvider();
 
     extend(Application.prototype, 'mount', function () {
         if (!app.forum.attribute('flatrate-live-chat.permissions.enabled')) return;

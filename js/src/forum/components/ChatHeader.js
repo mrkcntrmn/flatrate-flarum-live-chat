@@ -17,7 +17,7 @@ export default class ChatHeader extends Component {
         return (
             <div className="ChatHeader">
                 {this.attrs.backToLive ? (
-                    <Link className="ChatHeader-back" href={app.route('flatrate-live-chat.index')} title={backLabel} aria-label={backLabel}>
+                    <Link className="ChatHeader-back" href={this.backHref()} title={backLabel} aria-label={backLabel}>
                         <i className="fas fa-arrow-left"></i>
                     </Link>
                 ) : null}
@@ -44,6 +44,14 @@ export default class ChatHeader extends Component {
                 ) : null}
             </div>
         );
+    }
+
+    backHref() {
+        if (this.attrs.backHref) return this.attrs.backHref;
+        if (typeof app.route === 'function' && app.routes && app.routes['flatrate-live-chat.index']) {
+            return app.route('flatrate-live-chat.index');
+        }
+        return '/live';
     }
 
     overflowItems(chat) {

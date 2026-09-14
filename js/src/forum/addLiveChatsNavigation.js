@@ -3,6 +3,7 @@ import HeaderSecondary from 'flarum/components/HeaderSecondary';
 import LinkButton from 'flarum/components/LinkButton';
 import LiveChatsPage from './components/LiveChatsPage';
 import ChatPage from './components/ChatPage';
+import { liveIndexRedirectHref, liveRoomRedirectHref, messagingUiEnabled } from './utils/messagingUiEnabled';
 
 /**
  * Direct Messages uses HeaderSecondary priority 5.
@@ -11,14 +12,34 @@ import ChatPage from './components/ChatPage';
 export const LIVE_CHATS_HEADER_PRIORITY = 4;
 export const DIRECT_MESSAGES_HEADER_PRIORITY = 5;
 
+const RedirectLiveIndex = {
+    oninit() {
+        m.route.set(liveIndexRedirectHref(), null, { replace: true });
+    },
+    view() {
+        return null;
+    },
+};
+
+const RedirectLiveRoom = {
+    oninit() {
+        m.route.set(liveRoomRedirectHref(m.route.param('roomKey')), null, { replace: true });
+    },
+    view() {
+        return null;
+    },
+};
+
 export default function addLiveChatsNavigation() {
+    const shell = messagingUiEnabled();
+
     app.routes['flatrate-live-chat.index'] = {
         path: '/live',
-        component: LiveChatsPage,
+        component: shell ? RedirectLiveIndex : LiveChatsPage,
     };
     app.routes['flatrate-live-chat.live'] = {
         path: '/live/:roomKey',
-        component: ChatPage,
+        component: shell ? RedirectLiveRoom : ChatPage,
     };
     // Legacy /chat → /live for disposable smoke / bookmarks.
     app.routes.chat = {
@@ -34,6 +55,7 @@ export default function addLiveChatsNavigation() {
     };
 
     extend(HeaderSecondary.prototype, 'items', function (items) {
+        if (messagingUiEnabled()) return;
         if (!app.session.user) return;
         if (!app.forum.attribute('flatrate-live-chat.live_chats_navigation_enabled')) return;
         if (!app.forum.attribute('flatrate-live-chat.permissions.enabled')) return;

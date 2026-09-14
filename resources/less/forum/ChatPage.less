@@ -168,3 +168,21 @@
         color: var(--muted-color, @muted-color);
     }
 }
+
+.LiveConversationView {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 auto;
+    height: 100%;
+
+    &--embedded {
+        width: 100%;
+    }
+
+    &--unavailable {
+        padding: 1.5rem;
+        color: var(--muted-color, @muted-color);
+    }
+}
