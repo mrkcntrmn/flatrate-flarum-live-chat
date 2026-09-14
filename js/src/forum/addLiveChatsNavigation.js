@@ -3,6 +3,7 @@ import HeaderSecondary from 'flarum/components/HeaderSecondary';
 import LinkButton from 'flarum/components/LinkButton';
 import LiveChatsPage from './components/LiveChatsPage';
 import ChatPage from './components/ChatPage';
+import { liveIndexRedirectHref, liveRoomRedirectHref, messagingUiEnabled } from './utils/messagingUiEnabled';
 
 /**
  * Direct Messages uses HeaderSecondary priority 5.
@@ -11,14 +12,42 @@ import ChatPage from './components/ChatPage';
 export const LIVE_CHATS_HEADER_PRIORITY = 4;
 export const DIRECT_MESSAGES_HEADER_PRIORITY = 5;
 
+const RedirectLiveIndex = {
+    oninit() {
+        if (messagingUiEnabled()) {
+            m.route.set(liveIndexRedirectHref(), null, { replace: true });
+        }
+    },
+    view() {
+        if (messagingUiEnabled()) {
+            return null;
+        }
+        return m(LiveChatsPage);
+    },
+};
+
+const RedirectLiveRoom = {
+    oninit() {
+        if (messagingUiEnabled()) {
+            m.route.set(liveRoomRedirectHref(m.route.param('roomKey')), null, { replace: true });
+        }
+    },
+    view() {
+        if (messagingUiEnabled()) {
+            return null;
+        }
+        return m(ChatPage);
+    },
+};
+
 export default function addLiveChatsNavigation() {
     app.routes['flatrate-live-chat.index'] = {
         path: '/live',
-        component: LiveChatsPage,
+        component: RedirectLiveIndex,
     };
     app.routes['flatrate-live-chat.live'] = {
         path: '/live/:roomKey',
-        component: ChatPage,
+        component: RedirectLiveRoom,
     };
     // Legacy /chat → /live for disposable smoke / bookmarks.
     app.routes.chat = {
@@ -34,6 +63,7 @@ export default function addLiveChatsNavigation() {
     };
 
     extend(HeaderSecondary.prototype, 'items', function (items) {
+        if (messagingUiEnabled()) return;
         if (!app.session.user) return;
         if (!app.forum.attribute('flatrate-live-chat.live_chats_navigation_enabled')) return;
         if (!app.forum.attribute('flatrate-live-chat.permissions.enabled')) return;
