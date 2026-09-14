@@ -14,32 +14,40 @@ export const DIRECT_MESSAGES_HEADER_PRIORITY = 5;
 
 const RedirectLiveIndex = {
     oninit() {
-        m.route.set(liveIndexRedirectHref(), null, { replace: true });
+        if (messagingUiEnabled()) {
+            m.route.set(liveIndexRedirectHref(), null, { replace: true });
+        }
     },
     view() {
-        return null;
+        if (messagingUiEnabled()) {
+            return null;
+        }
+        return m(LiveChatsPage);
     },
 };
 
 const RedirectLiveRoom = {
     oninit() {
-        m.route.set(liveRoomRedirectHref(m.route.param('roomKey')), null, { replace: true });
+        if (messagingUiEnabled()) {
+            m.route.set(liveRoomRedirectHref(m.route.param('roomKey')), null, { replace: true });
+        }
     },
     view() {
-        return null;
+        if (messagingUiEnabled()) {
+            return null;
+        }
+        return m(ChatPage);
     },
 };
 
 export default function addLiveChatsNavigation() {
-    const shell = messagingUiEnabled();
-
     app.routes['flatrate-live-chat.index'] = {
         path: '/live',
-        component: shell ? RedirectLiveIndex : LiveChatsPage,
+        component: RedirectLiveIndex,
     };
     app.routes['flatrate-live-chat.live'] = {
         path: '/live/:roomKey',
-        component: shell ? RedirectLiveRoom : ChatPage,
+        component: RedirectLiveRoom,
     };
     // Legacy /chat → /live for disposable smoke / bookmarks.
     app.routes.chat = {

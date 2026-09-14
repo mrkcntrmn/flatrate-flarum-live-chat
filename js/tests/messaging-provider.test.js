@@ -154,8 +154,11 @@ async function main() {
   assert.ok(nav.includes('liveIndexRedirectHref()'));
   assert.ok(nav.includes('liveRoomRedirectHref('));
   assert.ok(nav.includes('{ replace: true }'));
-  assert.ok(nav.includes("component: shell ? RedirectLiveIndex : LiveChatsPage"));
-  assert.ok(nav.includes("component: shell ? RedirectLiveRoom : ChatPage"));
+  assert.ok(nav.includes('if (messagingUiEnabled())'));
+  assert.ok(nav.includes('return m(LiveChatsPage)'));
+  assert.ok(nav.includes('return m(ChatPage)'));
+  assert.ok(nav.includes('component: RedirectLiveIndex'));
+  assert.ok(nav.includes('component: RedirectLiveRoom'));
   assert.ok(!nav.includes('FlatRateLiveChatsNav-badge'));
   assert.ok(!nav.includes('getUnreadedTotal'));
 
