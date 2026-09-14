@@ -67,9 +67,7 @@ export default class ChatViewport extends Component {
                         onremove={this.wrapperOnRemove.bind(this)}
                     >
                         {this.componentLoader(this.state.scroll.loading)}
-                        {this.componentsChatMessages(this.model).concat(
-                            this.state.input.writingPreview ? this.componentChatMessage(this.state.input.previewModel) : []
-                        )}
+                        {this.componentsChatMessages(this.model)}
                     </div>
                     <ChatInput
                         state={this.state}
@@ -251,7 +249,7 @@ export default class ChatViewport extends Component {
             messages: app.chat.getChatMessages((mdl) => mdl.chat() == this.model && mdl.created_at() >= this.model.readed_at() && !mdl.isReaded),
             autoScroll: !!this.state.scroll.autoScroll,
             apiReadChat: app.chat.apiReadChat.bind(app.chat),
-            findMessageEl: (id) => document.querySelector(`.message-wrapper[data-id="${id}"`),
+            findMessageEl: (id) => document.querySelector(`.message-wrapper[data-id="${id}"]`),
         });
 
         if (result.processed > 0) {
@@ -261,7 +259,7 @@ export default class ChatViewport extends Component {
 
     scrollToAnchor(anchor) {
         let element;
-        if (anchor instanceof Message) element = $(`.message-wrapper[data-id="${anchor.id()}"`)[0];
+        if (anchor instanceof Message) element = $(`.message-wrapper[data-id="${anchor.id()}"]`)[0];
         else element = anchor;
 
         let chatWrapper = this.getChatWrapper();

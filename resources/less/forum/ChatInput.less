@@ -33,7 +33,26 @@
         min-height: 44px;
     }
 
-    .ChatInput-send,
+    .ChatInput-send.Button--primary {
+        flex: 0 0 44px;
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        min-height: 44px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+
+        // Flarum 1.x hides .Button-icon inside Button--primary and adds
+        // horizontal padding. Restore the icon-only primary button contract.
+        .Button-icon {
+            display: inline-block;
+            margin: 0;
+        }
+    }
+
     .ChatInput-cancel {
         flex: 0 0 auto;
         min-width: 44px;

@@ -145,14 +145,7 @@ export default class ChatInput extends Component {
 
         this.resizeInput();
 
-        if (this.state.input.messageLength) {
-            if (!this.state.input.writingPreview && !this.state.messageEditing) this.inputPreviewStart(inputValue);
-        } else {
-            if (this.state.input.writingPreview && !inputValue.length) this.inputPreviewEnd();
-        }
-
         if (this.state.messageEditing) this.state.messageEditing.content = inputValue;
-        else if (this.state.input.writingPreview) this.state.input.previewModel.content = inputValue;
 
         if (this.attrs.oninput) this.attrs.oninput(e);
     }
@@ -168,27 +161,5 @@ export default class ChatInput extends Component {
 
     inputPressButton() {
         this.state.messageSend();
-    }
-
-    inputPreviewStart(content) {
-        if (!this.state.input.writingPreview) {
-            this.state.input.writingPreview = true;
-
-            this.state.input.previewModel = app.store.createRecord('chatmessages');
-            this.state.input.previewModel.pushData({
-                id: 0,
-                attributes: { message: ' ', created_at: 0 },
-                relationships: { user: app.session.user, chat: this.model },
-            });
-            Object.assign(this.state.input.previewModel, { isEditing: true, isNeedToFlash: true, content });
-        } else this.state.input.previewModel.isNeedToFlash = true;
-
-        m.redraw();
-    }
-
-    inputPreviewEnd() {
-        this.state.input.writingPreview = false;
-
-        m.redraw();
     }
 }
