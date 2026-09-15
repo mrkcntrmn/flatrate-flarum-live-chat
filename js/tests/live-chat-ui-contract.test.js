@@ -87,9 +87,19 @@ async function main() {
   const input = read('js/src/forum/components/ChatInput.js');
   assert.ok(input.includes('ChatInput-send'));
   assert.ok(input.includes('fa-paper-plane'));
+  assert.ok(input.includes('aria-label={sendLabel}'));
   assert.ok(input.includes('<Button'));
   assert.ok(!input.includes('fa-angle-double-right'));
   assert.ok(input.includes('remaining < 100'));
+
+  const inputLess = read('resources/less/forum/ChatInput.less');
+  assert.ok(
+    inputLess.includes('.ChatInput-send.Button--icon .Button-icon') &&
+      inputLess.includes('display: inline-block'),
+    'Live send must override Flarum primary-button icon hiding'
+  );
+  assert.ok(inputLess.includes('min-width: 44px'));
+  assert.ok(inputLess.includes('min-height: 44px'));
 
   const viewport = read('js/src/forum/components/ChatViewport.js');
   assert.ok(viewport.includes('live_chats.new_messages'));

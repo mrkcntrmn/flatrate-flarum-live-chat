@@ -40,6 +40,17 @@
         min-height: 44px;
     }
 
+    // Flarum core hides icons on primary buttons (text-label convention).
+    // ChatInput-send is an icon-primary control — keep the paper-plane visible.
+    .ChatInput-send.Button--icon .Button-icon {
+        display: inline-block !important;
+        margin: 0;
+    }
+
+    .ChatInput-send.Button--icon .Button-label:empty {
+        display: none;
+    }
+
     .ChatInput-limiter,
     #chat-limiter {
         flex: 0 0 auto;
