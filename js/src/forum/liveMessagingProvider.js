@@ -42,12 +42,25 @@ export function createLiveMessagingProvider(options = {}) {
         await listConversations();
     }
 
+    function headerOverflowItems({ key } = {}) {
+        const a = getApp();
+        const build = options.buildHeaderOverflowItems;
+        if (typeof build !== 'function' || !a.chat) return null;
+        let chat = typeof a.chat.getCurrentChat === 'function' ? a.chat.getCurrentChat() : null;
+        if (!chat && key && Array.isArray(a.chat.chats)) {
+            chat = a.chat.chats.find((c) => roomKeyOf(c) === String(key)) || null;
+        }
+        if (!chat) return null;
+        return build(chat, a) || null;
+    }
+
     return {
         schemaVersion: 1,
         kind: 'live',
         listConversations,
         getUnreadTotal,
         renderConversation: options.renderConversation || (({ key, context }) => null),
+        headerOverflowItems,
         refresh,
     };
 }
