@@ -46,10 +46,20 @@ export function createLiveMessagingProvider(options = {}) {
         const a = getApp();
         const build = options.buildHeaderOverflowItems;
         if (typeof build !== 'function' || !a.chat) return null;
-        let chat = typeof a.chat.getCurrentChat === 'function' ? a.chat.getCurrentChat() : null;
-        if (!chat && key && Array.isArray(a.chat.chats)) {
-            chat = a.chat.chats.find((c) => roomKeyOf(c) === String(key)) || null;
+
+        // Route key is authoritative: never expose the previous room's actions
+        // while Messages is selecting a different Live conversation.
+        const requestedKey = key != null ? String(key) : null;
+        let chat = null;
+
+        if (requestedKey && Array.isArray(a.chat.chats)) {
+            chat = a.chat.chats.find((candidate) => roomKeyOf(candidate) === requestedKey) || null;
         }
+
+        if (!requestedKey && typeof a.chat.getCurrentChat === 'function') {
+            chat = a.chat.getCurrentChat();
+        }
+
         if (!chat) return null;
         return build(chat, a) || null;
     }
