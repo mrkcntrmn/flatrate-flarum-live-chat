@@ -56,11 +56,12 @@ export default class ChatViewport extends Component {
     }
 
     view(vnode) {
+        const v2 = this.attrs.presentationVersion === 2;
         if (this.model) {
             return (
-                <div className="ChatViewport">
+                <div className={'ChatViewport' + (v2 ? ' ChatViewport--messagesV2' : '')}>
                     <div
-                        className="wrapper"
+                        className={'wrapper' + (v2 ? ' MessagesMessageViewport' : '')}
                         oncreate={this.wrapperOnCreate.bind(this)}
                         onbeforeupdate={this.wrapperOnBeforeUpdate.bind(this)}
                         onupdate={this.wrapperOnUpdate.bind(this)}
@@ -86,7 +87,7 @@ export default class ChatViewport extends Component {
         }
 
         return (
-            <div className="ChatViewport">
+            <div className={'ChatViewport' + (v2 ? ' ChatViewport--messagesV2' : '')}>
                 <ChatWelcome />;
             </div>
         );
@@ -280,6 +281,14 @@ export default class ChatViewport extends Component {
             const fewMessages = chatWrapper.scrollHeight <= chatWrapper.clientHeight + 200;
             if (notAtBottom || fewMessages) return;
 
+            // V2 Messages: instant jump (no long animated scroll).
+            if (this.attrs.presentationVersion === 2) {
+                chatWrapper.scrollTop = chatWrapper.scrollHeight;
+                this.state.scroll.autoScroll = false;
+                this.scrolling = false;
+                return;
+            }
+
             const time = this.pixelsFromBottom() < 80 ? 0 : 250;
 
             $(chatWrapper)
@@ -337,7 +346,8 @@ export default class ChatViewport extends Component {
     }
 
     nearBottom() {
-        return this.pixelsFromBottom() <= 500;
+        const threshold = this.attrs.presentationVersion === 2 ? 100 : 500;
+        return this.pixelsFromBottom() <= threshold;
     }
 
     atBottom() {

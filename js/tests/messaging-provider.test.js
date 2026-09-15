@@ -173,6 +173,8 @@ async function main() {
   assert.ok(register.includes('embedded: true'));
   assert.ok(register.includes('backToLive: false'));
   assert.ok(register.includes('LiveConversationView'));
+  assert.ok(register.includes('MessagesLiveConversationView'));
+  assert.ok(register.includes('presentationVersion === 2'));
   assert.ok(!register.includes('room-catalog.json'));
   assert.ok(!register.includes('resources/room-catalog'));
 
@@ -196,10 +198,22 @@ async function main() {
   assert.ok(view.includes('live_chats.unavailable'));
   assert.ok(!view.includes('room-catalog.json'));
 
+  const v2 = read('js/src/forum/components/MessagesLiveConversationView.js');
+  assert.ok(v2.includes('MessagesLiveSurface'));
+  assert.ok(v2.includes('presentationVersion={2}'));
+  assert.ok(!v2.includes('ChatHeader'));
+  assert.ok(!v2.includes('room-catalog.json'));
+
+  const viewport = read('js/src/forum/components/ChatViewport.js');
+  assert.ok(viewport.includes('presentationVersion === 2'));
+  assert.ok(viewport.includes('MessagesMessageViewport'));
+  assert.ok(viewport.includes('chatWrapper.scrollTop = chatWrapper.scrollHeight'));
+
   const helper = read('js/src/forum/utils/messagingUiEnabled.js');
   assert.ok(helper.includes("return !!app.forum?.attribute?.('flatrateMessagingUiEnabled');"));
 
   console.log('MESSAGING_PROVIDER_CONTRACT=PASS');
+  console.log('MESSAGING002_LIVE_V2=PASS');
 }
 
 main().catch((err) => {
