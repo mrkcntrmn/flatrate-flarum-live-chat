@@ -42,12 +42,35 @@ export function createLiveMessagingProvider(options = {}) {
         await listConversations();
     }
 
+    function headerOverflowItems({ key } = {}) {
+        const a = getApp();
+        const build = options.buildHeaderOverflowItems;
+        if (typeof build !== 'function' || !a.chat) return null;
+
+        // Route key is authoritative: never expose the previous room's actions
+        // while Messages is selecting a different Live conversation.
+        const requestedKey = key != null ? String(key) : null;
+        let chat = null;
+
+        if (requestedKey && Array.isArray(a.chat.chats)) {
+            chat = a.chat.chats.find((candidate) => roomKeyOf(candidate) === requestedKey) || null;
+        }
+
+        if (!requestedKey && typeof a.chat.getCurrentChat === 'function') {
+            chat = a.chat.getCurrentChat();
+        }
+
+        if (!chat) return null;
+        return build(chat, a) || null;
+    }
+
     return {
         schemaVersion: 1,
         kind: 'live',
         listConversations,
         getUnreadTotal,
         renderConversation: options.renderConversation || (({ key, context }) => null),
+        headerOverflowItems,
         refresh,
     };
 }
