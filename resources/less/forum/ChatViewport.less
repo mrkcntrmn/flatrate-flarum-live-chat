@@ -297,3 +297,56 @@
     }
 
 }
+
+// FORUM-MESSAGING-003UI — own-message alignment for Messages V2 only
+.ChatViewport--messagesV2 {
+    .message-wrapper--own {
+        display: flex;
+        justify-content: flex-end;
+        text-align: right;
+
+        .avatar-wrapper,
+        a.name,
+        .name {
+            display: none !important;
+        }
+
+        .message-block {
+            margin-left: 0;
+            max-width: 82%;
+            min-width: 0;
+        }
+
+        .message {
+            display: inline-block;
+            max-width: 100%;
+            text-align: left;
+            padding: 8px 12px;
+            border-radius: 14px;
+            background: color-mix(in srgb, var(--primary-color, @primary-color) 18%, var(--control-bg, @control-bg));
+            box-sizing: border-box;
+        }
+
+        // Keep edit/moderation toolbar usable on own bubbles
+        .toolbar .right {
+            position: static;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+    }
+}
+
+@media (min-width: @screen-tablet) {
+    .ChatViewport--messagesV2 .message-wrapper--own .message-block {
+        max-width: 76%;
+    }
+}
+
+@media (min-width: @screen-desktop) {
+    .ChatViewport--messagesV2 .message-wrapper--own .message-block {
+        max-width: 70%;
+    }
+}

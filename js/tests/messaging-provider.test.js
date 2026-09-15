@@ -209,11 +209,39 @@ async function main() {
   assert.ok(viewport.includes('MessagesMessageViewport'));
   assert.ok(viewport.includes('chatWrapper.scrollTop = chatWrapper.scrollHeight'));
 
+  const chatMessage = read('js/src/forum/components/ChatMessage.js');
+  assert.ok(chatMessage.includes("'message-wrapper--own'"));
+  assert.ok(
+    chatMessage.includes("String(this.model.user()?.id()) === String(app.session.user?.id())"),
+    'own-message class must compare session user id safely'
+  );
+
+  const viewportLess = read('resources/less/forum/ChatViewport.less');
+  assert.ok(viewportLess.includes('.ChatViewport--messagesV2'));
+  assert.ok(viewportLess.includes('.message-wrapper--own'));
+  assert.ok(viewportLess.includes('.avatar-wrapper'));
+  assert.ok(viewportLess.includes('.name'));
+  assert.ok(viewportLess.includes('display: none'));
+  assert.ok(viewportLess.includes('max-width: 82%'));
+  assert.ok(viewportLess.includes('max-width: 76%'));
+  assert.ok(viewportLess.includes('max-width: 70%'));
+  assert.ok(
+    viewportLess.includes('color-mix(in srgb, var(--primary-color') &&
+      viewportLess.includes('18%') &&
+      viewportLess.includes('var(--control-bg'),
+    'own bubbles need subtle outgoing background under V2'
+  );
+  assert.ok(
+    viewportLess.includes('.toolbar .right'),
+    'own-message V2 CSS must preserve edit/moderation controls'
+  );
+
   const helper = read('js/src/forum/utils/messagingUiEnabled.js');
   assert.ok(helper.includes("return !!app.forum?.attribute?.('flatrateMessagingUiEnabled');"));
 
   console.log('MESSAGING_PROVIDER_CONTRACT=PASS');
   console.log('MESSAGING002_LIVE_V2=PASS');
+  console.log('MESSAGING003_LIVE_OWN_BUBBLE=PASS');
 }
 
 main().catch((err) => {

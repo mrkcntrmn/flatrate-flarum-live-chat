@@ -106,6 +106,7 @@ export default class ChatMessage extends Component {
             <div
                 className={classList({
                     'message-wrapper': true,
+                    'message-wrapper--own': String(this.model.user()?.id()) === String(app.session.user?.id()),
                     hidden: this.model.deleted_by(),
                     editing: this.model.isEditing,
                     deleted: !this.isVisible(),
