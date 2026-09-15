@@ -57,6 +57,9 @@ async function main() {
     pathToFileURL(path.join(__dirname, '../src/forum/utils/normalizeLiveConversation.js')).href
   );
   const { createLiveMessagingProvider } = await import(pathToFileURL(path.join(__dirname, '../src/forum/liveMessagingProvider.js')).href);
+  const { roomKeyOf } = await import(
+    pathToFileURL(path.join(__dirname, '../src/forum/utils/liveChatPresentation.js')).href
+  );
 
   const createdAt = new Date('2026-09-14T15:00:00.000Z');
   const row = normalizeLiveConversation(
@@ -132,6 +135,43 @@ async function main() {
   assert.strictEqual(provider.getUnreadTotal(), 0);
   console.log('LIVE_PROVIDER_PASS=PASS');
 
+  // Route-key overflow resolution must not inherit a stale getCurrentChat().
+  const roomA = makeChat({ roomKey: 'room-a-live', title: 'Room A', unreaded: 0 });
+  const roomB = makeChat({ roomKey: 'room-b-live', title: 'Room B', unreaded: 0 });
+  let currentChat = roomA;
+  const overflowApp = {
+    chat: {
+      chats: [roomA, roomB],
+      getCurrentChat: () => currentChat,
+    },
+  };
+  const overflowProvider = createLiveMessagingProvider({
+    app: overflowApp,
+    buildHeaderOverflowItems(chat) {
+      return {
+        roomKey: roomKeyOf(chat),
+        toArray: () => [{ roomKey: roomKeyOf(chat) }],
+      };
+    },
+  });
+
+  const fromB = overflowProvider.headerOverflowItems({ key: 'room-b-live' });
+  assert.ok(fromB, 'requested Live key must resolve even when current chat is another room');
+  assert.strictEqual(fromB.roomKey, 'room-b-live');
+
+  const unknown = overflowProvider.headerOverflowItems({ key: 'missing-live' });
+  assert.strictEqual(unknown, null, 'unknown route key must not inherit the current room controls');
+
+  currentChat = null;
+  const fallback = overflowProvider.headerOverflowItems({});
+  assert.strictEqual(fallback, null, 'no key and no current chat yields null');
+
+  currentChat = roomA;
+  const currentOnly = overflowProvider.headerOverflowItems({});
+  assert.ok(currentOnly);
+  assert.strictEqual(currentOnly.roomKey, 'room-a-live');
+  console.log('LIVE_HEADER_OVERFLOW_ROUTE_KEY=PASS');
+
   global.app.forum.attribute = (name) => name === 'flatrateMessagingUiEnabled';
   assert.strictEqual(messagingUiEnabled(), true);
   global.app.forum.attribute = () => false;
@@ -175,6 +215,8 @@ async function main() {
   assert.ok(register.includes('LiveConversationView'));
   assert.ok(register.includes('MessagesLiveConversationView'));
   assert.ok(register.includes('presentationVersion === 2'));
+  assert.ok(register.includes('buildHeaderOverflowItems'));
+  assert.ok(register.includes('chatHeaderOverflowItems'));
   assert.ok(!register.includes('room-catalog.json'));
   assert.ok(!register.includes('resources/room-catalog'));
 
@@ -182,8 +224,20 @@ async function main() {
   assert.ok(providerSrc.includes("url: a.forum.attribute('apiUrl') + '/flatrate-live-chat/live-chats'"));
   assert.ok(providerSrc.includes('pushPayload'));
   assert.ok(providerSrc.includes('normalizeLiveDirectory'));
+  assert.ok(providerSrc.includes('headerOverflowItems'));
+  assert.ok(providerSrc.includes('buildHeaderOverflowItems'));
+  assert.ok(providerSrc.includes('requestedKey'));
+  assert.ok(
+    /requestedKey && Array\.isArray\(a\.chat\.chats\)/.test(providerSrc),
+    'route key must resolve chat before getCurrentChat fallback'
+  );
+  assert.ok(
+    /if \(!requestedKey && typeof a\.chat\.getCurrentChat === 'function'\)/.test(providerSrc),
+    'getCurrentChat is only used when no route key is provided'
+  );
   assert.ok(!providerSrc.includes('room-catalog.json'));
   assert.ok(!providerSrc.includes('resources/room-catalog'));
+  assert.ok(!providerSrc.includes("from './utils/chatHeaderOverflowItems"));
 
   const chatPage = read('js/src/forum/components/ChatPage.js');
   assert.ok(chatPage.includes('LiveConversationView'));
@@ -220,8 +274,14 @@ async function main() {
   assert.ok(viewportLess.includes('.ChatViewport--messagesV2'));
   assert.ok(viewportLess.includes('.message-wrapper--own'));
   assert.ok(viewportLess.includes('.avatar-wrapper'));
+  assert.ok(viewportLess.includes('position: static'));
+  assert.ok(viewportLess.includes('flex-direction: row-reverse'));
   assert.ok(viewportLess.includes('.name'));
   assert.ok(viewportLess.includes('display: none'));
+  assert.ok(
+    !/message-wrapper--own[\s\S]*?\.avatar-wrapper\s*\{[^}]*display:\s*none/.test(viewportLess),
+    'own avatar must remain visible under Messages V2'
+  );
   assert.ok(viewportLess.includes('max-width: 82%'));
   assert.ok(viewportLess.includes('max-width: 76%'));
   assert.ok(viewportLess.includes('max-width: 70%'));
@@ -236,12 +296,35 @@ async function main() {
     'own-message V2 CSS must preserve edit/moderation controls'
   );
 
+  const overflowUtil = read('js/src/forum/utils/chatHeaderOverflowItems.js');
+  assert.ok(overflowUtil.includes('ChatEditModal'));
+  assert.ok(overflowUtil.includes('toggleSound'));
+  assert.ok(overflowUtil.includes('toggleNotifications'));
+  assert.ok(overflowUtil.includes("'liveSettings'"));
+  assert.ok(overflowUtil.includes("'liveSound'"));
+  assert.ok(overflowUtil.includes("'liveNotifications'"));
+
+  const chatHeader = read('js/src/forum/components/ChatHeader.js');
+  assert.ok(chatHeader.includes('chatHeaderOverflowItems'));
+  assert.ok(chatHeader.includes('fa-ellipsis-h'));
+
+  assert.ok(viewportLess.includes('flex-direction: row-reverse'));
+  assert.ok(viewportLess.includes('.message-wrapper--own'));
+  assert.ok(
+    /message-wrapper--own[\s\S]*?> div[\s\S]*?flex-direction:\s*row-reverse/.test(viewportLess),
+    'row-reverse must target the inner avatar+bubble row only'
+  );
+  assert.ok(
+    !/message-wrapper--own[\s\S]*?\.avatar-wrapper\s*\{[^}]*display:\s*none/.test(viewportLess),
+    'own avatar must remain visible under Messages V2'
+  );
   const helper = read('js/src/forum/utils/messagingUiEnabled.js');
   assert.ok(helper.includes("return !!app.forum?.attribute?.('flatrateMessagingUiEnabled');"));
 
   console.log('MESSAGING_PROVIDER_CONTRACT=PASS');
   console.log('MESSAGING002_LIVE_V2=PASS');
   console.log('MESSAGING003_LIVE_OWN_BUBBLE=PASS');
+  console.log('MESSAGING003_LIVE_HEADER_OVERFLOW=PASS');
 }
 
 main().catch((err) => {

@@ -81,8 +81,15 @@ async function main() {
   const header = read('js/src/forum/components/ChatHeader.js');
   assert.ok(header.includes('displayRoomTitle'));
   assert.ok(header.includes('ChatHeader-overflow'));
-  assert.ok(header.includes('toolbar.chat.info'));
+  assert.ok(header.includes('chatHeaderOverflowItems'));
+  assert.ok(header.includes('fa-ellipsis-h'));
   assert.ok(!header.includes('window-buttons'));
+
+  const overflow = read('js/src/forum/utils/chatHeaderOverflowItems.js');
+  assert.ok(overflow.includes('toolbar.chat.info'));
+  assert.ok(overflow.includes('toolbar.chat.settings'));
+  assert.ok(overflow.includes('toggleSound'));
+  assert.ok(overflow.includes('toggleNotifications'));
 
   const input = read('js/src/forum/components/ChatInput.js');
   assert.ok(input.includes('ChatInput-send'));
