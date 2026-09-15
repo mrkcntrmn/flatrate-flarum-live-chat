@@ -31,7 +31,7 @@ flatrate-live-chat:
       welcome:
         header: Welcome to Live Chat
         subheader: Choose a room to join the conversation.
-      send: Send
+      send: Send message
       cancel_edit: Cancel
       moder: Moderator
       kick: Kick

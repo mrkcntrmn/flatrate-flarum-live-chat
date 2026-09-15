@@ -1,0 +1,50 @@
+// FORUM-MESSAGING-002C — Live V2 surface inside Messages shell
+.MessagesLiveSurface {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.MessagesLiveSurface-loading,
+.MessagesLiveSurface--unavailable {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 16px;
+}
+
+.MessagesLiveSurface .ChatViewport,
+.MessagesLiveSurface .ChatViewport--messagesV2 {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.MessagesLiveSurface .MessagesMessageViewport,
+.MessagesLiveSurface .ChatViewport .wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.MessagesLiveSurface .ChatInput {
+  flex: 0 0 auto;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.MessagesPage .MessagesLiveSurface .ChatHeader {
+  display: none !important;
+}
