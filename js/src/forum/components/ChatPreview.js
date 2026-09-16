@@ -6,6 +6,11 @@ import SubtreeRetainer from 'flarum/utils/SubtreeRetainer';
 
 import ChatAvatar from './ChatAvatar';
 
+/**
+ * Live/group directory row preview.
+ * FORUM-MESSAGING-006UI: never render last-message body text here.
+ * Allowed: title, kind/privacy hint, recency, unread (parent).
+ */
 export default class ChatPreview extends Component {
     oninit(vnode) {
         super.oninit(vnode);
@@ -55,6 +60,7 @@ export default class ChatPreview extends Component {
 
     componentMessageTime() {
         let lastMessage = this.model.last_message();
+        if (!lastMessage) return null;
         let time = new Date(lastMessage.created_at());
         if (Date.now() - time.getTime() < 60 * 60 * 12 * 1000) {
             let nl = (n) => (n < 10 ? '0' : '') + n;
@@ -62,6 +68,28 @@ export default class ChatPreview extends Component {
         }
 
         return humanTime(lastMessage.created_at());
+    }
+
+    /**
+     * Kind · privacy metadata only — never last_message.message().
+     */
+    componentMetaLine() {
+        const visibility = typeof this.model.visibility === 'function' ? this.model.visibility() : null;
+        const isPrivate = visibility === 'private' || visibility === 'hidden' || Number(this.model.type()) === 0;
+        const kindLabel = isPrivate
+            ? app.translator.trans('flatrate-live-chat.forum.chat.list.preview.kind_group')
+            : app.translator.trans('flatrate-live-chat.forum.chat.list.preview.kind_live');
+        const privacyLabel = isPrivate
+            ? app.translator.trans('flatrate-live-chat.forum.chat.list.preview.privacy_private')
+            : app.translator.trans('flatrate-live-chat.forum.chat.list.preview.privacy_public');
+
+        return (
+            <div className="message meta">
+                <span className="empty">
+                    {kindLabel} · {privacyLabel}
+                </span>
+            </div>
+        );
     }
 
     componentPreview() {
@@ -72,7 +100,7 @@ export default class ChatPreview extends Component {
                     {this.model.icon() ? <i class={this.model.icon()} style={{ color: this.model.color() }}></i> : null}
                     {this.model.title()}
                 </div>
-                {this.model.last_message() ? this.componentTextPreview() : this.componentTextEmpty()}
+                {this.componentMetaLine()}
             </div>,
             this.model.last_message() ? (
                 <div className="timestamp" title={extractText(this.model.last_message().created_at())}>
@@ -89,61 +117,13 @@ export default class ChatPreview extends Component {
                 <div className="title" title={this.model.title()}>
                     {this.model.title()}
                 </div>
-                {this.componentTextPreview()}
+                {this.componentMetaLine()}
             </div>,
-            <div className="timestamp" title={extractText(this.model.last_message().created_at())}>
-                {(this.humanTime = this.componentMessageTime())}
-            </div>,
-        ];
-    }
-
-    formatTextPreview(text) {
-        let type;
-        if (text.startsWith('```')) {
-            text = app.translator.trans('flatrate-live-chat.forum.chat.message.type.code');
-            type = 'media';
-        } else if (text.startsWith('http://') || text.startsWith('https://')) {
-            text = app.translator.trans('flatrate-live-chat.forum.chat.message.type.url');
-            type = 'media';
-        }
-        return { text, type };
-    }
-
-    componentTextPreview() {
-        let lastMessage = this.model.last_message();
-        if (lastMessage.type() != 0) {
-            return (
-                <div className="message">
-                    <span className="media">{app.translator.trans('flatrate-live-chat.forum.chat.message.type.event')}</span>
+            this.model.last_message() ? (
+                <div className="timestamp" title={extractText(this.model.last_message().created_at())}>
+                    {(this.humanTime = this.componentMessageTime())}
                 </div>
-            );
-        }
-
-        let formatResult = this.formatTextPreview(lastMessage.message());
-        let senderName,
-            users = this.model.users(),
-            sender = lastMessage.user();
-        if (app.session.user) {
-            if (app.session.user == sender) senderName = `${app.translator.trans('flatrate-live-chat.forum.chat.message.you')}: `;
-            else if (users.length > 2 || this.model.type()) senderName = sender.displayName() + ': ';
-        }
-
-        return (
-            <div
-                className={classList({ message: true, censored: lastMessage.is_censored() })}
-                title={lastMessage.is_censored() ? app.translator.trans('flatrate-live-chat.forum.chat.message.censored') : null}
-            >
-                <span className="sender">{senderName}</span>
-                <span className={formatResult.type}>{formatResult.text}</span>
-            </div>
-        );
-    }
-
-    componentTextEmpty() {
-        return (
-            <div className="message">
-                <span className="empty">{app.translator.trans('flatrate-live-chat.forum.chat.list.preview.empty')}</span>
-            </div>
-        );
+            ) : null,
+        ];
     }
 }

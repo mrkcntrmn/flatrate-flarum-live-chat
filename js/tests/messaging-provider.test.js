@@ -273,8 +273,15 @@ async function main() {
     'own-message class must compare session user id safely'
   );
   assert.ok(
-    chatMessage.includes('own && this.isMessagesV2() && app.session.user ? app.session.user : this.model.user()'),
-    'own avatar must resolve through session user after ownership confirmed under V2'
+    chatMessage.includes('authorForPresentation()') &&
+      chatMessage.includes('own && this.isMessagesV2() && app.session.user') &&
+      chatMessage.includes('username(author)') &&
+      chatMessage.includes('avatar(author'),
+    'own avatar and nickname must resolve through the same canonical author under V2'
+  );
+  assert.ok(
+    !/avatar\(app\.session\.user\)[\s\S]*username\(this\.model\.user\(\)\)/.test(chatMessage),
+    'must not split session avatar from message.user nickname'
   );
 
   const viewportLess = read('resources/less/forum/ChatViewport.less');
@@ -285,7 +292,11 @@ async function main() {
   assert.ok(viewportLess.includes('position: static'));
   assert.ok(viewportLess.includes('flex-direction: row-reverse'));
   assert.ok(viewportLess.includes('.name'));
-  assert.ok(viewportLess.includes('display: none'));
+  // 006UI: own nickname is visible; do not require display:none on .name
+  assert.ok(
+    !/\.message-wrapper--own[\s\S]*a\.name,[\s\S]*\.name[\s\S]*display:\s*none\s*!important/.test(viewportLess),
+    'own nickname must not be force-hidden under Messages V2'
+  );
   assert.ok(
     !/message-wrapper--own[\s\S]*?\.avatar-wrapper\s*\{[^}]*display:\s*none/.test(viewportLess),
     'own avatar must remain visible under Messages V2'
@@ -346,6 +357,7 @@ async function main() {
   console.log('MESSAGING003_LIVE_OWN_BUBBLE=PASS');
   console.log('MESSAGING003_LIVE_HEADER_OVERFLOW=PASS');
   console.log('MESSAGING005_LIVE_OWN_ROW=PASS');
+  console.log('MESSAGING006_LIVE_OWN_IDENTITY=PASS');
 }
 
 main().catch((err) => {

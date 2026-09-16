@@ -11,6 +11,8 @@ flatrate-live-chat:
       error: Could not load live chats.
       retry: Try again
       unavailable: This live chat isn't available.
+      meta_live_public: Live · Public
+      meta_group_private: Group · Private
     realtime_not_found: Realtime is unavailable until Centrifugo is configured.
     index:
       chat_link: Chat
@@ -72,6 +74,10 @@ flatrate-live-chat:
         placeholder: Filter Chats
         preview:
           empty: No messages
+          kind_live: Live
+          kind_group: Group
+          privacy_public: Public
+          privacy_private: Private
         add_modal:
           title: Select users
           chat: Chat

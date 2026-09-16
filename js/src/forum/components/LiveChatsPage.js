@@ -65,8 +65,13 @@ export default class LiveChatsPage extends Page {
     roomCard(chat) {
         const roomKey = roomKeyOf(chat);
         const last = chat.last_message?.();
-        const preview = last ? last.message?.() || last.content?.() || '' : app.translator.trans('flatrate-live-chat.forum.chat.list.preview.empty');
+        // FORUM-MESSAGING-006UI: recency from created_at only — never last message body.
         const when = last && last.created_at ? last.created_at() : null;
+        const visibility = typeof chat.visibility === 'function' ? chat.visibility() : null;
+        const isPrivate = visibility === 'private' || visibility === 'hidden' || Number(chat.type?.()) === 0;
+        const meta = isPrivate
+            ? app.translator.trans('flatrate-live-chat.forum.live_chats.meta_group_private')
+            : app.translator.trans('flatrate-live-chat.forum.live_chats.meta_live_public');
 
         return (
             <li className="LiveChatsPage-card" key={chat.id()}>
@@ -80,7 +85,7 @@ export default class LiveChatsPage extends Page {
                         ) : null}
                     </div>
                     <div className="LiveChatsPage-secondary">
-                        <span className="LiveChatsPage-preview">{preview}</span>
+                        <span className="LiveChatsPage-meta">{meta}</span>
                     </div>
                 </Link>
             </li>
