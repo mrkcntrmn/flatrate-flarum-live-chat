@@ -31,15 +31,16 @@ test('ChatMessage exposes explicit ChatMessage-row and ID-based own detection', 
 
 test('V2 own layout targets ChatMessage-row with visible own identity', () => {
   const less = read('resources/less/forum/ChatViewport.less');
-  assert.match(less, /\.ChatViewport--messagesV2[\s\S]*\.message-wrapper--own[\s\S]*\.ChatMessage-row/);
-  assert.match(less, /\.ChatMessage-row[\s\S]*flex-direction:\s*row-reverse/);
+  // 007UI: grid lane under dual ChatViewport class + .wrapper (beats legacy absolute).
+  assert.match(less, /\.ChatViewport\.ChatViewport--messagesV2[\s\S]*\.message-wrapper\.message-wrapper--own/);
+  assert.match(less, /\.ChatMessage-row--own[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*28px/);
   assert.doesNotMatch(less, /\.message-wrapper--own\s*>\s*div\s*\{/);
   // 006UI: nickname is no longer force-hidden on own bubbles.
   assert.doesNotMatch(
     less,
     /\.message-wrapper--own[\s\S]*a\.name,[\s\S]*\.name[\s\S]*display:\s*none\s*!important/
   );
-  assert.match(less, /\.message-block[\s\S]*max-width:\s*82%/);
+  assert.match(less, /\.ChatMessage-content[\s\S]*max-width:\s*min\(86%/);
 });
 
 test('directory overflow contributes Settings/Info without global sound toggles', () => {
