@@ -68,17 +68,53 @@ export default class ChatMessage extends Component {
     content() {
         const author = this.authorForPresentation();
 
+        // FORUM-MESSAGING-007UI: deterministic V2 own structure (no row-reverse).
+        if (this.isMessagesV2() && this.isOwnMessage()) {
+            return this.v2OwnContent(author);
+        }
+
+        return this.legacyContent(author);
+    }
+
+    /**
+     * Messages V2 own-message DOM: content column then avatar lane.
+     * Avatar participates in layout (grid); do not rely on flex row-reverse.
+     */
+    v2OwnContent(author) {
+        return (
+            <div className="ChatMessage-row ChatMessage-row--own">
+                <div className="ChatMessage-content">
+                    <div className="ChatMessage-meta">
+                        <a className="name" onclick={this.modelEvent.bind(this, 'insertMention')}>
+                            {extractText(username(author)) + ':'}
+                        </a>
+                        <div className="labels">{this.labels.map((label) => (label.condition() ? label.component() : null))}</div>
+                        {this.model.id() ? (
+                            <a className="timestamp" title={extractText(fullTime(this.model.created_at()))}>
+                                {(this.humanTime = humanTime(this.model.created_at()))}
+                            </a>
+                        ) : null}
+                        <div className="ChatMessage-actions">
+                            {this.model.id()
+                                ? this.model.isDeletedForever
+                                    ? null
+                                    : this.editDropDown()
+                                : this.model.isTimedOut
+                                ? this.editDropDownTimedOut()
+                                : null}
+                        </div>
+                    </div>
+                    {this.messageBody()}
+                </div>
+                {this.avatarNode(author)}
+            </div>
+        );
+    }
+
+    legacyContent(author) {
         return (
             <div className="ChatMessage-row">
-                {author ? (
-                    <Link className="avatar-wrapper" href={app.route.user(author)}>
-                        <span>{avatar(author, { className: 'avatar' })}</span>
-                    </Link>
-                ) : (
-                    <div className="avatar-wrapper">
-                        <span>{avatar(author, { className: 'avatar' })}</span>
-                    </div>
-                )}
+                {this.avatarNode(author)}
                 <div className="message-block">
                     <div className="toolbar">
                         <a className="name" onclick={this.modelEvent.bind(this, 'insertMention')}>
@@ -98,22 +134,44 @@ export default class ChatMessage extends Component {
                                 : null}
                         </div>
                     </div>
-                    <div className="message">
-                        {this.model.is_censored() ? (
-                            <div className="censored actualMessage" title={app.translator.trans('flatrate-live-chat.forum.chat.message.censored')}>
-                                {this.model.content}
-                            </div>
-                        ) : (
-                            <div
-                                className="actualMessage"
-                                oncreate={this.onContentWrapperCreated.bind(this)}
-                                onupdate={this.onContentWrapperUpdated.bind(this)}
-                            >
-                                {this.model.content}
-                            </div>
-                        )}
-                    </div>
+                    {this.messageBody()}
                 </div>
+            </div>
+        );
+    }
+
+    avatarNode(author) {
+        if (author) {
+            return (
+                <Link className="avatar-wrapper" href={app.route.user(author)}>
+                    <span>{avatar(author, { className: 'avatar' })}</span>
+                </Link>
+            );
+        }
+
+        return (
+            <div className="avatar-wrapper">
+                <span>{avatar(author, { className: 'avatar' })}</span>
+            </div>
+        );
+    }
+
+    messageBody() {
+        return (
+            <div className="message">
+                {this.model.is_censored() ? (
+                    <div className="censored actualMessage" title={app.translator.trans('flatrate-live-chat.forum.chat.message.censored')}>
+                        {this.model.content}
+                    </div>
+                ) : (
+                    <div
+                        className="actualMessage"
+                        oncreate={this.onContentWrapperCreated.bind(this)}
+                        onupdate={this.onContentWrapperUpdated.bind(this)}
+                    >
+                        {this.model.content}
+                    </div>
+                )}
             </div>
         );
     }
