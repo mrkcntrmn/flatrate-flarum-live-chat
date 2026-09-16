@@ -51,15 +51,18 @@ export default class ChatMessage extends Component {
     }
 
     content() {
+        const own = this.isOwnMessage();
+        const author = own && app.session.user ? app.session.user : this.model.user();
+
         return (
-            <div>
-                {this.model.user() ? (
-                    <Link className="avatar-wrapper" href={app.route.user(this.model.user())}>
-                        <span>{avatar(this.model.user(), { className: 'avatar' })}</span>
+            <div className="ChatMessage-row">
+                {author ? (
+                    <Link className="avatar-wrapper" href={app.route.user(author)}>
+                        <span>{avatar(author, { className: 'avatar' })}</span>
                     </Link>
                 ) : (
                     <div className="avatar-wrapper">
-                        <span>{avatar(this.model.user(), { className: 'avatar' })}</span>
+                        <span>{avatar(author, { className: 'avatar' })}</span>
                     </div>
                 )}
                 <div className="message-block">
@@ -101,12 +104,21 @@ export default class ChatMessage extends Component {
         );
     }
 
+    isOwnMessage() {
+        const author = this.model.user?.();
+        const actor = app.session.user;
+
+        if (!author || !actor) return false;
+
+        return String(author.id()) === String(actor.id());
+    }
+
     view(vnode) {
         return (
             <div
                 className={classList({
                     'message-wrapper': true,
-                    'message-wrapper--own': String(this.model.user()?.id()) === String(app.session.user?.id()),
+                    'message-wrapper--own': this.isOwnMessage(),
                     hidden: this.model.deleted_by(),
                     editing: this.model.isEditing,
                     deleted: !this.isVisible(),

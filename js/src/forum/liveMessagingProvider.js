@@ -49,6 +49,22 @@ export function createLiveMessagingProvider(options = {}) {
 
         // Route key is authoritative: never expose the previous room's actions
         // while Messages is selecting a different Live conversation.
+        const chat = resolveChatByKey(a, key);
+        if (!chat) return null;
+        return build(chat, a) || null;
+    }
+
+    function directoryOverflowItems({ key } = {}) {
+        const a = getApp();
+        const build = options.buildDirectoryOverflowItems;
+        if (typeof build !== 'function' || !a.chat) return null;
+
+        const chat = resolveChatByKey(a, key);
+        if (!chat) return null;
+        return build(chat, a) || null;
+    }
+
+    function resolveChatByKey(a, key) {
         const requestedKey = key != null ? String(key) : null;
         let chat = null;
 
@@ -60,8 +76,7 @@ export function createLiveMessagingProvider(options = {}) {
             chat = a.chat.getCurrentChat();
         }
 
-        if (!chat) return null;
-        return build(chat, a) || null;
+        return chat;
     }
 
     return {
@@ -71,6 +86,7 @@ export function createLiveMessagingProvider(options = {}) {
         getUnreadTotal,
         renderConversation: options.renderConversation || (({ key, context }) => null),
         headerOverflowItems,
+        directoryOverflowItems,
         refresh,
     };
 }
