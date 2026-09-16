@@ -126,13 +126,7 @@ export default class ChatViewport extends Component {
         const presentationVersion = 2;
         return groupChatMessages(messages, { sessionUser: app.session.user }).map((item) => {
             if (item.kind === 'event') {
-                return (
-                    <ChatEventMessage
-                        key={item.key}
-                        model={item.model}
-                        presentationVersion={presentationVersion}
-                    />
-                );
+                return <ChatEventMessage key={item.key} model={item.model} presentationVersion={presentationVersion} />;
             }
 
             return <ChatMessageGroup key={item.key} group={item} presentationVersion={presentationVersion} />;

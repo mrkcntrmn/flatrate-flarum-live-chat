@@ -14,93 +14,97 @@ import ChatMessage from './ChatMessage';
  * FORUM-MESSAGING-008UI
  */
 export default class ChatMessageGroup extends Component {
-  view() {
-    const group = this.attrs.group;
-    if (!group || !group.messages || !group.messages.length) return null;
+    view() {
+        const group = this.attrs.group;
+        if (!group || !group.messages || !group.messages.length) return null;
 
-    const author = this.authorForPresentation();
-    const first = group.timestampModel || group.messages[0];
-    const createdAt = typeof first.created_at === 'function' ? first.created_at() : null;
-    const nameText = extractText(username(author)) + ':';
+        const author = this.authorForPresentation();
+        const first = group.timestampModel || group.messages[0];
+        const createdAt = typeof first.created_at === 'function' ? first.created_at() : null;
+        const nameText = extractText(username(author)) + ':';
 
-    return (
-      <div
-        className={classList({
-          ChatMessageGroup: true,
-          'ChatMessageGroup--own': !!group.own,
-        })}
-        data-author-id={group.authorId || undefined}
-      >
-        <div className="ChatMessageGroup-header">
-          <div className="ChatMessageGroup-identity">
-            {group.own ? (
-              <a className="ChatMessageGroup-name" onclick={this.insertMention.bind(this)}>
-                {nameText}
-              </a>
-            ) : null}
-            {this.avatarNode(author)}
-            {!group.own ? (
-              <a className="ChatMessageGroup-name" onclick={this.insertMention.bind(this)}>
-                {nameText}
-              </a>
-            ) : null}
-          </div>
-          {createdAt ? (
-            <time className="ChatMessageGroup-time" title={extractText(fullTime(createdAt))} datetime={createdAt.toISOString?.() || undefined}>
-              {humanTime(createdAt)}
-            </time>
-          ) : null}
-        </div>
-        <div className="ChatMessageGroup-messages">
-          {group.messages.map((model) => (
-            <ChatMessage
-              key={typeof model.id === 'function' ? model.id() : model.id}
-              model={model}
-              presentationVersion={2}
-              grouped={true}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  /**
-   * Canonical author for the group header (same contract as ChatMessage).
-   */
-  authorForPresentation() {
-    const group = this.attrs.group;
-    const first = group.messages[0];
-    const messageAuthor = typeof first.user === 'function' ? first.user() : first.user;
-
-    if (group.own && app.session.user) {
-      return app.session.user;
+        return (
+            <div
+                className={classList({
+                    ChatMessageGroup: true,
+                    'ChatMessageGroup--own': !!group.own,
+                })}
+                data-author-id={group.authorId || undefined}
+            >
+                <div className="ChatMessageGroup-header">
+                    <div className="ChatMessageGroup-identity">
+                        {group.own ? (
+                            <a className="ChatMessageGroup-name" onclick={this.insertMention.bind(this)}>
+                                {nameText}
+                            </a>
+                        ) : null}
+                        {this.avatarNode(author)}
+                        {!group.own ? (
+                            <a className="ChatMessageGroup-name" onclick={this.insertMention.bind(this)}>
+                                {nameText}
+                            </a>
+                        ) : null}
+                    </div>
+                    {createdAt ? (
+                        <time
+                            className="ChatMessageGroup-time"
+                            title={extractText(fullTime(createdAt))}
+                            datetime={createdAt.toISOString?.() || undefined}
+                        >
+                            {humanTime(createdAt)}
+                        </time>
+                    ) : null}
+                </div>
+                <div className="ChatMessageGroup-messages">
+                    {group.messages.map((model) => (
+                        <ChatMessage
+                            key={typeof model.id === 'function' ? model.id() : model.id}
+                            model={model}
+                            presentationVersion={2}
+                            grouped={true}
+                        />
+                    ))}
+                </div>
+            </div>
+        );
     }
 
-    return messageAuthor;
-  }
+    /**
+     * Canonical author for the group header (same contract as ChatMessage).
+     */
+    authorForPresentation() {
+        const group = this.attrs.group;
+        const first = group.messages[0];
+        const messageAuthor = typeof first.user === 'function' ? first.user() : first.user;
 
-  insertMention(e) {
-    e.preventDefault();
-    const first = this.attrs.group.messages[0];
-    const viewportState = app.chat.getViewportState(first.chat());
-    viewportState.onChatMessageClicked('insertMention', first);
-    app.chat.onChatMessageClicked('insertMention', first);
-  }
+        if (group.own && app.session.user) {
+            return app.session.user;
+        }
 
-  avatarNode(author) {
-    if (author) {
-      return (
-        <Link className="ChatMessageGroup-avatar" href={app.route.user(author)}>
-          <span>{avatar(author, { className: 'avatar' })}</span>
-        </Link>
-      );
+        return messageAuthor;
     }
 
-    return (
-      <div className="ChatMessageGroup-avatar">
-        <span>{avatar(author, { className: 'avatar' })}</span>
-      </div>
-    );
-  }
+    insertMention(e) {
+        e.preventDefault();
+        const first = this.attrs.group.messages[0];
+        const viewportState = app.chat.getViewportState(first.chat());
+        viewportState.onChatMessageClicked('insertMention', first);
+        app.chat.onChatMessageClicked('insertMention', first);
+    }
+
+    avatarNode(author) {
+        if (author) {
+            return (
+                <Link className="ChatMessageGroup-avatar" href={app.route.user(author)}>
+                    <span>{avatar(author, { className: 'avatar' })}</span>
+                </Link>
+            );
+        }
+
+        return (
+            <div className="ChatMessageGroup-avatar">
+                <span>{avatar(author, { className: 'avatar' })}</span>
+            </div>
+        );
+    }
 }
