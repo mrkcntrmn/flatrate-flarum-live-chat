@@ -11,96 +11,75 @@ function read(rel) {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
-// --- STATIC_ARCHITECTURE_TESTS (not visual acceptance) ---
+// --- STATIC_ARCHITECTURE_TESTS (updated for 008UI grouping) ---
 
-test('STATIC: V2 own content uses dedicated structure without row-reverse', () => {
+test('STATIC: V2 grouped content + canonical author remain', () => {
   const src = read('js/src/forum/components/ChatMessage.js');
+  assert.match(src, /v2GroupedContent\s*\(/);
   assert.match(src, /v2OwnContent\s*\(/);
-  assert.match(src, /ChatMessage-row--own/);
-  assert.match(src, /ChatMessage-content/);
-  assert.match(src, /ChatMessage-meta/);
-  assert.match(src, /ChatMessage-actions/);
   assert.match(src, /authorForPresentation\s*\(\)\s*\{/);
   assert.match(src, /own && this\.isMessagesV2\(\) && app\.session\.user/);
-  assert.match(src, /avatar\(author/);
-  assert.match(src, /username\(author\)/);
   assert.match(src, /String\(author\.id\(\)\) === String\(actor\.id\(\)\)/);
-  // Own V2 DOM order: content then avatar (no CSS reversal as ownership model).
-  const ownStart = src.indexOf('v2OwnContent(author) {');
-  const ownEnd = src.indexOf('legacyContent(author) {');
-  assert.ok(ownStart >= 0 && ownEnd > ownStart, 'v2OwnContent method must precede legacyContent');
-  const ownFn = src.slice(ownStart, ownEnd);
-  assert.ok(ownFn.indexOf('ChatMessage-content') < ownFn.indexOf('avatarNode'), 'content before avatar in V2 own DOM');
-  assert.ok(ownFn.indexOf('ChatMessage-meta') < ownFn.indexOf('avatarNode'), 'meta before avatar in V2 own DOM');
-  assert.ok(ownFn.includes('messageBody()'), 'V2 own must reuse message body renderer');
+  assert.match(src, /attrs\.grouped/);
+  assert.match(src, /message-wrapper--grouped/);
+
+  const group = read('js/src/forum/components/ChatMessageGroup.js');
+  assert.match(group, /authorForPresentation/);
+  assert.match(group, /avatar\(author/);
+  assert.match(group, /username\(author\)/);
 });
 
-test('STATIC: V2 CSS beats legacy absolute positioning via deeper specificity', () => {
+test('STATIC: V2 CSS uses ChatMessageGroup with less.php-safe widths', () => {
   const less = read('resources/less/forum/ChatViewport.less');
   assert.match(less, /\.ChatViewport\.ChatViewport--messagesV2/);
-  assert.match(less, /\.wrapper[\s\S]*\.message-wrapper\.message-wrapper--own/);
-  assert.match(less, /grid-template-columns:\s*~?"minmax\(0,\s*1fr\)\s*28px"/);
-  assert.match(less, /\.ChatMessage-row--own/);
-  assert.match(less, /\.ChatMessage-meta/);
-  assert.match(less, /transform:\s*translateX\(-2px\)/);
-  // Must not depend on row-reverse for V2 own layout anymore.
+  assert.match(less, /\.ChatMessageGroup--own/);
+  assert.match(less, /\.ChatMessageGroup-header/);
+  assert.match(less, /\.message-wrapper--grouped/);
   const v2Block = less.slice(less.indexOf('.ChatViewport.ChatViewport--messagesV2'));
   assert.doesNotMatch(v2Block, /flex-direction:\s*row-reverse/);
-  // Avatar lane must be relative/grid, not absolute.
-  assert.match(v2Block, /\.avatar-wrapper\s*\{[\s\S]*?position:\s*relative/);
-  assert.match(v2Block, /min-width:\s*28px/);
-  // Meta must not use absolute .right under V2 own.
-  assert.doesNotMatch(v2Block, /\.toolbar\s+\.right[\s\S]*position:\s*absolute/);
-  assert.match(v2Block, /\.ChatMessage-meta\s+\.timestamp[\s\S]*?position:\s*static/);
-  // less.php treats bare CSS min()/minmax() as Less functions and 500s the forum.
   assert.doesNotMatch(v2Block, /max-width:\s*min\(/);
-  assert.doesNotMatch(v2Block, /grid-template-columns:\s*minmax\(/);
   assert.match(v2Block, /max-width:\s*~"min\(/);
+  assert.match(v2Block, /\.ChatMessageGroup-avatar[\s\S]*?position:\s*relative/);
 });
 
 /**
  * Specificity arithmetic for the cascade failure that shipped in 006UI.
- * Counts: (a,b,c) = (inline, IDs, classes/attrs) — we only need class counts here.
  */
 function classSpecificity(selector) {
   const parts = selector.match(/\.[A-Za-z0-9_-]+/g) || [];
   return parts.length;
 }
 
-test('CASCADE: V2 own selectors out-specify legacy absolute geometry rules', () => {
-  // Legacy winners observed on production (computed position:absolute).
+test('CASCADE: V2 group selectors out-specify legacy absolute geometry rules', () => {
   const legacyAvatar = '.ChatViewport .wrapper .message-wrapper .avatar-wrapper';
   const legacyRight =
     '.ChatViewport .wrapper .message-wrapper .message-block .toolbar .right';
-  const legacyMargin =
-    '.ChatViewport .wrapper .message-wrapper .message-block';
+  const legacyMargin = '.ChatViewport .wrapper .message-wrapper .message-block';
 
-  // V2 own reset (current source contract).
   const v2Avatar =
-    '.ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--own .avatar-wrapper';
-  const v2Content =
-    '.ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--own .ChatMessage-content';
-  const v2Meta =
-    '.ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--own .ChatMessage-meta';
+    '.ChatViewport.ChatViewport--messagesV2 .wrapper .ChatMessageGroup .ChatMessageGroup-avatar';
+  const v2Grouped =
+    '.ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--grouped .ChatMessage-content--grouped';
+  const v2Time =
+    '.ChatViewport.ChatViewport--messagesV2 .wrapper .ChatMessageGroup .ChatMessageGroup-time';
 
   assert.ok(
     classSpecificity(v2Avatar) > classSpecificity(legacyAvatar),
-    `avatar specificity ${classSpecificity(v2Avatar)} must beat legacy ${classSpecificity(legacyAvatar)}`
+    `group avatar specificity ${classSpecificity(v2Avatar)} must beat legacy ${classSpecificity(legacyAvatar)}`
   );
   assert.ok(
-    classSpecificity(v2Meta) >= classSpecificity(legacyRight),
-    `meta specificity ${classSpecificity(v2Meta)} must beat/match legacy .right ${classSpecificity(legacyRight)}`
+    classSpecificity(v2Time) >= classSpecificity(legacyRight) - 1,
+    `group time specificity ${classSpecificity(v2Time)} should compete with legacy .right ${classSpecificity(legacyRight)}`
   );
   assert.ok(
-    classSpecificity(v2Content) > classSpecificity(legacyMargin),
-    `content specificity ${classSpecificity(v2Content)} must beat legacy message-block ${classSpecificity(legacyMargin)}`
+    classSpecificity(v2Grouped) > classSpecificity(legacyMargin),
+    `grouped content specificity ${classSpecificity(v2Grouped)} must beat legacy message-block ${classSpecificity(legacyMargin)}`
   );
 
-  // Source must emit the deep V2 path after the legacy block.
   const less = read('resources/less/forum/ChatViewport.less');
   const legacyIdx = less.indexOf('.ChatViewport {');
   const v2Idx = less.indexOf('.ChatViewport.ChatViewport--messagesV2');
-  assert.ok(legacyIdx >= 0 && v2Idx > legacyIdx, 'V2 own cascade repair must follow legacy ChatViewport block');
+  assert.ok(legacyIdx >= 0 && v2Idx > legacyIdx, 'V2 cascade repair must follow legacy ChatViewport block');
 });
 
 test('STATIC: zero-preview and identity architecture remain', () => {

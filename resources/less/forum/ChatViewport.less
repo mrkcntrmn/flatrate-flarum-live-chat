@@ -298,147 +298,178 @@
 
 }
 
-// FORUM-MESSAGING-007UI — deterministic V2 own-message geometry.
-// Specificity must beat legacy:
-//   .ChatViewport .wrapper .message-wrapper .avatar-wrapper { position: absolute } (0,4,0)
-//   .ChatViewport .wrapper .message-wrapper .message-block .toolbar .right (0,6,0)
-// Nested under .ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--own.
+// FORUM-MESSAGING-008UI — grouped message identity + mirrored metadata.
+// Presentation groups own avatar/nickname/timestamp once; ChatMessage is content-only under V2.
+// Specificity must beat legacy absolute geometry under .ChatViewport .wrapper .message-wrapper …
 .ChatViewport.ChatViewport--messagesV2 {
     .wrapper {
-        .message-wrapper.message-wrapper--own {
-            // Spacing tokens (local to this tranche)
-            // ROW_X_INSET ≈ 12px, AVATAR_COLUMN=28px, CONTENT_AVATAR_GAP=6px,
-            // AVATAR_VISUAL_OVERLAP=2px, META_BUBBLE_GAP=2px, META_ITEM_GAP=6px
-            display: block;
-            box-sizing: border-box;
+        .ChatMessageGroup {
+            display: flex;
+            flex-direction: column;
             width: 100%;
-            padding: 8px 12px;
-            position: relative;
-            text-align: right;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            margin: 0;
+            gap: 4px;
+        }
 
-            .ChatMessage-row--own {
-                display: grid;
-                // Escape CSS minmax()/min() — less.php otherwise evaluates them as Less functions
-                // and crashes the whole forum frontend compile (Less_Exception_Compiler).
-                grid-template-columns: ~"minmax(0, 1fr) 28px";
-                column-gap: 6px;
-                align-items: end;
-                width: 100%;
-                min-width: 0;
+        .ChatMessageGroup + .ChatMessageGroup,
+        .ChatMessageGroup + .message-wrapper,
+        .message-wrapper + .ChatMessageGroup {
+            margin-top: 12px;
+        }
+
+        .ChatMessageGroup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            width: 100%;
+            min-width: 0;
+            margin: 0 0 4px;
+        }
+
+        .ChatMessageGroup-identity {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .ChatMessageGroup-name {
+            display: block;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--heading-color, @heading-color);
+            font-weight: 600;
+            cursor: pointer;
+            line-height: 1.2;
+        }
+
+        .ChatMessageGroup-time {
+            flex: 0 0 auto;
+            white-space: nowrap;
+            color: var(--muted-color, @muted-color);
+            font-size: 12px;
+            line-height: 1.2;
+            order: 0;
+        }
+
+        .ChatMessageGroup-avatar {
+            display: block;
+            position: relative;
+            flex: 0 0 28px;
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            margin: 0;
+            overflow: visible;
+        }
+
+        .ChatMessageGroup-avatar > span,
+        .ChatMessageGroup-avatar .Avatar,
+        .ChatMessageGroup-avatar .avatar,
+        .ChatMessageGroup-avatar img {
+            display: block;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+            line-height: 28px;
+            font-size: 13px;
+        }
+
+        .ChatMessageGroup-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 100%;
+            min-width: 0;
+            align-items: flex-start;
+        }
+
+        // Incoming: avatar + name | time
+        .ChatMessageGroup:not(.ChatMessageGroup--own) {
+            .ChatMessageGroup-header {
+                flex-direction: row;
             }
 
-            .ChatMessage-content {
-                grid-column: 1;
-                min-width: 0;
-                max-width: ~"min(86%, 560px)";
-                justify-self: end;
+            .ChatMessageGroup-identity {
+                order: 1;
+                justify-content: flex-start;
+            }
+
+            .ChatMessageGroup-time {
+                order: 2;
+            }
+
+            .ChatMessageGroup-messages {
+                align-items: flex-start;
+                padding-left: 36px; // avatar (28) + gap (8)
+            }
+        }
+
+        // Outgoing: time | name + avatar (mirrored)
+        .ChatMessageGroup--own {
+            .ChatMessageGroup-header {
+                flex-direction: row;
+            }
+
+            .ChatMessageGroup-identity {
+                order: 2;
+                justify-content: flex-end;
+                flex: 0 1 auto;
+            }
+
+            .ChatMessageGroup-time {
+                order: 1;
+                margin-right: auto;
+            }
+
+            .ChatMessageGroup-messages {
+                align-items: flex-end;
+                padding-right: 36px;
+            }
+        }
+
+        // Grouped ChatMessage rows: content only; defeat legacy absolute geometry.
+        .message-wrapper.message-wrapper--grouped {
+            display: block;
+            position: relative;
+            width: auto;
+            max-width: ~"min(86%, 560px)";
+            padding: 0;
+            margin: 0;
+            text-align: left;
+
+            .ChatMessage-content--grouped {
+                position: relative;
                 display: flex;
                 flex-direction: column;
-                align-items: flex-end;
-                position: relative;
+                align-items: stretch;
                 margin: 0;
+                margin-left: 0;
+                min-width: 0;
+                max-width: 100%;
             }
 
-            .ChatMessage-meta {
-                display: flex;
-                align-items: baseline;
-                justify-content: flex-end;
-                flex-wrap: wrap;
-                gap: 6px;
-                width: 100%;
-                min-width: 0;
+            .labels {
+                position: static;
+                display: inline-flex;
                 margin: 0 0 2px;
-                position: relative;
-            }
-
-            .ChatMessage-meta .name,
-            .ChatMessage-meta a.name {
-                position: static;
-                display: block;
-                min-width: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                color: var(--heading-color, @heading-color);
-                font-weight: 600;
-                cursor: pointer;
-            }
-
-            .ChatMessage-meta .timestamp {
-                position: static;
-                flex: 0 0 auto;
-                display: block;
-                white-space: nowrap;
-                color: var(--muted-color, @muted-color);
-                cursor: pointer;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                font-size: 12px;
-                padding: 0;
-            }
-
-            .ChatMessage-meta .labels {
-                display: inline-flex;
-                flex: 0 0 auto;
-                position: static;
-            }
-
-            .ChatMessage-actions {
-                position: static;
-                flex: 0 0 auto;
-                display: inline-flex;
-                align-items: center;
-            }
-
-            .ChatMessage-actions .edit {
-                display: inline;
-                padding: 0;
-                position: static;
-            }
-
-            // Hard invariant: avatar lane consumes real layout width (not absolute overlay).
-            .avatar-wrapper {
-                grid-column: 2;
-                display: block;
-                position: relative;
-                width: 28px;
-                height: 28px;
-                min-width: 28px;
-                align-self: end;
-                overflow: visible;
-                z-index: 2;
-                margin: 0;
-                // Aesthetic overlap only after lane is reserved.
-                transform: translateX(-2px);
-            }
-
-            .avatar-wrapper > span {
-                display: block;
-                width: 28px;
-                height: 28px;
-            }
-
-            .avatar-wrapper .Avatar,
-            .avatar-wrapper .avatar,
-            .avatar-wrapper img {
-                display: block;
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
-                object-fit: cover;
-                line-height: 28px;
-                font-size: 13px;
             }
 
             .message {
+                display: block;
                 width: fit-content;
                 max-width: 100%;
                 min-width: 0;
                 text-align: left;
                 padding: 8px 12px;
                 border-radius: 14px;
-                // Prefer Less-native mix over CSS color-mix() for less.php safety.
-                background: mix(@primary-color, @control-bg, 18%);
                 box-sizing: border-box;
                 word-break: normal;
                 overflow-wrap: anywhere;
@@ -455,17 +486,50 @@
                 overflow-wrap: anywhere;
             }
         }
+
+        .ChatMessageGroup--own .message-wrapper.message-wrapper--grouped {
+            .message {
+                background: mix(@primary-color, @control-bg, 18%);
+            }
+
+            .ChatMessage-content--grouped {
+                align-items: flex-end;
+            }
+
+            .message {
+                // keep left-aligned text inside right-aligned bubble
+                text-align: left;
+            }
+        }
+
+        // Neutralize legacy absolute avatar / toolbar for any remaining V2 own wrappers.
+        .message-wrapper.message-wrapper--own:not(.message-wrapper--grouped) {
+            .avatar-wrapper {
+                position: relative;
+                inset: auto;
+                margin: 0;
+            }
+
+            .message-block {
+                margin-left: 0;
+            }
+
+            .toolbar .right {
+                position: static;
+                inset: auto;
+            }
+        }
     }
 }
 
 @media (min-width: @screen-tablet) {
-    .ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--own .ChatMessage-content {
+    .ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--grouped {
         max-width: ~"min(76%, 560px)";
     }
 }
 
 @media (min-width: @screen-desktop) {
-    .ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--own .ChatMessage-content {
+    .ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--grouped {
         max-width: ~"min(70%, 560px)";
     }
 }

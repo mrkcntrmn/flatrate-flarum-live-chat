@@ -68,7 +68,12 @@ export default class ChatMessage extends Component {
     content() {
         const author = this.authorForPresentation();
 
-        // FORUM-MESSAGING-007UI: deterministic V2 own structure (no row-reverse).
+        // FORUM-MESSAGING-008UI: V2 grouped rows are content-only (identity lives on ChatMessageGroup).
+        if (this.isMessagesV2() && this.attrs.grouped) {
+            return this.v2GroupedContent();
+        }
+
+        // Fallback if a V2 message is rendered outside a group (should be rare).
         if (this.isMessagesV2() && this.isOwnMessage()) {
             return this.v2OwnContent(author);
         }
@@ -77,7 +82,19 @@ export default class ChatMessage extends Component {
     }
 
     /**
-     * Messages V2 own-message DOM: content column then avatar lane.
+     * Messages V2 body inside ChatMessageGroup — no avatar/name/time/ellipsis.
+     */
+    v2GroupedContent() {
+        return (
+            <div className="ChatMessage-content ChatMessage-content--grouped">
+                <div className="labels">{this.labels.map((label) => (label.condition() ? label.component() : null))}</div>
+                {this.messageBody()}
+            </div>
+        );
+    }
+
+    /**
+     * Legacy V2 own-message DOM kept as fallback when not wrapped by ChatMessageGroup.
      * Avatar participates in layout (grid); do not rely on flex row-reverse.
      */
     v2OwnContent(author) {
@@ -94,15 +111,6 @@ export default class ChatMessage extends Component {
                                 {(this.humanTime = humanTime(this.model.created_at()))}
                             </a>
                         ) : null}
-                        <div className="ChatMessage-actions">
-                            {this.model.id()
-                                ? this.model.isDeletedForever
-                                    ? null
-                                    : this.editDropDown()
-                                : this.model.isTimedOut
-                                ? this.editDropDownTimedOut()
-                                : null}
-                        </div>
                     </div>
                     {this.messageBody()}
                 </div>
@@ -195,6 +203,7 @@ export default class ChatMessage extends Component {
                 className={classList({
                     'message-wrapper': true,
                     'message-wrapper--own': this.isOwnMessage(),
+                    'message-wrapper--grouped': !!this.attrs.grouped,
                     hidden: this.model.deleted_by(),
                     editing: this.model.isEditing,
                     deleted: !this.isVisible(),
