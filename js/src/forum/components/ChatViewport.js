@@ -3,12 +3,14 @@ import LoadingIndicator from 'flarum/components/LoadingIndicator';
 
 import ChatInput from './ChatInput';
 import ChatMessage from './ChatMessage';
+import ChatMessageGroup from './ChatMessageGroup';
 import ChatEventMessage from './ChatEventMessage';
 import ChatWelcome from './ChatWelcome';
 import Message from '../models/Message';
 import timedRedraw from '../utils/timedRedraw';
 import { processVisibleUnread } from '../utils/processVisibleUnread';
 import { startInitialHistoryFetch, settleInitialHistoryFetch } from '../utils/chatMessagesFetchLifecycle';
+import { groupChatMessages } from '../utils/groupChatMessages';
 
 export default class ChatViewport extends Component {
     oninit(vnode) {
@@ -68,9 +70,7 @@ export default class ChatViewport extends Component {
                         onremove={this.wrapperOnRemove.bind(this)}
                     >
                         {this.componentLoader(this.state.scroll.loading)}
-                        {this.componentsChatMessages(this.model).concat(
-                            this.state.input.writingPreview ? this.componentChatMessage(this.state.input.previewModel) : []
-                        )}
+                        {this.componentsChatMessages(this.model)}
                     </div>
                     <ChatInput
                         state={this.state}
@@ -103,7 +103,34 @@ export default class ChatViewport extends Component {
     }
 
     componentsChatMessages(chat) {
-        return app.chat.getChatMessages().map((model) => this.componentChatMessage(model));
+        const messages = app.chat.getChatMessages().slice();
+
+        // Include optimistic writing preview in the same ordered collection so V2 grouping
+        // can attach it to the latest same-author group within the gap window.
+        if (this.state.input.writingPreview && this.state.input.previewModel) {
+            messages.push(this.state.input.previewModel);
+        }
+
+        if (this.attrs.presentationVersion === 2) {
+            return this.componentsChatMessageGroups(messages);
+        }
+
+        return messages.map((model) => this.componentChatMessage(model));
+    }
+
+    /**
+     * Messages V2: render presentation groups (identity once) + event breakers.
+     * FORUM-MESSAGING-008UI
+     */
+    componentsChatMessageGroups(messages) {
+        const presentationVersion = 2;
+        return groupChatMessages(messages, { sessionUser: app.session.user }).map((item) => {
+            if (item.kind === 'event') {
+                return <ChatEventMessage key={item.key} model={item.model} presentationVersion={presentationVersion} />;
+            }
+
+            return <ChatMessageGroup key={item.key} group={item} presentationVersion={presentationVersion} />;
+        });
     }
 
     hasNewMessageState() {

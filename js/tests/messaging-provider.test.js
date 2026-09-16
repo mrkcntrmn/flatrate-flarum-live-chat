@@ -287,22 +287,18 @@ async function main() {
   const viewportLess = read('resources/less/forum/ChatViewport.less');
   assert.ok(viewportLess.includes('.ChatViewport--messagesV2'));
   assert.ok(viewportLess.includes('.message-wrapper--own'));
-  assert.ok(viewportLess.includes('.ChatMessage-row'));
-  assert.ok(viewportLess.includes('.avatar-wrapper'));
+  assert.ok(viewportLess.includes('.ChatMessageGroup'));
+  assert.ok(viewportLess.includes('.ChatMessageGroup--own'));
   assert.ok(viewportLess.includes('.ChatViewport.ChatViewport--messagesV2'));
-  assert.ok(
-    viewportLess.includes('grid-template-columns: ~"minmax(0, 1fr) 28px"'),
-    'grid minmax must be escaped for less.php'
-  );
-  assert.ok(viewportLess.includes('.ChatMessage-meta'));
-  assert.ok(viewportLess.includes('.name'));
+  assert.ok(viewportLess.includes('.ChatMessageGroup-avatar'));
+  assert.ok(viewportLess.includes('.ChatMessageGroup-name'));
   // 006UI: own nickname is visible; do not require display:none on .name
   assert.ok(
     !/\.message-wrapper--own[\s\S]*a\.name,[\s\S]*\.name[\s\S]*display:\s*none\s*!important/.test(viewportLess),
     'own nickname must not be force-hidden under Messages V2'
   );
   assert.ok(
-    !/message-wrapper--own[\s\S]*?\.avatar-wrapper\s*\{[^}]*display:\s*none/.test(viewportLess),
+    !/ChatMessageGroup-avatar\s*\{[^}]*display:\s*none/.test(viewportLess),
     'own avatar must remain visible under Messages V2'
   );
   assert.ok(viewportLess.includes('max-width: ~"min(86%'));
@@ -313,8 +309,8 @@ async function main() {
     'own bubbles need subtle outgoing background under V2 (Less-native mix)'
   );
   assert.ok(
-    viewportLess.includes('.ChatMessage-actions'),
-    'own-message V2 CSS must preserve edit/moderation controls'
+    viewportLess.includes('.message-wrapper--grouped'),
+    '008UI grouped message wrappers must be styled'
   );
 
   const overflowUtil = read('js/src/forum/utils/chatHeaderOverflowItems.js');
@@ -331,8 +327,8 @@ async function main() {
 
   assert.ok(viewportLess.includes('.message-wrapper--own'));
   assert.ok(
-    /ChatMessage-row--own[\s\S]*?grid-template-columns:\s*~?"minmax\(0,\s*1fr\)\s*28px"/.test(viewportLess),
-    '007UI must reserve an explicit avatar grid lane for own rows'
+    viewportLess.includes('ChatMessageGroup-header'),
+    '008UI must render group-level identity headers'
   );
   assert.ok(
     !/message-wrapper--own[\s\S]*?> div[\s\S]*?flex-direction:\s*row-reverse/.test(viewportLess),
@@ -343,9 +339,12 @@ async function main() {
     '007UI must not use row-reverse for V2 own ownership'
   );
   assert.ok(
-    !/message-wrapper--own[\s\S]*?\.avatar-wrapper\s*\{[^}]*display:\s*none/.test(viewportLess),
+    !/ChatMessageGroup-avatar\s*\{[^}]*display:\s*none/.test(viewportLess),
     'own avatar must remain visible under Messages V2'
   );
+  const groupComp = read('js/src/forum/components/ChatMessageGroup.js');
+  assert.ok(groupComp.includes('ChatMessageGroup'), '008UI ChatMessageGroup component required');
+  assert.ok(groupComp.includes('grouped={true}'), 'grouped ChatMessage must omit per-message identity');
   const helper = read('js/src/forum/utils/messagingUiEnabled.js');
   assert.ok(helper.includes("return !!app.forum?.attribute?.('flatrateMessagingUiEnabled');"));
 

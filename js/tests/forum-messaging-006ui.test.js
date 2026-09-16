@@ -13,10 +13,12 @@ function read(rel) {
 
 test('ChatMessage uses one canonical author for avatar and nickname', () => {
   const src = read('js/src/forum/components/ChatMessage.js');
+  const group = read('js/src/forum/components/ChatMessageGroup.js');
   assert.match(src, /authorForPresentation\s*\(\)\s*\{/);
   assert.match(src, /own && this\.isMessagesV2\(\) && app\.session\.user/);
-  assert.match(src, /avatar\(author/);
-  assert.match(src, /username\(author\)/);
+  assert.match(group, /authorForPresentation/);
+  assert.match(group, /avatar\(author/);
+  assert.match(group, /username\(author\)/);
   // Forbidden split-identity pattern for the same V2 self message.
   assert.doesNotMatch(src, /avatar\(app\.session\.user\)[\s\S]*username\(this\.model\.user\(\)\)/);
   assert.doesNotMatch(src, /username\(this\.model\.user\(\)\)/);
@@ -25,16 +27,16 @@ test('ChatMessage uses one canonical author for avatar and nickname', () => {
 
 test('V2 own nickname remains visible alongside avatar', () => {
   const less = read('resources/less/forum/ChatViewport.less');
-  assert.match(less, /\.ChatViewport\.ChatViewport--messagesV2[\s\S]*\.message-wrapper\.message-wrapper--own/);
-  assert.match(less, /\.ChatMessage-row--own[\s\S]*grid-template-columns/);
+  assert.match(less, /\.ChatViewport\.ChatViewport--messagesV2[\s\S]*\.ChatMessageGroup--own/);
+  assert.match(less, /\.ChatMessageGroup-name/);
+  assert.match(less, /\.ChatMessageGroup-avatar/);
   // Must not force-hide own nickname anymore.
   assert.doesNotMatch(
     less,
     /\.message-wrapper--own[\s\S]*a\.name,[\s\S]*\.name[\s\S]*display:\s*none\s*!important/
   );
-  assert.match(less, /\.message-wrapper--own[\s\S]*\.avatar-wrapper/);
   assert.ok(
-    !/message-wrapper--own[\s\S]*?\.avatar-wrapper\s*\{[^}]*display:\s*none/.test(less),
+    !/ChatMessageGroup-avatar\s*\{[^}]*display:\s*none/.test(less),
     'own avatar must remain visible'
   );
 });
