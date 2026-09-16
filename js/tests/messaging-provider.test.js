@@ -289,8 +289,9 @@ async function main() {
   assert.ok(viewportLess.includes('.message-wrapper--own'));
   assert.ok(viewportLess.includes('.ChatMessage-row'));
   assert.ok(viewportLess.includes('.avatar-wrapper'));
-  assert.ok(viewportLess.includes('position: static'));
-  assert.ok(viewportLess.includes('flex-direction: row-reverse'));
+  assert.ok(viewportLess.includes('.ChatViewport.ChatViewport--messagesV2'));
+  assert.ok(viewportLess.includes('grid-template-columns: minmax(0, 1fr) 28px'));
+  assert.ok(viewportLess.includes('.ChatMessage-meta'));
   assert.ok(viewportLess.includes('.name'));
   // 006UI: own nickname is visible; do not require display:none on .name
   assert.ok(
@@ -301,9 +302,9 @@ async function main() {
     !/message-wrapper--own[\s\S]*?\.avatar-wrapper\s*\{[^}]*display:\s*none/.test(viewportLess),
     'own avatar must remain visible under Messages V2'
   );
-  assert.ok(viewportLess.includes('max-width: 82%'));
-  assert.ok(viewportLess.includes('max-width: 76%'));
-  assert.ok(viewportLess.includes('max-width: 70%'));
+  assert.ok(viewportLess.includes('max-width: min(86%'));
+  assert.ok(viewportLess.includes('max-width: min(76%'));
+  assert.ok(viewportLess.includes('max-width: min(70%'));
   assert.ok(
     viewportLess.includes('color-mix(in srgb, var(--primary-color') &&
       viewportLess.includes('18%') &&
@@ -311,7 +312,7 @@ async function main() {
     'own bubbles need subtle outgoing background under V2'
   );
   assert.ok(
-    viewportLess.includes('.toolbar .right'),
+    viewportLess.includes('.ChatMessage-actions'),
     'own-message V2 CSS must preserve edit/moderation controls'
   );
 
@@ -327,15 +328,18 @@ async function main() {
   assert.ok(chatHeader.includes('chatHeaderOverflowItems'));
   assert.ok(chatHeader.includes('fa-ellipsis-h'));
 
-  assert.ok(viewportLess.includes('flex-direction: row-reverse'));
   assert.ok(viewportLess.includes('.message-wrapper--own'));
   assert.ok(
-    /message-wrapper--own[\s\S]*?\.ChatMessage-row[\s\S]*?flex-direction:\s*row-reverse/.test(viewportLess),
-    'row-reverse must target explicit ChatMessage-row, not anonymous > div'
+    /ChatMessage-row--own[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*28px/.test(viewportLess),
+    '007UI must reserve an explicit avatar grid lane for own rows'
   );
   assert.ok(
     !/message-wrapper--own[\s\S]*?> div[\s\S]*?flex-direction:\s*row-reverse/.test(viewportLess),
     'anonymous > div must no longer be the V2 layout contract'
+  );
+  assert.ok(
+    !/\.ChatViewport\.ChatViewport--messagesV2[\s\S]*flex-direction:\s*row-reverse/.test(viewportLess),
+    '007UI must not use row-reverse for V2 own ownership'
   );
   assert.ok(
     !/message-wrapper--own[\s\S]*?\.avatar-wrapper\s*\{[^}]*display:\s*none/.test(viewportLess),
