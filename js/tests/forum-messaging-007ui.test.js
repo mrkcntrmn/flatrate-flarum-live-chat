@@ -54,6 +54,51 @@ test('STATIC: V2 CSS beats legacy absolute positioning via deeper specificity', 
   assert.match(v2Block, /\.ChatMessage-meta\s+\.timestamp[\s\S]*?position:\s*static/);
 });
 
+/**
+ * Specificity arithmetic for the cascade failure that shipped in 006UI.
+ * Counts: (a,b,c) = (inline, IDs, classes/attrs) — we only need class counts here.
+ */
+function classSpecificity(selector) {
+  const parts = selector.match(/\.[A-Za-z0-9_-]+/g) || [];
+  return parts.length;
+}
+
+test('CASCADE: V2 own selectors out-specify legacy absolute geometry rules', () => {
+  // Legacy winners observed on production (computed position:absolute).
+  const legacyAvatar = '.ChatViewport .wrapper .message-wrapper .avatar-wrapper';
+  const legacyRight =
+    '.ChatViewport .wrapper .message-wrapper .message-block .toolbar .right';
+  const legacyMargin =
+    '.ChatViewport .wrapper .message-wrapper .message-block';
+
+  // V2 own reset (current source contract).
+  const v2Avatar =
+    '.ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--own .avatar-wrapper';
+  const v2Content =
+    '.ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--own .ChatMessage-content';
+  const v2Meta =
+    '.ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--own .ChatMessage-meta';
+
+  assert.ok(
+    classSpecificity(v2Avatar) > classSpecificity(legacyAvatar),
+    `avatar specificity ${classSpecificity(v2Avatar)} must beat legacy ${classSpecificity(legacyAvatar)}`
+  );
+  assert.ok(
+    classSpecificity(v2Meta) >= classSpecificity(legacyRight),
+    `meta specificity ${classSpecificity(v2Meta)} must beat/match legacy .right ${classSpecificity(legacyRight)}`
+  );
+  assert.ok(
+    classSpecificity(v2Content) > classSpecificity(legacyMargin),
+    `content specificity ${classSpecificity(v2Content)} must beat legacy message-block ${classSpecificity(legacyMargin)}`
+  );
+
+  // Source must emit the deep V2 path after the legacy block.
+  const less = read('resources/less/forum/ChatViewport.less');
+  const legacyIdx = less.indexOf('.ChatViewport {');
+  const v2Idx = less.indexOf('.ChatViewport.ChatViewport--messagesV2');
+  assert.ok(legacyIdx >= 0 && v2Idx > legacyIdx, 'V2 own cascade repair must follow legacy ChatViewport block');
+});
+
 test('STATIC: zero-preview and identity architecture remain', () => {
   const preview = read('js/src/forum/components/ChatPreview.js');
   assert.doesNotMatch(preview, /lastMessage\.message\(\)/);
