@@ -50,12 +50,23 @@ export default class ChatMessage extends Component {
         return this.subtree.needsRebuild();
     }
 
-    content() {
+    /**
+     * Canonical author for presentation. Avatar, nickname, and profile link must
+     * all derive from this same object (FORUM-MESSAGING-006UI).
+     */
+    authorForPresentation() {
+        const messageAuthor = this.model.user();
         const own = this.isOwnMessage();
-        // Messages V2: after ownership is confirmed, prefer session user for avatar.
-        // Legacy Live must keep message.user() so presentation stays unchanged.
-        const author =
-            own && this.isMessagesV2() && app.session.user ? app.session.user : this.model.user();
+
+        if (own && this.isMessagesV2() && app.session.user) {
+            return app.session.user;
+        }
+
+        return messageAuthor;
+    }
+
+    content() {
+        const author = this.authorForPresentation();
 
         return (
             <div className="ChatMessage-row">
@@ -71,7 +82,7 @@ export default class ChatMessage extends Component {
                 <div className="message-block">
                     <div className="toolbar">
                         <a className="name" onclick={this.modelEvent.bind(this, 'insertMention')}>
-                            {extractText(username(this.model.user())) + ': '}
+                            {extractText(username(author)) + ': '}
                         </a>
                         <div className="labels">{this.labels.map((label) => (label.condition() ? label.component() : null))}</div>
                         <div className="right">

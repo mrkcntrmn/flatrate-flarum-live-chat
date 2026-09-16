@@ -22,18 +22,23 @@ test('ChatMessage exposes explicit ChatMessage-row and ID-based own detection', 
   assert.match(src, /isOwnMessage\s*\(\)\s*\{/);
   assert.match(src, /String\(author\.id\(\)\) === String\(actor\.id\(\)\)/);
   assert.match(src, /'message-wrapper--own':\s*this\.isOwnMessage\(\)/);
-  assert.match(src, /own && this\.isMessagesV2\(\) && app\.session\.user \? app\.session\.user : this\.model\.user\(\)/);
+  assert.match(src, /authorForPresentation\s*\(\)\s*\{/);
+  assert.match(src, /own && this\.isMessagesV2\(\) && app\.session\.user/);
   assert.match(src, /presentationVersion === 2/);
-  // Incoming path still uses message author when not own / not V2.
-  assert.match(src, /this\.model\.user\(\)/);
+  // Incoming / legacy path still falls back to message author.
+  assert.match(src, /return messageAuthor/);
 });
 
-test('V2 own layout targets ChatMessage-row, not anonymous child div', () => {
+test('V2 own layout targets ChatMessage-row with visible own identity', () => {
   const less = read('resources/less/forum/ChatViewport.less');
   assert.match(less, /\.ChatViewport--messagesV2[\s\S]*\.message-wrapper--own[\s\S]*\.ChatMessage-row/);
   assert.match(less, /\.ChatMessage-row[\s\S]*flex-direction:\s*row-reverse/);
   assert.doesNotMatch(less, /\.message-wrapper--own\s*>\s*div\s*\{/);
-  assert.match(less, /\.message-wrapper--own[\s\S]*a\.name,[\s\S]*\.name[\s\S]*display:\s*none/);
+  // 006UI: nickname is no longer force-hidden on own bubbles.
+  assert.doesNotMatch(
+    less,
+    /\.message-wrapper--own[\s\S]*a\.name,[\s\S]*\.name[\s\S]*display:\s*none\s*!important/
+  );
   assert.match(less, /\.message-block[\s\S]*max-width:\s*82%/);
 });
 
