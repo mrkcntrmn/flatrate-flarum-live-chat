@@ -25,8 +25,8 @@ test('ChatMessage uses one canonical author for avatar and nickname', () => {
 
 test('V2 own nickname remains visible alongside avatar', () => {
   const less = read('resources/less/forum/ChatViewport.less');
-  assert.match(less, /\.ChatViewport--messagesV2[\s\S]*\.message-wrapper--own[\s\S]*\.ChatMessage-row/);
-  assert.match(less, /\.ChatMessage-row[\s\S]*flex-direction:\s*row-reverse/);
+  assert.match(less, /\.ChatViewport\.ChatViewport--messagesV2[\s\S]*\.message-wrapper\.message-wrapper--own/);
+  assert.match(less, /\.ChatMessage-row--own[\s\S]*grid-template-columns/);
   // Must not force-hide own nickname anymore.
   assert.doesNotMatch(
     less,
