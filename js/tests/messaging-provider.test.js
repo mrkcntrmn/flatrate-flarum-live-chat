@@ -290,7 +290,10 @@ async function main() {
   assert.ok(viewportLess.includes('.ChatMessage-row'));
   assert.ok(viewportLess.includes('.avatar-wrapper'));
   assert.ok(viewportLess.includes('.ChatViewport.ChatViewport--messagesV2'));
-  assert.ok(viewportLess.includes('grid-template-columns: minmax(0, 1fr) 28px'));
+  assert.ok(
+    viewportLess.includes('grid-template-columns: ~"minmax(0, 1fr) 28px"'),
+    'grid minmax must be escaped for less.php'
+  );
   assert.ok(viewportLess.includes('.ChatMessage-meta'));
   assert.ok(viewportLess.includes('.name'));
   // 006UI: own nickname is visible; do not require display:none on .name
@@ -302,14 +305,12 @@ async function main() {
     !/message-wrapper--own[\s\S]*?\.avatar-wrapper\s*\{[^}]*display:\s*none/.test(viewportLess),
     'own avatar must remain visible under Messages V2'
   );
-  assert.ok(viewportLess.includes('max-width: min(86%'));
-  assert.ok(viewportLess.includes('max-width: min(76%'));
-  assert.ok(viewportLess.includes('max-width: min(70%'));
+  assert.ok(viewportLess.includes('max-width: ~"min(86%'));
+  assert.ok(viewportLess.includes('max-width: ~"min(76%'));
+  assert.ok(viewportLess.includes('max-width: ~"min(70%'));
   assert.ok(
-    viewportLess.includes('color-mix(in srgb, var(--primary-color') &&
-      viewportLess.includes('18%') &&
-      viewportLess.includes('var(--control-bg'),
-    'own bubbles need subtle outgoing background under V2'
+    /mix\(\s*@primary-color\s*,\s*@control-bg\s*,\s*18%\s*\)/.test(viewportLess),
+    'own bubbles need subtle outgoing background under V2 (Less-native mix)'
   );
   assert.ok(
     viewportLess.includes('.ChatMessage-actions'),
@@ -330,7 +331,7 @@ async function main() {
 
   assert.ok(viewportLess.includes('.message-wrapper--own'));
   assert.ok(
-    /ChatMessage-row--own[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*28px/.test(viewportLess),
+    /ChatMessage-row--own[\s\S]*?grid-template-columns:\s*~?"minmax\(0,\s*1fr\)\s*28px"/.test(viewportLess),
     '007UI must reserve an explicit avatar grid lane for own rows'
   );
   assert.ok(

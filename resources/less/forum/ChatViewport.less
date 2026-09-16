@@ -318,7 +318,9 @@
 
             .ChatMessage-row--own {
                 display: grid;
-                grid-template-columns: minmax(0, 1fr) 28px;
+                // Escape CSS minmax()/min() — less.php otherwise evaluates them as Less functions
+                // and crashes the whole forum frontend compile (Less_Exception_Compiler).
+                grid-template-columns: ~"minmax(0, 1fr) 28px";
                 column-gap: 6px;
                 align-items: end;
                 width: 100%;
@@ -328,7 +330,7 @@
             .ChatMessage-content {
                 grid-column: 1;
                 min-width: 0;
-                max-width: min(86%, 560px);
+                max-width: ~"min(86%, 560px)";
                 justify-self: end;
                 display: flex;
                 flex-direction: column;
@@ -435,7 +437,8 @@
                 text-align: left;
                 padding: 8px 12px;
                 border-radius: 14px;
-                background: color-mix(in srgb, var(--primary-color, @primary-color) 18%, var(--control-bg, @control-bg));
+                // Prefer Less-native mix over CSS color-mix() for less.php safety.
+                background: mix(@primary-color, @control-bg, 18%);
                 box-sizing: border-box;
                 word-break: normal;
                 overflow-wrap: anywhere;
@@ -457,12 +460,12 @@
 
 @media (min-width: @screen-tablet) {
     .ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--own .ChatMessage-content {
-        max-width: min(76%, 560px);
+        max-width: ~"min(76%, 560px)";
     }
 }
 
 @media (min-width: @screen-desktop) {
     .ChatViewport.ChatViewport--messagesV2 .wrapper .message-wrapper.message-wrapper--own .ChatMessage-content {
-        max-width: min(70%, 560px);
+        max-width: ~"min(70%, 560px)";
     }
 }
