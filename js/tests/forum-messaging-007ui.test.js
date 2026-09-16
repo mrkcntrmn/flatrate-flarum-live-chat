@@ -39,7 +39,7 @@ test('STATIC: V2 CSS beats legacy absolute positioning via deeper specificity', 
   const less = read('resources/less/forum/ChatViewport.less');
   assert.match(less, /\.ChatViewport\.ChatViewport--messagesV2/);
   assert.match(less, /\.wrapper[\s\S]*\.message-wrapper\.message-wrapper--own/);
-  assert.match(less, /grid-template-columns:\s*minmax\(0,\s*1fr\)\s*28px/);
+  assert.match(less, /grid-template-columns:\s*~?"minmax\(0,\s*1fr\)\s*28px"/);
   assert.match(less, /\.ChatMessage-row--own/);
   assert.match(less, /\.ChatMessage-meta/);
   assert.match(less, /transform:\s*translateX\(-2px\)/);
@@ -52,6 +52,10 @@ test('STATIC: V2 CSS beats legacy absolute positioning via deeper specificity', 
   // Meta must not use absolute .right under V2 own.
   assert.doesNotMatch(v2Block, /\.toolbar\s+\.right[\s\S]*position:\s*absolute/);
   assert.match(v2Block, /\.ChatMessage-meta\s+\.timestamp[\s\S]*?position:\s*static/);
+  // less.php treats bare CSS min()/minmax() as Less functions and 500s the forum.
+  assert.doesNotMatch(v2Block, /max-width:\s*min\(/);
+  assert.doesNotMatch(v2Block, /grid-template-columns:\s*minmax\(/);
+  assert.match(v2Block, /max-width:\s*~"min\(/);
 });
 
 /**
