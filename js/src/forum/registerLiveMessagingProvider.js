@@ -3,11 +3,13 @@ import MessagesLiveConversationView from './components/MessagesLiveConversationV
 import ChatState from './states/ChatState';
 import { createLiveMessagingProvider } from './liveMessagingProvider';
 import chatHeaderOverflowItems from './utils/chatHeaderOverflowItems';
+import chatDirectoryOverflowItems from './utils/chatDirectoryOverflowItems';
 
 export default function registerLiveMessagingProvider() {
     app.flatRateMessagingSources ??= {};
     app.flatRateMessagingSources.live = createLiveMessagingProvider({
         buildHeaderOverflowItems: chatHeaderOverflowItems,
+        buildDirectoryOverflowItems: chatDirectoryOverflowItems,
         renderConversation({ key, context }) {
             if (!app.chat) {
                 app.chat = new ChatState();

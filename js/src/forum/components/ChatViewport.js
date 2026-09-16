@@ -94,7 +94,12 @@ export default class ChatViewport extends Component {
     }
 
     componentChatMessage(model) {
-        return model.type() ? <ChatEventMessage key={model.id()} model={model} /> : <ChatMessage key={model.id()} model={model} />;
+        const presentationVersion = this.attrs.presentationVersion;
+        return model.type() ? (
+            <ChatEventMessage key={model.id()} model={model} presentationVersion={presentationVersion} />
+        ) : (
+            <ChatMessage key={model.id()} model={model} presentationVersion={presentationVersion} />
+        );
     }
 
     componentsChatMessages(chat) {

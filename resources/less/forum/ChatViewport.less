@@ -298,22 +298,20 @@
 
 }
 
-// FORUM-MESSAGING-003UI — own-message alignment for Messages V2 only
+// FORUM-MESSAGING-005UI — explicit V2 own-message row (no anonymous > div contract)
 .ChatViewport--messagesV2 {
     .message-wrapper--own {
         display: flex;
         justify-content: flex-end;
         text-align: right;
 
-        // Inner row: bubble then avatar on the right (own identity).
-        > div {
+        .ChatMessage-row {
             display: flex;
             flex-direction: row-reverse;
-            align-items: flex-start;
+            align-items: flex-end;
             gap: 8px;
-            max-width: 82%;
+            width: 100%;
             min-width: 0;
-            margin-left: auto;
         }
 
         // Keep nickname off own bubbles; avatar stays visible.
@@ -336,15 +334,17 @@
         }
 
         .message-block {
-            margin-left: 0;
-            margin-right: 0;
-            max-width: none;
+            flex: 0 1 auto;
             min-width: 0;
-            flex: 1 1 auto;
+            max-width: 82%;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
         }
 
         .message {
-            display: inline-block;
+            width: fit-content;
             max-width: 100%;
             text-align: left;
             padding: 8px 12px;
@@ -354,6 +354,14 @@
         }
 
         // Keep edit/moderation toolbar usable on own bubbles
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            width: 100%;
+        }
+
         .toolbar .right {
             position: static;
             display: inline-flex;
@@ -366,13 +374,13 @@
 }
 
 @media (min-width: @screen-tablet) {
-    .ChatViewport--messagesV2 .message-wrapper--own > div {
+    .ChatViewport--messagesV2 .message-wrapper--own .message-block {
         max-width: 76%;
     }
 }
 
 @media (min-width: @screen-desktop) {
-    .ChatViewport--messagesV2 .message-wrapper--own > div {
+    .ChatViewport--messagesV2 .message-wrapper--own .message-block {
         max-width: 70%;
     }
 }

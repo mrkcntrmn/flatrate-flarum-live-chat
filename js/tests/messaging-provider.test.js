@@ -265,14 +265,22 @@ async function main() {
 
   const chatMessage = read('js/src/forum/components/ChatMessage.js');
   assert.ok(chatMessage.includes("'message-wrapper--own'"));
+  assert.ok(chatMessage.includes('ChatMessage-row'));
+  assert.ok(chatMessage.includes('isOwnMessage()'));
+  assert.ok(chatMessage.includes('presentationVersion'));
   assert.ok(
-    chatMessage.includes("String(this.model.user()?.id()) === String(app.session.user?.id())"),
+    chatMessage.includes("String(author.id()) === String(actor.id())"),
     'own-message class must compare session user id safely'
+  );
+  assert.ok(
+    chatMessage.includes('own && this.isMessagesV2() && app.session.user ? app.session.user : this.model.user()'),
+    'own avatar must resolve through session user after ownership confirmed under V2'
   );
 
   const viewportLess = read('resources/less/forum/ChatViewport.less');
   assert.ok(viewportLess.includes('.ChatViewport--messagesV2'));
   assert.ok(viewportLess.includes('.message-wrapper--own'));
+  assert.ok(viewportLess.includes('.ChatMessage-row'));
   assert.ok(viewportLess.includes('.avatar-wrapper'));
   assert.ok(viewportLess.includes('position: static'));
   assert.ok(viewportLess.includes('flex-direction: row-reverse'));
@@ -311,8 +319,12 @@ async function main() {
   assert.ok(viewportLess.includes('flex-direction: row-reverse'));
   assert.ok(viewportLess.includes('.message-wrapper--own'));
   assert.ok(
-    /message-wrapper--own[\s\S]*?> div[\s\S]*?flex-direction:\s*row-reverse/.test(viewportLess),
-    'row-reverse must target the inner avatar+bubble row only'
+    /message-wrapper--own[\s\S]*?\.ChatMessage-row[\s\S]*?flex-direction:\s*row-reverse/.test(viewportLess),
+    'row-reverse must target explicit ChatMessage-row, not anonymous > div'
+  );
+  assert.ok(
+    !/message-wrapper--own[\s\S]*?> div[\s\S]*?flex-direction:\s*row-reverse/.test(viewportLess),
+    'anonymous > div must no longer be the V2 layout contract'
   );
   assert.ok(
     !/message-wrapper--own[\s\S]*?\.avatar-wrapper\s*\{[^}]*display:\s*none/.test(viewportLess),
@@ -321,10 +333,19 @@ async function main() {
   const helper = read('js/src/forum/utils/messagingUiEnabled.js');
   assert.ok(helper.includes("return !!app.forum?.attribute?.('flatrateMessagingUiEnabled');"));
 
+  assert.ok(register.includes('chatDirectoryOverflowItems'));
+  assert.ok(providerSrc.includes('directoryOverflowItems'));
+  const directoryOverflow = read('js/src/forum/utils/chatDirectoryOverflowItems.js');
+  assert.ok(directoryOverflow.includes('ChatEditModal'));
+  assert.ok(directoryOverflow.includes("'liveSettings'"));
+  assert.ok(!directoryOverflow.includes('toggleSound'));
+  assert.ok(!directoryOverflow.includes('toggleNotifications'));
+
   console.log('MESSAGING_PROVIDER_CONTRACT=PASS');
   console.log('MESSAGING002_LIVE_V2=PASS');
   console.log('MESSAGING003_LIVE_OWN_BUBBLE=PASS');
   console.log('MESSAGING003_LIVE_HEADER_OVERFLOW=PASS');
+  console.log('MESSAGING005_LIVE_OWN_ROW=PASS');
 }
 
 main().catch((err) => {
