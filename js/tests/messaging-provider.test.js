@@ -273,8 +273,8 @@ async function main() {
     'own-message class must compare session user id safely'
   );
   assert.ok(
-    chatMessage.includes('own && app.session.user ? app.session.user : this.model.user()'),
-    'own avatar must resolve through session user after ownership confirmed'
+    chatMessage.includes('own && this.isMessagesV2() && app.session.user ? app.session.user : this.model.user()'),
+    'own avatar must resolve through session user after ownership confirmed under V2'
   );
 
   const viewportLess = read('resources/less/forum/ChatViewport.less');

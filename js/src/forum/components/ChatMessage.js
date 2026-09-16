@@ -52,7 +52,10 @@ export default class ChatMessage extends Component {
 
     content() {
         const own = this.isOwnMessage();
-        const author = own && app.session.user ? app.session.user : this.model.user();
+        // Messages V2: after ownership is confirmed, prefer session user for avatar.
+        // Legacy Live must keep message.user() so presentation stays unchanged.
+        const author =
+            own && this.isMessagesV2() && app.session.user ? app.session.user : this.model.user();
 
         return (
             <div className="ChatMessage-row">
@@ -111,6 +114,10 @@ export default class ChatMessage extends Component {
         if (!author || !actor) return false;
 
         return String(author.id()) === String(actor.id());
+    }
+
+    isMessagesV2() {
+        return this.attrs.presentationVersion === 2;
     }
 
     view(vnode) {

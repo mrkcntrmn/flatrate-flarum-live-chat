@@ -22,8 +22,9 @@ test('ChatMessage exposes explicit ChatMessage-row and ID-based own detection', 
   assert.match(src, /isOwnMessage\s*\(\)\s*\{/);
   assert.match(src, /String\(author\.id\(\)\) === String\(actor\.id\(\)\)/);
   assert.match(src, /'message-wrapper--own':\s*this\.isOwnMessage\(\)/);
-  assert.match(src, /own && app\.session\.user \? app\.session\.user : this\.model\.user\(\)/);
-  // Incoming path still uses message author when not own.
+  assert.match(src, /own && this\.isMessagesV2\(\) && app\.session\.user \? app\.session\.user : this\.model\.user\(\)/);
+  assert.match(src, /presentationVersion === 2/);
+  // Incoming path still uses message author when not own / not V2.
   assert.match(src, /this\.model\.user\(\)/);
 });
 
