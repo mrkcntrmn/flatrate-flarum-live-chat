@@ -43,7 +43,7 @@ flatrate-live-chat:
         title: Chat settings
         moderator:
           got: You just got Moderator rights in the chat {chatname}!
-          lost: You just lost your Moderator rights in the chat {chatname}.
+          lost: You just lost Moderator rights in the chat {chatname}.
         form:
           title:
             label: Chat name

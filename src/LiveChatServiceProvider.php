@@ -12,6 +12,7 @@ use FlatRate\LiveChat\Provisioner\RoomProvisioner;
 use FlatRate\LiveChat\Provisioner\RoomReconcileSnapshot;
 use FlatRate\LiveChat\Realtime\CentrifugoChannelNamer;
 use FlatRate\LiveChat\Realtime\CentrifugoClientConfig;
+use FlatRate\LiveChat\Realtime\CentrifugoPresenceStatsReader;
 use FlatRate\LiveChat\Realtime\CentrifugoRealtimePublisher;
 use FlatRate\LiveChat\Realtime\FakeRealtimePublisher;
 use FlatRate\LiveChat\Realtime\NullRealtimePublisher;
@@ -38,6 +39,7 @@ class LiveChatServiceProvider extends AbstractServiceProvider
         });
         $this->container->singleton(RealtimeEgressProbe::class);
         $this->container->singleton(CentrifugoChannelNamer::class);
+        $this->container->singleton(CentrifugoPresenceStatsReader::class);
         $this->container->singleton(RealtimeTokenIssuer::class, function (Container $container) {
             return new RsaRealtimeTokenIssuer($container->make(CentrifugoClientConfig::class));
         });
