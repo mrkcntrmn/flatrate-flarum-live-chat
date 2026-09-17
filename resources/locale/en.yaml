@@ -4,7 +4,7 @@ flatrate-live-chat:
       live_chats: Live Chat
     live_chats:
       title: Live Chat
-      general_label: FlatRate.wiki
+      general_label: FlatRate.wiki Live
       empty: Live Chat isn't available yet.
       new_messages: New messages
       jump_latest: Jump to latest
@@ -93,8 +93,8 @@ flatrate-live-chat:
               channel: Channel name
               validator: At least 1 symbol
             icon:
-              label: => flatrate-live-chat.forum.chat.edit_modal.form.icon.label
-              validator: => flatrate-live-chat.forum.chat.edit_modal.form.icon.validator
+              label: => core.ref.icon
+              validator: => core.ref.icon_text
             color:
               label: => flatrate-live-chat.forum.chat.edit_modal.form.color.label
               validator: => flatrate-live-chat.forum.chat.edit_modal.form.color.validator
