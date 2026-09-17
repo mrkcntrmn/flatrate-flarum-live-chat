@@ -8,6 +8,7 @@ export function createLiveMessagingProvider(options = {}) {
 
     async function fetchPrimaryPresenceCount(a, roomKey) {
         if (!roomKey || roomKey !== PRIMARY_ROOM_KEY) return null;
+        if (!a.forum.attribute('flatrate-live-chat.realtime.connect')) return null;
         try {
             const payload = await a.request({
                 method: 'POST',
