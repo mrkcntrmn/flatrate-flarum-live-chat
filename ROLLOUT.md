@@ -1,7 +1,7 @@
 # Rollout — FlatRate Live Chat
 
 ```text
-CANONICAL_ROOM_COUNT=42
+CANONICAL_ROOM_COUNT=46
 ROLLOUT_PROFILE=general-live-first
 CHAT001C_STATUS=implementation-complete
 PRODUCTION_INSTALL_AUTHORIZED=false
@@ -12,7 +12,7 @@ LIVE_ROOMS_CREATED=0
 
 | Dimension | Values | Meaning |
 | --- | --- | --- |
-| canonical | present in embedded catalog | Room exists in the 42-room set |
+| canonical | present in embedded catalog | Room exists in the 46-room set |
 | visibility | `visible` \| `hidden` | Server-side list/API/history/realtime exposure |
 | audience | `members` \| `staff-preview` | Who may access when visible/hidden rules apply |
 
@@ -25,7 +25,7 @@ for direct URL/API guesses.
 | Room | visibility | audience |
 | --- | --- | --- |
 | `community-general-live` | visible | members |
-| all 41 brand rooms | hidden | staff-preview |
+| all 45 brand rooms | hidden | staff-preview |
 
 Staff preview: `canPreviewHiddenChatRooms(actor)` — admin **or** moderator.
 Suspended users are denied posting and realtime subscription even if staff.
@@ -34,7 +34,7 @@ Suspended users are denied posting and realtime subscription even if staff.
 
 Changing visibility/audience must **not** change `roomKey` / id / scope / messages.
 
-CLI provisioner reconcile (disposable shells) targets 42 rooms and may apply
+CLI provisioner reconcile (disposable shells) targets 46 rooms and may apply
 rollout dimensions without rewriting durable identity.
 
 Production reconcile uses admin HTTP endpoints only:
@@ -44,7 +44,7 @@ GET  /api/flatrate-live-chat/admin/rooms/reconcile-preview
 POST /api/flatrate-live-chat/admin/rooms/reconcile
 ```
 
-Production path is fail-closed: initial 0→42 create or already-reconciled no-op.
+Production path is fail-closed: initial 0→46 create or already-reconciled no-op.
 Partial, extra, or drifted states require human review (no auto-heal).
 
 ## Routes
