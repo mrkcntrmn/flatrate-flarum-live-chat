@@ -15,7 +15,7 @@
     "build": "webpack --mode production",
     "format": "prettier --write src",
     "format-check": "prettier --check src",
-    "test": "node tests/realtime-client.test.js && node tests/check-unreaded-gate.test.js && node tests/message-fetch-lifecycle.test.js && node tests/live-chat-ui-contract.test.js && node tests/messaging-provider.test.js && node --test tests/forum-messaging-005ui.test.js tests/forum-messaging-006ui.test.js tests/forum-messaging-007ui.test.js tests/forum-messaging-007ui-rendered.test.js tests/forum-messaging-008ui.test.js"
+    "test": "node tests/realtime-client.test.js && node tests/check-unreaded-gate.test.js && node tests/message-fetch-lifecycle.test.js && node tests/live-chat-ui-contract.test.js && node tests/messaging-provider.test.js && node --test tests/forum-messaging-005ui.test.js tests/forum-messaging-006ui.test.js tests/forum-messaging-007ui.test.js tests/forum-messaging-007ui-rendered.test.js tests/forum-messaging-008ui.test.js && node tests/forum-messaging-009ui.test.js"
   },
   "husky": {
     "hooks": {
