@@ -23,6 +23,7 @@ use FlatRate\LiveChat\Api\Controllers\DeleteChatController;
 use FlatRate\LiveChat\Api\Controllers\RealtimeAuthController;
 use FlatRate\LiveChat\Api\Controllers\RealtimeConnectTokenController;
 use FlatRate\LiveChat\Api\Controllers\RealtimeEgressProbeController;
+use FlatRate\LiveChat\Api\Controllers\RealtimePresenceStatsController;
 use FlatRate\LiveChat\Api\Controllers\RealtimeSubscriptionTokenController;
 use FlatRate\LiveChat\Api\Controllers\RoomReconcileController;
 use FlatRate\LiveChat\Api\Controllers\RoomReconcilePreviewController;
@@ -66,6 +67,7 @@ return [
         ->post('/flatrate-live-chat/realtime/auth', 'flatrate-live-chat.realtime.auth', RealtimeAuthController::class)
         ->post('/flatrate-live-chat/realtime/connect-token', 'flatrate-live-chat.realtime.connect-token', RealtimeConnectTokenController::class)
         ->post('/flatrate-live-chat/realtime/subscription-token', 'flatrate-live-chat.realtime.subscription-token', RealtimeSubscriptionTokenController::class)
+        ->post('/flatrate-live-chat/realtime/presence-stats', 'flatrate-live-chat.realtime.presence-stats', RealtimePresenceStatsController::class)
         ->get('/flatrate-live-chat/realtime/egress-probe', 'flatrate-live-chat.realtime.egress-probe', RealtimeEgressProbeController::class)
         ->get('/flatrate-live-chat/admin/rooms/reconcile-preview', 'flatrate-live-chat.admin.rooms.reconcile-preview', RoomReconcilePreviewController::class)
         ->post('/flatrate-live-chat/admin/rooms/reconcile', 'flatrate-live-chat.admin.rooms.reconcile', RoomReconcileController::class)
