@@ -4,7 +4,7 @@ flatrate-live-chat:
       live_chats: Live Chat
     live_chats:
       title: Live Chat
-      general_label: FlatRate.wiki Live
+      general_label: FlatRate.wiki
       empty: Live Chat isn't available yet.
       new_messages: New messages
       jump_latest: Jump to latest
@@ -43,7 +43,7 @@ flatrate-live-chat:
         title: Chat settings
         moderator:
           got: You just got Moderator rights in the chat {chatname}!
-          lost: You just lost your Moderator rights in the chat {chatname}.
+          lost: You just lost Moderator rights in the chat {chatname}.
         form:
           title:
             label: Chat name
@@ -93,8 +93,8 @@ flatrate-live-chat:
               channel: Channel name
               validator: At least 1 symbol
             icon:
-              label: => core.ref.icon
-              validator: => core.ref.icon_text
+              label: => flatrate-live-chat.forum.chat.edit_modal.form.icon.label
+              validator: => flatrate-live-chat.forum.chat.edit_modal.form.icon.validator
             color:
               label: => flatrate-live-chat.forum.chat.edit_modal.form.color.label
               validator: => flatrate-live-chat.forum.chat.edit_modal.form.color.validator
