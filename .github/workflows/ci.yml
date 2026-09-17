@@ -36,6 +36,13 @@ jobs:
           npm ci
           npm test
           npm run build
+      - name: Tracked production JS assets must match build
+        run: |
+          if ! git diff --exit-code -- js/dist; then
+            echo "Tracked JS production assets are stale."
+            echo "Run \`cd js && npm ci && npm run build\`, commit js/dist, and retry."
+            exit 1
+          fi
       - name: Upstream provenance guard
         run: |
           python3 - <<'PY'

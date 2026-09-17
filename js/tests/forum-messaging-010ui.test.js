@@ -17,6 +17,21 @@ test('Messages Live provider requests count-only primary-room presence', () => {
   assert.match(src, /primaryIndex/);
 });
 
+test('Live provider exposes liveUserCount only when realtime is configured and fails soft', () => {
+  const src = read('js/src/forum/liveMessagingProvider.js');
+  assert.match(src, /fetchPrimaryPresenceCount/);
+  assert.match(
+    src,
+    /if \(!a\.forum\.attribute\('flatrate-live-chat\.realtime\.connect'\)\) return null;/
+  );
+  assert.match(src, /catch \(e\) \{/);
+  assert.match(src, /return null;/);
+  assert.match(src, /rows\[primaryIndex\] = \{ \.\.\.rows\[primaryIndex\], liveUserCount: count \};/);
+  // Room authorization remains list-driven; presence never invents rooms.
+  assert.match(src, /authorizedKeys = new Set\(lastListed\.map/);
+  assert.doesNotMatch(src, /\/api\/presence['"]/);
+});
+
 test('forum API exposes authorized roomKey-only presence stats', () => {
   const extend = read('extend.php');
   const controller = read('src/Api/Controllers/RealtimePresenceStatsController.php');
