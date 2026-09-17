@@ -92,8 +92,8 @@ class RolloutProfile
         if ($this->profileId() !== self::PROFILE_GENERAL_LIVE_FIRST) {
             throw new \RuntimeException('unsupported rollout profile: ' . $this->profileId());
         }
-        if ($this->canonicalRoomCount() !== 42) {
-            throw new \RuntimeException('CANONICAL_ROOM_COUNT must be 42');
+        if ($this->canonicalRoomCount() !== 46) {
+            throw new \RuntimeException('CANONICAL_ROOM_COUNT must be 46');
         }
         $general = $this->policyForRoomKey('community-general-live');
         if ($general['visibility'] !== RoomVisibility::VISIBLE || $general['audience'] !== RoomAudience::MEMBERS) {

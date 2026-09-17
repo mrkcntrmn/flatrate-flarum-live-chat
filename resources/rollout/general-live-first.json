@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "flatrate-live-chat-rollout-profile",
   "profileId": "general-live-first",
-  "canonicalRoomCount": 42,
+  "canonicalRoomCount": 46,
   "defaultBrand": {
     "visibility": "hidden",
     "audience": "staff-preview"

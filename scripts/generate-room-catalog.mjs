@@ -23,7 +23,7 @@ for (const r of chat.additionalRooms || []) {
     scopeKey: r.scopeKey,
   });
 }
-if (brands.length !== 41 || rooms.length !== 42) {
+if (brands.length !== 45 || rooms.length !== 46) {
   console.error(`unexpected counts brands=${brands.length} rooms=${rooms.length}`);
   process.exit(1);
 }
@@ -35,9 +35,9 @@ const doc = {
     liveChatTarget: chatPath,
     controlRepoNote: 'embedded snapshot; no runtime wiki filesystem dependency',
   },
-  brandRoomCount: 41,
+  brandRoomCount: 45,
   generalRoomCount: 1,
-  totalRoomCount: 42,
+  totalRoomCount: 46,
   rooms,
 };
 writeFileSync(outPath, JSON.stringify(doc, null, 2) + '\n');

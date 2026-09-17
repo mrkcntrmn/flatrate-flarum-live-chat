@@ -88,7 +88,7 @@ class ProductionRoomReconcileApiTest extends TestCase
     }
 
     /** @return list<array<string,mixed>> */
-    private function buildExact42(): array
+    private function buildExact46(): array
     {
         $rows = [];
         $id = 1;
@@ -173,13 +173,13 @@ class ProductionRoomReconcileApiTest extends TestCase
         $body = json_decode((string) $ok->getBody(), true);
         $this->assertTrue($body['ok']);
         $this->assertSame(RoomReconcileSnapshot::CLASS_READY_INITIAL_CREATE, $body['classification']);
-        $this->assertSame(42, $body['catalogCount']);
+        $this->assertSame(46, $body['catalogCount']);
         $this->assertSame(0, $body['existingCanonicalCount']);
-        $this->assertSame(42, $body['missingCount']);
+        $this->assertSame(46, $body['missingCount']);
         $this->assertSame(0, $body['extraCount']);
         $this->assertSame(0, $body['driftedCount']);
         $this->assertSame(1, $body['memberVisibleExpected']);
-        $this->assertSame(41, $body['staffPreviewExpected']);
+        $this->assertSame(45, $body['staffPreviewExpected']);
         $blob = (string) $ok->getBody();
         foreach (['BEGIN RSA', 'edge-key', 'api-key', 'Cookie', 'Authorization', 'token'] as $secretish) {
             $this->assertStringNotContainsStringIgnoringCase($secretish, $blob);
@@ -218,7 +218,7 @@ class ProductionRoomReconcileApiTest extends TestCase
         $this->assertSame(200, $ok->getStatusCode());
         $body = json_decode((string) $ok->getBody(), true);
         $this->assertTrue($body['ok']);
-        $this->assertSame(42, $body['createdCount']);
+        $this->assertSame(46, $body['createdCount']);
         $this->assertTrue($body['writesApplied']);
     }
 
@@ -301,7 +301,7 @@ class ProductionRoomReconcileApiTest extends TestCase
             'confirm' => $this->snapshot->expectedConfirmation($preview['stateSha256']),
         ];
 
-        $this->store = array_slice($this->buildExact42(), 0, 1);
+        $this->store = array_slice($this->buildExact46(), 0, 1);
         $result = $service->reconcile($payload);
         $this->assertSame(409, $result['status']);
         $this->assertSame(ProductionRoomReconcileService::ERR_STATE_CHANGED, $result['body']['code']);
@@ -322,10 +322,10 @@ class ProductionRoomReconcileApiTest extends TestCase
         ];
         $first = $service->reconcile($payload);
         $this->assertSame(200, $first['status']);
-        $this->assertSame(42, $first['body']['createdCount']);
+        $this->assertSame(46, $first['body']['createdCount']);
         $this->assertSame(0, $first['body']['updatedCount']);
         $this->assertTrue($first['body']['writesApplied']);
-        $this->assertSame(42, $first['body']['existingCanonicalCount']);
+        $this->assertSame(46, $first['body']['existingCanonicalCount']);
         $this->assertSame(0, $first['body']['missingCount']);
         $ids = array_column($this->store, 'id');
         $keys = array_column($this->store, 'room_key');
@@ -335,7 +335,7 @@ class ProductionRoomReconcileApiTest extends TestCase
         $secondPayload = [
             'expectedCatalogSha256' => $againPreview['catalogSha256'],
             'expectedStateSha256' => $againPreview['stateSha256'],
-            'expectedExistingCanonicalCount' => 42,
+            'expectedExistingCanonicalCount' => 46,
             'confirm' => $this->snapshot->expectedConfirmation($againPreview['stateSha256']),
         ];
         $writesBefore = $this->writeCalls;
@@ -353,8 +353,8 @@ class ProductionRoomReconcileApiTest extends TestCase
     {
         $service = $this->service();
 
-        foreach ([1, 21, 41] as $n) {
-            $this->store = array_slice($this->buildExact42(), 0, $n);
+        foreach ([1, 23, 45] as $n) {
+            $this->store = array_slice($this->buildExact46(), 0, $n);
             $preview = $service->preview();
             $this->assertSame(RoomReconcileSnapshot::CLASS_REVIEW_REQUIRED, $preview['classification']);
             $payload = [
@@ -371,7 +371,7 @@ class ProductionRoomReconcileApiTest extends TestCase
             $this->assertCount($n, $this->store);
         }
 
-        $this->store = $this->buildExact42();
+        $this->store = $this->buildExact46();
         $this->store[] = [
             'id' => 999,
             'type' => 1,
@@ -394,7 +394,7 @@ class ProductionRoomReconcileApiTest extends TestCase
         $this->assertSame(409, $extraResult['status']);
         $this->assertSame(ProductionRoomReconcileService::ERR_REQUIRES_REVIEW, $extraResult['body']['code']);
 
-        $this->store = $this->buildExact42();
+        $this->store = $this->buildExact46();
         $this->store[0]['title'] = 'Mutated Title';
         $driftPreview = $service->preview();
         $this->assertSame(1, $driftPreview['driftedCount']);
@@ -414,7 +414,7 @@ class ProductionRoomReconcileApiTest extends TestCase
         $service = $this->service();
 
         // General Live type=0
-        $this->store = $this->buildExact42();
+        $this->store = $this->buildExact46();
         foreach ($this->store as $i => $row) {
             if ($row['room_key'] === 'community-general-live') {
                 $this->store[$i]['type'] = 0;
@@ -439,7 +439,7 @@ class ProductionRoomReconcileApiTest extends TestCase
         $this->assertSame($writesBefore, $this->writeCalls);
 
         // Brand room type=0
-        $this->store = $this->buildExact42();
+        $this->store = $this->buildExact46();
         foreach ($this->store as $i => $row) {
             if ($row['room_key'] === 'toyota-live') {
                 $this->store[$i]['type'] = 0;
@@ -464,7 +464,7 @@ class ProductionRoomReconcileApiTest extends TestCase
         $this->assertSame($writesBefore, $this->writeCalls);
 
         // Same room: bad type + bad title counts once
-        $this->store = $this->buildExact42();
+        $this->store = $this->buildExact46();
         foreach ($this->store as $i => $row) {
             if ($row['room_key'] === 'toyota-live') {
                 $this->store[$i]['type'] = 0;
@@ -476,8 +476,8 @@ class ProductionRoomReconcileApiTest extends TestCase
         $this->assertSame(RoomReconcileSnapshot::CLASS_REVIEW_REQUIRED, $doublePreview['classification']);
         $this->assertSame(1, $doublePreview['driftedCount']);
 
-        // Valid exact 42 remains ALREADY_RECONCILED no-op
-        $this->store = $this->buildExact42();
+        // Valid exact 46 remains ALREADY_RECONCILED no-op
+        $this->store = $this->buildExact46();
         $validPreview = $service->preview();
         $this->assertSame(RoomReconcileSnapshot::CLASS_ALREADY_RECONCILED, $validPreview['classification']);
         $this->assertSame(0, $validPreview['driftedCount']);
@@ -485,7 +485,7 @@ class ProductionRoomReconcileApiTest extends TestCase
         $noop = $service->reconcile([
             'expectedCatalogSha256' => $validPreview['catalogSha256'],
             'expectedStateSha256' => $validPreview['stateSha256'],
-            'expectedExistingCanonicalCount' => 42,
+            'expectedExistingCanonicalCount' => 46,
             'confirm' => $this->snapshot->expectedConfirmation($validPreview['stateSha256']),
         ]);
         $this->assertSame(200, $noop['status']);
