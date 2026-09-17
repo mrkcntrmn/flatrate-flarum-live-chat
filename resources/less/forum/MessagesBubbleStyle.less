@@ -1,0 +1,74 @@
+// FORUM-MESSAGING-009UI — shared Messages V2 bubble presentation.
+// Live/group chat keeps other-user identity, hides the signed-in user's own
+// avatar/nickname, centers group timestamps, and uses the same neutral/blue
+// bubble palette as Direct. Read receipts intentionally remain a Direct-only
+// concern and are not introduced here.
+
+.ChatViewport.ChatViewport--messagesV2 .wrapper {
+    .ChatMessageGroup-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        grid-template-areas: "identity time spacer";
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .ChatMessageGroup-identity {
+        grid-area: identity;
+        justify-self: start;
+        max-width: 100%;
+        order: initial;
+    }
+
+    .ChatMessageGroup-time {
+        grid-area: time;
+        justify-self: center;
+        margin: 0;
+        order: initial;
+        text-align: center;
+    }
+
+    .ChatMessageGroup:not(.ChatMessageGroup--own) {
+        .ChatMessageGroup-header {
+            flex-direction: initial;
+        }
+
+        .ChatMessageGroup-identity,
+        .ChatMessageGroup-time {
+            order: initial;
+        }
+    }
+
+    .ChatMessageGroup--own {
+        .ChatMessageGroup-identity {
+            display: none;
+        }
+
+        .ChatMessageGroup-time {
+            margin: 0;
+            order: initial;
+        }
+
+        .ChatMessageGroup-messages {
+            align-items: flex-end;
+            padding-right: 0;
+        }
+    }
+
+    .message-wrapper.message-wrapper--grouped .message {
+        background: #e9e9eb;
+        color: #111111;
+    }
+
+    .message-wrapper.message-wrapper--grouped .message .actualMessage,
+    .message-wrapper.message-wrapper--grouped .message .censored,
+    .message-wrapper.message-wrapper--grouped .message a {
+        color: inherit;
+    }
+
+    .ChatMessageGroup--own .message-wrapper.message-wrapper--grouped .message {
+        background: #0a84ff;
+        color: #ffffff;
+    }
+}
