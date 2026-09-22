@@ -17,13 +17,13 @@ class RoomCatalogAndRealtimeTest extends TestCase
     public function testCatalogCounts(): void
     {
         $catalog = new RoomCatalog();
-        $this->assertSame(41, $catalog->brandRoomCount());
+        $this->assertSame(45, $catalog->brandRoomCount());
         $this->assertSame(1, $catalog->generalRoomCount());
-        $this->assertSame(42, $catalog->totalRoomCount());
-        $this->assertCount(42, $catalog->rooms());
+        $this->assertSame(46, $catalog->totalRoomCount());
+        $this->assertCount(46, $catalog->rooms());
     }
 
-    public function testGmAndCdjrIndependence(): void
+    public function testGmCdjrAndJlrIndependence(): void
     {
         $catalog = new RoomCatalog();
         $keys = array_column($catalog->rooms(), 'roomKey');
@@ -41,6 +41,15 @@ class RoomCatalogAndRealtimeTest extends TestCase
         $this->assertContains('dodge-live', $keys);
         $this->assertContains('jeep-live', $keys);
         $this->assertContains('ram-live', $keys);
+        $this->assertContains('jlr-live', $keys);
+        $this->assertContains('jaguar-live', $keys);
+        $this->assertContains('land-rover-live', $keys);
+        $this->assertContains('range-rover-live', $keys);
+        $this->assertContains('aston-martin-live', $keys);
+        $this->assertNotSame(
+            $catalog->findByRoomKey('jlr-live'),
+            $catalog->findByRoomKey('range-rover-live')
+        );
     }
 
     public function testGeneralLiveScope(): void
@@ -53,12 +62,12 @@ class RoomCatalogAndRealtimeTest extends TestCase
         $this->assertNotSame('general-shop-discussion', $general['scopeKey']);
     }
 
-    public function testProvisionerDryRunExpects42(): void
+    public function testProvisionerDryRunExpects46(): void
     {
         $p = new RoomProvisioner(new RoomCatalog(), false);
         $result = $p->run(RoomProvisioner::MODE_DRY_RUN, []);
-        $this->assertSame(42, $result['expected']);
-        $this->assertCount(42, $result['missing']);
+        $this->assertSame(46, $result['expected']);
+        $this->assertCount(46, $result['missing']);
         $this->assertFalse($result['writesApplied']);
     }
 
