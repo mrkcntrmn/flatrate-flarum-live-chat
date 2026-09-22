@@ -97,7 +97,7 @@ class RolloutAndRealtimeAuthTest extends TestCase
         $profile = new RolloutProfile();
         $profile->assertValid();
         $this->assertSame('general-live-first', $profile->profileId());
-        $this->assertSame(42, $profile->canonicalRoomCount());
+        $this->assertSame(46, $profile->canonicalRoomCount());
 
         $general = $profile->policyForRoomKey('community-general-live');
         $this->assertSame(RoomVisibility::VISIBLE, $general['visibility']);
@@ -113,11 +113,11 @@ class RolloutAndRealtimeAuthTest extends TestCase
         $catalog = new RoomCatalog();
         $profile = new RolloutProfile();
         $expanded = $profile->expandForRooms($catalog->rooms());
-        $this->assertCount(42, $expanded);
+        $this->assertCount(46, $expanded);
         $memberVisible = array_filter($expanded, fn ($r) => $r['visibility'] === 'visible' && $r['audience'] === 'members');
         $this->assertCount(1, $memberVisible);
         $staff = array_filter($expanded, fn ($r) => $r['audience'] === 'staff-preview');
-        $this->assertCount(41, $staff);
+        $this->assertCount(45, $staff);
     }
 
     public function testMemberCannotSeeHiddenBrandRoom(): void
@@ -223,9 +223,9 @@ class RolloutAndRealtimeAuthTest extends TestCase
         ]];
         $applicator = new RolloutApplicator($catalog, $profile, false);
         $result = $applicator->apply($existing, true);
-        $this->assertSame(42, $result['expected']);
+        $this->assertSame(46, $result['expected']);
         $this->assertSame(1, $result['memberVisible']);
-        $this->assertSame(41, $result['staffPreview']);
+        $this->assertSame(45, $result['staffPreview']);
         $keys = array_column($result['updated'], 'roomKey');
         $this->assertContains('toyota-live', $keys);
         foreach ($result['updated'] as $u) {
@@ -253,7 +253,7 @@ class RolloutAndRealtimeAuthTest extends TestCase
             'audience' => RoomAudience::STAFF_PREVIEW,
         ]];
         $result = $p->run(RoomProvisioner::MODE_DRY_RUN, $existing);
-        $this->assertSame(42, $result['expected']);
+        $this->assertSame(46, $result['expected']);
         $this->assertSame('general-live-first', $result['rolloutProfile']);
         $driftKeys = array_column($result['drifted'], 'roomKey');
         $this->assertContains('community-general-live', $driftKeys);
@@ -549,9 +549,9 @@ class RolloutAndRealtimeAuthTest extends TestCase
     public function testDoctorReportNoSecrets(): void
     {
         $report = (new DoctorReport())->toArray();
-        $this->assertSame(42, $report['canonicalRoomCount']);
+        $this->assertSame(46, $report['canonicalRoomCount']);
         $this->assertSame(1, $report['memberVisibleRooms']);
-        $this->assertSame(41, $report['staffPreviewRooms']);
+        $this->assertSame(45, $report['staffPreviewRooms']);
         $this->assertArrayNotHasKey('productionCentrifugoConfigured', $report);
         $this->assertArrayNotHasKey('NEXT_VERSION', $report);
         $this->assertSame('CENTRIFUGO_SELF_HOSTED', $report['transport']['transportDecision']);
