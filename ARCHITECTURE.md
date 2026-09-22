@@ -26,14 +26,14 @@ audience    (members|staff-preview)
 
 Canonical catalog (embedded `resources/room-catalog.json`):
 
-- 41 brand rooms: `roomKey={boardKey}-live`, `scopeType=board`, `scopeKey={boardKey}`
+- 45 brand rooms: `roomKey={boardKey}-live`, `scopeType=board`, `scopeKey={boardKey}`
 - 1 General Live: `community-general-live`, `scopeType=navigation-group`, `scopeKey=community`
 
 ```text
-CANONICAL_ROOM_COUNT=42
+CANONICAL_ROOM_COUNT=46
 ```
 
-GM Live and CDJR Live are independent of child brand rooms. No mirroring.
+GM Live, CDJR Live, and JLR Live are independent of child brand rooms. No mirroring.
 
 ## Rollout
 
@@ -71,7 +71,7 @@ GET  /api/flatrate-live-chat/admin/rooms/reconcile-preview
 POST /api/flatrate-live-chat/admin/rooms/reconcile
 ```
 
-That path binds catalog/state SHA + confirmation, creates 0→42 in one DB
+That path binds catalog/state SHA + confirmation, creates 0→46 in one DB
 transaction, fail-closes on partial/extra/drift, and no-ops when already
 reconciled. It constructs a write-enabled provisioner only inside the trusted
 controller — the service-provider default remains `allowWrites=false`.

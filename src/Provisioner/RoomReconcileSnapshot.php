@@ -19,7 +19,7 @@ final class RoomReconcileSnapshot
     public const CLASS_ALREADY_RECONCILED = 'ALREADY_RECONCILED';
     public const CLASS_REVIEW_REQUIRED = 'REVIEW_REQUIRED';
 
-    public const CONFIRM_PREFIX = 'FORUM-CHAT-001D:RECONCILE:42:general-live-first:';
+    public const CONFIRM_PREFIX = 'FORUM-CHAT-001D:RECONCILE:46:general-live-first:';
 
     public function __construct(
         private RoomCatalog $catalog,
@@ -120,9 +120,9 @@ final class RoomReconcileSnapshot
     {
         $this->rollout->assertValid();
         $catalogCount = count($this->catalog->rooms());
-        if ($catalogCount !== 42
+        if ($catalogCount !== 46
             || $this->catalog->generalRoomCount() !== 1
-            || $this->catalog->brandRoomCount() !== 41
+            || $this->catalog->brandRoomCount() !== 45
             || $this->rollout->profileId() !== RolloutProfile::PROFILE_GENERAL_LIVE_FIRST
         ) {
             throw new \RuntimeException('embedded catalog/profile invariants failed');
@@ -167,9 +167,9 @@ final class RoomReconcileSnapshot
         $drifted = count($driftedKeys);
 
         $classification = self::CLASS_REVIEW_REQUIRED;
-        if ($existingCanonical === 0 && $missing === 42 && $extra === 0 && $drifted === 0) {
+        if ($existingCanonical === 0 && $missing === 46 && $extra === 0 && $drifted === 0) {
             $classification = self::CLASS_READY_INITIAL_CREATE;
-        } elseif ($existingCanonical === 42 && $missing === 0 && $extra === 0 && $drifted === 0) {
+        } elseif ($existingCanonical === 46 && $missing === 0 && $extra === 0 && $drifted === 0) {
             $classification = self::CLASS_ALREADY_RECONCILED;
         }
 
@@ -178,13 +178,13 @@ final class RoomReconcileSnapshot
 
         return [
             'ok' => true,
-            'catalogCount' => 42,
+            'catalogCount' => 46,
             'existingCanonicalCount' => $existingCanonical,
             'missingCount' => $missing,
             'extraCount' => $extra,
             'driftedCount' => $drifted,
             'memberVisibleExpected' => 1,
-            'staffPreviewExpected' => 41,
+            'staffPreviewExpected' => 45,
             'rolloutProfile' => RolloutProfile::PROFILE_GENERAL_LIVE_FIRST,
             'catalogSha256' => $catalogSha,
             'stateSha256' => $stateSha,
@@ -226,7 +226,7 @@ final class RoomReconcileSnapshot
         if ($general !== [RoomVisibility::VISIBLE, RoomAudience::MEMBERS]) {
             throw new \RuntimeException('general room postcondition failed');
         }
-        if ($brandHidden !== 41) {
+        if ($brandHidden !== 45) {
             throw new \RuntimeException('brand room postcondition failed');
         }
     }

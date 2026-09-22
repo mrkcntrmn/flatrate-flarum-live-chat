@@ -12,7 +12,7 @@ use FlatRate\LiveChat\Rollout\RolloutProfile;
 /**
  * Production-safe reconcile orchestration.
  *
- * Stricter than RoomProvisioner: initial 0→42 create and already-reconciled
+ * Stricter than RoomProvisioner: initial 0→46 create and already-reconciled
  * no-op only. Partial/extra/drifted states fail closed.
  */
 final class ProductionRoomReconcileService
@@ -104,7 +104,7 @@ final class ProductionRoomReconcileService
                     'writesApplied' => false,
                     'catalogSha256' => $fresh['catalogSha256'],
                     'stateSha256' => $fresh['stateSha256'],
-                    'existingCanonicalCount' => 42,
+                    'existingCanonicalCount' => 46,
                     'missingCount' => 0,
                     'extraCount' => 0,
                     'driftedCount' => 0,
@@ -114,10 +114,10 @@ final class ProductionRoomReconcileService
 
         if ($fresh['classification'] !== RoomReconcileSnapshot::CLASS_READY_INITIAL_CREATE
             || $fresh['existingCanonicalCount'] !== 0
-            || $fresh['missingCount'] !== 42
+            || $fresh['missingCount'] !== 46
             || $fresh['extraCount'] !== 0
             || $fresh['driftedCount'] !== 0
-            || $fresh['catalogCount'] !== 42
+            || $fresh['catalogCount'] !== 46
             || $fresh['rolloutProfile'] !== RolloutProfile::PROFILE_GENERAL_LIVE_FIRST
         ) {
             return [
