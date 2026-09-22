@@ -18,7 +18,7 @@ use FlatRate\LiveChat\Rollout\RoomVisibility;
  * operator shell environments only (`FLATRATE_LIVE_CHAT_ALLOW_WRITES=1`).
  * Production PikaPods uses the admin HTTP reconcile API, which constructs a
  * provisioner with writes enabled only inside that trusted controller path.
- * Reconcile always targets CANONICAL_ROOM_COUNT=42.
+ * Reconcile always targets CANONICAL_ROOM_COUNT=46.
  */
 class RoomProvisioner
 {
@@ -49,8 +49,8 @@ class RoomProvisioner
         }
 
         $expected = $this->catalog->rooms();
-        if (count($expected) !== 42) {
-            throw new \RuntimeException('CANONICAL_ROOM_COUNT must be 42');
+        if (count($expected) !== 46) {
+            throw new \RuntimeException('CANONICAL_ROOM_COUNT must be 46');
         }
 
         $byKey = [];
