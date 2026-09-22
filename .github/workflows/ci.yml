@@ -74,17 +74,18 @@ jobs:
           python3 - <<'PY'
           import json
           d=json.load(open('resources/room-catalog.json'))
-          assert d['totalRoomCount']==42
-          assert d['brandRoomCount']==41
+          assert d['totalRoomCount']==46
+          assert d['brandRoomCount']==45
           assert d['generalRoomCount']==1
           keys={r['roomKey'] for r in d['rooms']}
-          assert 'gm-live' in keys and 'cdjr-live' in keys and 'community-general-live' in keys
+          for key in ['gm-live','cdjr-live','jlr-live','jaguar-live','land-rover-live','range-rover-live','aston-martin-live','community-general-live']:
+            assert key in keys
           assert 'start-here-live' not in keys
           assert 'general-shop-discussion-live' not in keys
           assert 'technician-topics-live' not in keys
           r=json.load(open('resources/rollout/general-live-first.json'))
           assert r['profileId']=='general-live-first'
-          assert r['canonicalRoomCount']==42
+          assert r['canonicalRoomCount']==46
           assert r['defaultBrand']['visibility']=='hidden'
           assert r['defaultBrand']['audience']=='staff-preview'
           rooms={x['roomKey']:x for x in r['rooms']}
