@@ -167,3 +167,4 @@ flatrate-live-chat:
         minimize: Minimize initially
         censor: Censoring messages for unauthorized users
       live_chats_navigation: Show Live Chat navigation
+      general_live_enabled: Enable General Live (Admin kill switch)
