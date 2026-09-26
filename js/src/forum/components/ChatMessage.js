@@ -82,13 +82,49 @@ export default class ChatMessage extends Component {
     }
 
     /**
-     * Messages V2 body inside ChatMessageGroup — no avatar/name/time/ellipsis.
+     * Messages V2 body inside ChatMessageGroup — no avatar/name/time.
+     * Staff moderation menu is attached per message when authorized.
      */
     v2GroupedContent() {
+        const canModerate = this.canModerateMessage();
         return (
             <div className="ChatMessage-content ChatMessage-content--grouped">
                 <div className="labels">{this.labels.map((label) => (label.condition() ? label.component() : null))}</div>
-                {this.messageBody()}
+                <div className="ChatMessage-groupedRow">
+                    {this.messageBody()}
+                    {canModerate && this.model.id() && !this.model.deleted_by() ? this.moderationDropdown() : null}
+                </div>
+            </div>
+        );
+    }
+
+    /**
+     * Canonical Live moderation gate. Uses forum-serialized moderate permission
+     * (administrators inherit via Flarum can(); do not invent username heuristics).
+     */
+    canModerateMessage() {
+        return !!app.forum.attribute('flatrate-live-chat.permissions.moderate');
+    }
+
+    /**
+     * Narrow staff-only menu: Remove message → existing DELETE path (dropdownDelete).
+     * Do not route staff removal through the inherited hide mutation.
+     */
+    moderationDropdown() {
+        const label = app.translator.trans('flatrate-live-chat.forum.chat.message.actions.remove');
+        return (
+            <div className="ChatMessage-moderation">
+                <Dropdown
+                    buttonClassName="Button Button--icon Button--flat ChatMessage-moderationToggle"
+                    menuClassName="Dropdown-menu Dropdown-menu--top Dropdown-menu--bottom Dropdown-menu--left Dropdown-menu--right"
+                    icon="fas fa-ellipsis-h"
+                    label={label}
+                    accessibleToggleLabel={extractText(label)}
+                >
+                    <Button onclick={this.modelEvent.bind(this, 'dropdownDelete')} icon="fas fa-trash-alt">
+                        {label}
+                    </Button>
+                </Dropdown>
             </div>
         );
     }

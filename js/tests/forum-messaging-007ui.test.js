@@ -36,7 +36,10 @@ test('STATIC: V2 CSS uses ChatMessageGroup with less.php-safe widths', () => {
   assert.match(less, /\.ChatMessageGroup-header/);
   assert.match(less, /\.message-wrapper--grouped/);
   const v2Block = less.slice(less.indexOf('.ChatViewport.ChatViewport--messagesV2'));
-  assert.doesNotMatch(v2Block, /flex-direction:\s*row-reverse/);
+  // Ownership layout must not use row-reverse; 011UI may mirror the staff menu row only.
+  assert.doesNotMatch(v2Block, /\.message-wrapper--own[\s\S]*?>\s*div[\s\S]*?flex-direction:\s*row-reverse/);
+  assert.doesNotMatch(v2Block, /\.ChatMessageGroup--own\s*\{[^}]*flex-direction:\s*row-reverse/);
+  assert.match(v2Block, /\.ChatMessage-groupedRow[\s\S]*flex-direction:\s*row-reverse/);
   assert.doesNotMatch(v2Block, /max-width:\s*min\(/);
   assert.match(v2Block, /max-width:\s*~"min\(/);
   assert.match(v2Block, /\.ChatMessageGroup-avatar[\s\S]*?position:\s*relative/);
