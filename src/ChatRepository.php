@@ -6,6 +6,7 @@
 namespace FlatRate\LiveChat;
 
 use FlatRate\LiveChat\Auth\ChatAuthorization;
+use FlatRate\LiveChat\Auth\GeneralLiveGate;
 use FlatRate\LiveChat\Rollout\RoomAudience;
 use FlatRate\LiveChat\Rollout\RoomVisibility;
 use Flarum\User\User;
@@ -36,6 +37,10 @@ class ChatRepository
         $query = $this->query()
             ->where('type', 1)
             ->whereNotNull('room_key');
+
+        if (!$this->auth->isGeneralLiveEnabled()) {
+            $query->where('room_key', '!=', GeneralLiveGate::ROOM_KEY);
+        }
 
         if ($this->auth->canPreviewHiddenChatRooms($actor)) {
             return $query;

@@ -11,6 +11,7 @@ namespace FlatRate\LiveChat\Auth;
 use FlatRate\LiveChat\Chat;
 use FlatRate\LiveChat\Rollout\RoomAudience;
 use FlatRate\LiveChat\Rollout\RoomVisibility;
+use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\User\Exception\PermissionDeniedException;
 use Flarum\User\User;
 
@@ -28,9 +29,45 @@ class ChatAuthorization
     public const PERM_MODERATE = 'flatrate-live-chat.permissions.moderate';
     public const PERM_ADMIN_ROOMS = 'flatrate-live-chat.permissions.admin-rooms';
 
+    public function __construct(private ?SettingsRepositoryInterface $settings = null)
+    {
+    }
+
     public function assertEnabled(User $actor): void
     {
         $actor->assertCan(self::PERM_ENABLED);
+    }
+
+    /**
+     * Admin operational gate for General Live. Migration-safe: absent => enabled.
+     */
+    public function isGeneralLiveEnabled(): bool
+    {
+        $raw = null;
+        if ($this->settings !== null) {
+            $raw = $this->settings->get(GeneralLiveGate::SETTING_KEY);
+        } elseif (function_exists('resolve')) {
+            try {
+                $raw = resolve(SettingsRepositoryInterface::class)->get(GeneralLiveGate::SETTING_KEY);
+            } catch (\Throwable $e) {
+                $raw = null;
+            }
+        }
+
+        return GeneralLiveGate::isEnabled($raw);
+    }
+
+    /**
+     * Narrow General Live only. Never broadens Brand/DM access.
+     */
+    public function assertGeneralLiveOperational(Chat $chat): void
+    {
+        if (!GeneralLiveGate::isGeneralLiveRoom($chat)) {
+            return;
+        }
+        if (!$this->isGeneralLiveEnabled()) {
+            throw new PermissionDeniedException();
+        }
     }
 
     public function assertNotGuest(User $actor): void
@@ -137,6 +174,7 @@ class ChatAuthorization
             // Callers that reach here for a filtered-out room should prefer 404.
             throw new PermissionDeniedException();
         }
+        $this->assertGeneralLiveOperational($chat);
     }
 
     public function assertCanReadMessages(User $actor, Chat $chat): void

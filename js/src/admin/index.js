@@ -36,6 +36,13 @@ app.initializers.add('flatrate-live-chat', (app) => {
             type: 'boolean',
             default: false,
         })
+        .registerSetting({
+            setting: 'flatrate-live-chat.general_live_enabled',
+            label: app.translator.trans('flatrate-live-chat.admin.settings.general_live_enabled'),
+            type: 'boolean',
+            // Migration-safe: unset DB value is treated as enabled server-side.
+            default: true,
+        })
         .registerPermission(
             {
                 icon: 'fas fa-eye',
