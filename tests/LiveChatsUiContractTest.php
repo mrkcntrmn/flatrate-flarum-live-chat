@@ -65,6 +65,11 @@ class LiveChatsUiContractTest extends TestCase
         $this->assertStringContainsString("route('/live', 'flatrate-live-chat.index'", $src);
         $this->assertStringContainsString('live_chats_navigation_enabled', $src);
         $this->assertStringContainsString("->default('flatrate-live-chat.live_chats_navigation_enabled', '0')", $src);
+        $this->assertStringContainsString('general_live_enabled', $src);
+        $this->assertStringNotContainsString(
+            "->default('flatrate-live-chat.general_live_enabled', '0')",
+            $src
+        );
     }
 
     public function testMembershipHelpersPresentAndReadDoesNotSubscribe(): void

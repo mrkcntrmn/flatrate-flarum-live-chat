@@ -84,14 +84,14 @@ export default class ChatState {
 
     subscribeRoomChannel(roomKey) {
         if (app.flatrateLiveRealtime && roomKey) {
-            return app.flatrateLiveRealtime.subscribe(roomKey);
+            return app.flatrateLiveRealtime.acquire(roomKey, 'active_conversation');
         }
         return null;
     }
 
     unsubscribeRoomChannel(roomKey) {
         if (app.flatrateLiveRealtime && roomKey) {
-            app.flatrateLiveRealtime.unsubscribe(roomKey);
+            app.flatrateLiveRealtime.release(roomKey, 'active_conversation');
         }
     }
 

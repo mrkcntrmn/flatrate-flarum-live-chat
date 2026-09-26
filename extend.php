@@ -100,10 +100,15 @@ return [
             $attributes['flatrate-live-chat.settings.attachments'] = false;
             $attributes['flatrate-live-chat.settings.email_notifications'] = false;
             $attributes['flatrate-live-chat.settings.indexing'] = false;
-            $nav = resolve(\Flarum\Settings\SettingsRepositoryInterface::class)
-                ->get('flatrate-live-chat.live_chats_navigation_enabled');
+            $settings = resolve(\Flarum\Settings\SettingsRepositoryInterface::class);
+            $nav = $settings->get('flatrate-live-chat.live_chats_navigation_enabled');
             $attributes['flatrate-live-chat.live_chats_navigation_enabled'] =
                 $nav === '1' || $nav === 1 || $nav === true || $nav === 'true';
+            // Migration-safe: absent setting preserves General Live enabled.
+            $attributes['flatrate-live-chat.general_live_enabled'] =
+                \FlatRate\LiveChat\Auth\GeneralLiveGate::isEnabled(
+                    $settings->get(\FlatRate\LiveChat\Auth\GeneralLiveGate::SETTING_KEY)
+                );
             $attributes['flatrate-live-chat.realtime.decision'] = 'CENTRIFUGO_SELF_HOSTED';
             $attributes['flatrate-live-chat.rollout.profile'] = 'general-live-first';
             $attributes['flatrate-live-chat.canPreviewHidden'] = resolve(\FlatRate\LiveChat\Auth\ChatAuthorization::class)

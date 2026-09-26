@@ -37,6 +37,7 @@ export default class FlatRateRealtimeClient {
         this.onEvent = options.onEvent || (() => {});
         this.client = null;
         this.subscriptions = new Map(); // roomKey -> Subscription
+        this.roomReasons = new Map(); // roomKey -> Set<reason>
         this.seen = new Set();
         this.maxSeen = 500;
         this.reconnectAttempts = 0;
@@ -151,6 +152,7 @@ export default class FlatRateRealtimeClient {
 
     /**
      * Subscribe by roomKey (preferred). Also accepts a full `$flatrate-live-*` channel.
+     * Physical subscribe — prefer acquire/release for multi-reason ownership.
      */
     async subscribe(roomKeyOrChannel) {
         let roomKey = roomKeyOrChannel;
@@ -184,6 +186,67 @@ export default class FlatRateRealtimeClient {
         return sub;
     }
 
+    /**
+     * Reason-aware ownership. First reason opens the physical subscription;
+     * additional reasons reuse it; final release unsubscribes.
+     */
+    async acquire(roomKeyOrChannel, reason) {
+        let roomKey = roomKeyOrChannel;
+        if (typeof roomKeyOrChannel === 'string' && roomKeyOrChannel.startsWith('$flatrate-live-')) {
+            roomKey = roomKeyFromChannel(roomKeyOrChannel);
+        }
+        if (!roomKey || !reason) {
+            return null;
+        }
+        let reasons = this.roomReasons.get(roomKey);
+        if (!reasons) {
+            reasons = new Set();
+            this.roomReasons.set(roomKey, reasons);
+        }
+        const first = reasons.size === 0;
+        reasons.add(String(reason));
+        if (first || !this.subscriptions.has(roomKey)) {
+            const sub = await this.subscribe(roomKey);
+            if (!sub) {
+                reasons.delete(String(reason));
+                if (reasons.size === 0) {
+                    this.roomReasons.delete(roomKey);
+                }
+                return null;
+            }
+            return sub;
+        }
+        return this.subscriptions.get(roomKey);
+    }
+
+    release(roomKeyOrChannel, reason) {
+        let roomKey = roomKeyOrChannel;
+        if (typeof roomKeyOrChannel === 'string' && roomKeyOrChannel.startsWith('$flatrate-live-')) {
+            roomKey = roomKeyFromChannel(roomKeyOrChannel);
+        }
+        if (!roomKey || !reason) return;
+        const reasons = this.roomReasons.get(roomKey);
+        if (!reasons) {
+            // No ownership bookkeeping — leave physical sub alone unless legacy unsubscribe.
+            return;
+        }
+        reasons.delete(String(reason));
+        if (reasons.size === 0) {
+            this.roomReasons.delete(roomKey);
+            this.unsubscribe(roomKey);
+        }
+    }
+
+    hasReason(roomKey, reason) {
+        const reasons = this.roomReasons.get(roomKey);
+        return !!(reasons && reasons.has(String(reason)));
+    }
+
+    reasonCount(roomKey) {
+        const reasons = this.roomReasons.get(roomKey);
+        return reasons ? reasons.size : 0;
+    }
+
     unsubscribe(roomKeyOrChannel) {
         let roomKey = roomKeyOrChannel;
         if (typeof roomKeyOrChannel === 'string' && roomKeyOrChannel.startsWith('$flatrate-live-')) {
@@ -200,12 +263,14 @@ export default class FlatRateRealtimeClient {
             // fail closed — HTTP history remains authoritative
         }
         this.subscriptions.delete(roomKey);
+        this.roomReasons.delete(roomKey);
     }
 
     unsubscribeAll() {
         for (const name of [...this.subscriptions.keys()]) {
             this.unsubscribe(name);
         }
+        this.roomReasons.clear();
     }
 
     handleEnvelope(envelope) {

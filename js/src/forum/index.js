@@ -8,6 +8,7 @@ import Model from 'flarum/Model';
 import ChatState from './states/ChatState';
 import addLiveChatsNavigation from './addLiveChatsNavigation';
 import registerLiveMessagingProvider from './registerLiveMessagingProvider';
+import registerLiveMainProvider, { startLiveMainProvider } from './registerLiveMainProvider';
 import FlatRateRealtimeClient from './realtime/FlatRateRealtimeClient';
 
 app.initializers.add('flatrate-live-chat', (app) => {
@@ -42,6 +43,7 @@ app.initializers.add('flatrate-live-chat', (app) => {
 
     addLiveChatsNavigation();
     registerLiveMessagingProvider();
+    registerLiveMainProvider();
 
     extend(Application.prototype, 'mount', function () {
         if (!app.forum.attribute('flatrate-live-chat.permissions.enabled')) return;
@@ -60,6 +62,9 @@ app.initializers.add('flatrate-live-chat', (app) => {
         if (app.session.user && app.flatrateLiveRealtime.isConfigured()) {
             app.flatrateLiveRealtime.connect();
         }
+
+        // MAIN presentation provider (Navigation consumes app.flatRateLiveMain).
+        startLiveMainProvider();
 
         if ('Notification' in window && app.chat.getFrameState('notify')) Notification.requestPermission();
 

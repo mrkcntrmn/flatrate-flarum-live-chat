@@ -52,6 +52,10 @@ all brand rooms hidden/staff-preview. Not a single `enabled` boolean.
 - sender always from actor (spoof rejected)
 - type=0 private/group chat disabled (`DM_COUPLING=false`)
 - Prefer 404 over revealing 403 for hidden room guesses
+- General Live operational kill switch: `flatrate-live-chat.general_live_enabled`
+  (Admin only; not `live_chats_navigation_enabled`). Migration-safe: setting
+  absent ⇒ enabled; explicit `0` ⇒ disabled. Narrows `community-general-live`
+  only; Brand/staff rooms and Direct Messages unchanged.
 
 ## Routes
 
