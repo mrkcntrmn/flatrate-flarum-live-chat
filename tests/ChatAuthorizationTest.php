@@ -117,4 +117,43 @@ class ChatAuthorizationTest extends TestCase
         $this->auth->assertCanManageCanonicalRooms($admin);
         $this->addToAssertionCount(1);
     }
+
+    public function testOrdinaryMemberCannotModerate(): void
+    {
+        $u = $this->member();
+        $this->expectException(PermissionDeniedException::class);
+        $this->auth->assertCanModerate($u);
+    }
+
+    public function testModeratorCanModerate(): void
+    {
+        $u = $this->member();
+        $u->permissions[ChatAuthorization::PERM_MODERATE] = true;
+        $this->auth->assertCanModerate($u);
+        $this->addToAssertionCount(1);
+    }
+
+    public function testAdministratorCanModerate(): void
+    {
+        $admin = new User(1);
+        $admin->isAdmin = true;
+        $this->auth->assertCanModerate($admin);
+        $this->addToAssertionCount(1);
+    }
+
+    public function testSuspendedModeratorCannotModerate(): void
+    {
+        $u = $this->member();
+        $u->permissions[ChatAuthorization::PERM_MODERATE] = true;
+        $u->suspended_until = date('c', time() + 3600);
+        $this->expectException(PermissionDeniedException::class);
+        $this->auth->assertCanModerate($u);
+    }
+
+    public function testGuestCannotModerate(): void
+    {
+        $guest = new User(null);
+        $this->expectException(PermissionDeniedException::class);
+        $this->auth->assertCanModerate($guest);
+    }
 }

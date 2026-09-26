@@ -109,6 +109,7 @@ flatrate-live-chat:
         actions:
           hide: Hide
           resend: Resend
+          remove: Remove message
         censored: Log in to see this message!
         deleted: deleted by
         deleted_forever: deleted forever by

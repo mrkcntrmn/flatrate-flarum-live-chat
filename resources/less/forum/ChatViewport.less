@@ -359,7 +359,9 @@
         }
 
         .ChatMessageGroup-avatar {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             position: relative;
             flex: 0 0 28px;
             width: 28px;
@@ -371,15 +373,24 @@
 
         .ChatMessageGroup-avatar > span,
         .ChatMessageGroup-avatar .Avatar,
-        .ChatMessageGroup-avatar .avatar,
+        .ChatMessageGroup-avatar .avatar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            text-align: center;
+            line-height: 1;
+            border-radius: 50%;
+            font-size: 13px;
+        }
+
         .ChatMessageGroup-avatar img {
             display: block;
             width: 28px;
             height: 28px;
             border-radius: 50%;
             object-fit: cover;
-            line-height: 28px;
-            font-size: 13px;
         }
 
         .ChatMessageGroup-messages {
@@ -456,6 +467,33 @@
                 max-width: 100%;
             }
 
+            .ChatMessage-groupedRow {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            .ChatMessage-moderation {
+                flex: 0 0 auto;
+                align-self: center;
+            }
+
+            .ChatMessage-moderationToggle {
+                width: 32px;
+                min-width: 32px;
+                height: 32px;
+                min-height: 32px;
+                margin: 0;
+                padding: 0;
+                font-size: 16px;
+                color: var(--muted-color, @muted-color);
+                background: transparent !important;
+                box-shadow: none !important;
+                border: 0 !important;
+            }
+
             .labels {
                 position: static;
                 display: inline-flex;
@@ -487,7 +525,17 @@
             }
         }
 
+        .ChatMessageGroup:not(.ChatMessageGroup--own) {
+            .message-wrapper.message-wrapper--grouped .ChatMessage-groupedRow {
+                flex-direction: row;
+            }
+        }
+
         .ChatMessageGroup--own .message-wrapper.message-wrapper--grouped {
+            .ChatMessage-groupedRow {
+                flex-direction: row-reverse;
+            }
+
             .message {
                 background: mix(@primary-color, @control-bg, 18%);
             }

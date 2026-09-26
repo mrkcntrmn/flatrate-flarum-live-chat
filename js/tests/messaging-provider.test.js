@@ -335,8 +335,12 @@ async function main() {
     'anonymous > div must no longer be the V2 layout contract'
   );
   assert.ok(
-    !/\.ChatViewport\.ChatViewport--messagesV2[\s\S]*flex-direction:\s*row-reverse/.test(viewportLess),
-    '007UI must not use row-reverse for V2 own ownership'
+    !/\.ChatMessageGroup--own\s*\{[^}]*flex-direction:\s*row-reverse/.test(viewportLess),
+    '007UI must not use row-reverse for V2 own ownership containers'
+  );
+  assert.ok(
+    /\.ChatMessage-groupedRow[\s\S]*flex-direction:\s*row-reverse/.test(viewportLess),
+    '011UI staff menu may mirror via groupedRow row-reverse only'
   );
   assert.ok(
     !/ChatMessageGroup-avatar\s*\{[^}]*display:\s*none/.test(viewportLess),
