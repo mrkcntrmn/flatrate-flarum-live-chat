@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f193e06fe98c8e26213edcff226f0f49",
+    "content-hash": "0c93b2909f2218dd4ec2d0c861555b4a",
     "packages": [
         {
             "name": "axy/backtrace",
