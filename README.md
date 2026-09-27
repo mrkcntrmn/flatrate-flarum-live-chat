@@ -23,13 +23,7 @@ Canonical routes: `/live/{roomKey}`.
 
 Target a Flarum **1.8.x** app with `flarum/core` **^1.8.19** and PHP **^8.1** (see `composer.json`).
 
-**Packagist / semver:**
-
-```bash
-composer require flatrate/flarum-live-chat:^1.2
-```
-
-**VCS (GitHub)** — add the repository, then require the tagged line (not `dev-main#<sha>`):
+**Install from GitHub (current path for `v1.2.0`)** — Packagist currently lists only `1.0.0` / `1.1.0`; add the VCS repository and require the tagged line (not `dev-main#<sha>`):
 
 ```json
 {
@@ -46,6 +40,12 @@ composer require flatrate/flarum-live-chat:^1.2
 ```
 
 Exact tag pin: `"flatrate/flarum-live-chat": "1.2.0"`.
+
+**After `1.2.0` is published to Packagist:**
+
+```bash
+composer require flatrate/flarum-live-chat:^1.2
+```
 
 ### Deployment models
 
