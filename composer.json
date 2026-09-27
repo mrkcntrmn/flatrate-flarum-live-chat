@@ -70,6 +70,9 @@
                 "backgroundSize": "cover",
                 "backgroundPosition": "center"
             }
+        },
+        "branch-alias": {
+            "dev-main": "1.x-dev"
         }
     },
     "homepage": "https://github.com/mrkcntrmn/flatrate-flarum-live-chat"
