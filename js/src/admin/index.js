@@ -39,9 +39,24 @@ app.initializers.add('flatrate-live-chat', (app) => {
         .registerSetting({
             setting: 'flatrate-live-chat.general_live_enabled',
             label: app.translator.trans('flatrate-live-chat.admin.settings.general_live_enabled'),
+            help: app.translator.trans('flatrate-live-chat.admin.settings.general_live_enabled_help'),
             type: 'boolean',
             // Migration-safe: unset DB value is treated as enabled server-side.
             default: true,
+        })
+        .registerSetting({
+            setting: 'flatrate-live-chat.general_live_admin_preview_enabled',
+            label: app.translator.trans('flatrate-live-chat.admin.settings.general_live_admin_preview_enabled'),
+            help: app.translator.trans('flatrate-live-chat.admin.settings.general_live_admin_preview_enabled_help'),
+            type: 'boolean',
+            default: false,
+        })
+        .registerSetting({
+            setting: 'flatrate-live-chat.general_live_user_enabled',
+            label: app.translator.trans('flatrate-live-chat.admin.settings.general_live_user_enabled'),
+            help: app.translator.trans('flatrate-live-chat.admin.settings.general_live_user_enabled_help'),
+            type: 'boolean',
+            default: false,
         })
         .registerPermission(
             {

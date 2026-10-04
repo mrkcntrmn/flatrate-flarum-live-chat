@@ -51,18 +51,12 @@ export function createLiveMainProvider(options = {}) {
     function available() {
         const a = getApp();
         if (!a?.session?.user) return false;
-        if (!a.forum?.attribute?.('flatrate-live-chat.permissions.enabled')) return false;
-        // Explicit forum attribute from server (migration-safe: absent serialized as true).
-        if (a.forum.attribute('flatrate-live-chat.general_live_enabled') === false) return false;
-        if (a.forum.attribute('flatrate-live-chat.general_live_enabled') !== true) {
-            // Fail closed if attribute missing from an unexpected payload.
-            return false;
-        }
-        return true;
+        // Server-derived actor-effective gate. Do not reimplement rollout here.
+        return a.forum?.attribute?.('flatrate-live-chat.main_live_available') === true;
     }
 
     function userLive() {
-        // Effective background Live: preference AND admin gate.
+        // Effective background Live: stored preference AND pinned-MAIN eligibility.
         return preferredLive && available();
     }
 
@@ -104,6 +98,9 @@ export function createLiveMainProvider(options = {}) {
 
     async function refreshLiveCount() {
         const a = getApp();
+        // Rollout or master changes release persistent Live without touching
+        // an active_conversation reason owned by the open room.
+        await syncPersistentSubscription();
         if (!available()) {
             liveCount = null;
             return null;

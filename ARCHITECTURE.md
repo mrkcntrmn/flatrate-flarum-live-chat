@@ -56,6 +56,16 @@ all brand rooms hidden/staff-preview. Not a single `enabled` boolean.
   (Admin only; not `live_chats_navigation_enabled`). Migration-safe: setting
   absent ⇒ enabled; explicit `0` ⇒ disabled. Narrows `community-general-live`
   only; Brand/staff rooms and Direct Messages unchanged.
+- Pinned MAIN Live rollout is separate from that room gate
+  (`Auth\GeneralLiveMainRollout`). Both new settings fail closed when absent:
+  `general_live_admin_preview_enabled` (Flarum admins only, not moderators)
+  and `general_live_user_enabled` (ordinary signed-in members; includes admins).
+  Forum clients receive one actor-effective boolean,
+  `flatrate-live-chat.main_live_available`. Navigation must not read the raw
+  rollout settings. Personal LIVE remains the local preference
+  `flatrate:general-live-presence:v1` and is not the Admin User Live switch.
+  With master ON and both rollout settings OFF, existing Messages General Live
+  stays authorized and the pinned MAIN row stays hidden.
 
 ## Routes
 

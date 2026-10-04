@@ -10,7 +10,7 @@ Derived from [`xelson/flarum-ext-chat`](https://github.com/Xelson/flarum-ext-cha
 | Extension ID | `flatrate-live-chat` |
 | Namespace | `FlatRate\LiveChat\` |
 | Upstream pin | `a7489ac183764eef12969135d6b665ac5eb18272` (`v1.1.5`) |
-| Rollout | `general-live-first` (General Live member-visible; brands staff-preview) |
+| Rollout | `general-live-first` (General Live member-visible; brands staff-preview). Pinned MAIN Live is separately fail-closed: Admin Preview and User Live default off |
 | Release tag | `v1.2.0` (authority on `main`; commit `46cd51243446025c3da0fe1997fdbaa2636669dd`) |
 | Requires | `flarum/core` ^1.8.19, PHP ^8.1 |
 | Transport | Centrifugo self-hosted (`1.1.0` stable; `1.1.1` source adds PikaPods file-backed secrets + egress probe) |
