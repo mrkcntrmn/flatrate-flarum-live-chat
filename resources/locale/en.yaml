@@ -167,4 +167,9 @@ flatrate-live-chat:
         minimize: Minimize initially
         censor: Censoring messages for unauthorized users
       live_chats_navigation: Show Live Chat navigation
-      general_live_enabled: Enable General Live (Admin kill switch)
+      general_live_enabled: Enable General Live
+      general_live_enabled_help: Master operational switch for General Live.
+      general_live_admin_preview_enabled: Admin Preview
+      general_live_admin_preview_enabled_help: Show the pinned General Live experience to Admins before user rollout.
+      general_live_user_enabled: User Live
+      general_live_user_enabled_help: Show the pinned General Live experience and personal LIVE control to signed-in members.

@@ -23,6 +23,10 @@ jobs:
           cache-dependency-path: js/package-lock.json
       - name: Composer validate
         run: composer validate --no-check-publish --strict
+      # Composer 2.10 blocks league/flysystem 1.x, which Flarum 1.8.19 requires.
+      # Ignore only those advisory IDs so the existing 1.8.19 lock can install.
+      - name: Allow Flarum 1.8.19 flysystem advisories
+        run: composer config --global --json policy.advisories.ignore-id '["PKSA-w9tt-7782-78jx","PKSA-pwh8-d4fr-nywn"]'
       - name: Install dependencies (platform-strict)
         # PHP 8.2 + declared platform extensions; no blanket --ignore-platform-reqs.
         run: composer update --no-interaction --prefer-dist
@@ -124,6 +128,8 @@ jobs:
           tools: composer:v2
           coverage: none
           extensions: dom, curl, gd, mbstring, pdo, pdo_mysql, tokenizer, xml, zip
+      - name: Allow Flarum 1.8.19 flysystem advisories
+        run: composer config --global --json policy.advisories.ignore-id '["PKSA-w9tt-7782-78jx","PKSA-pwh8-d4fr-nywn"]'
       - name: Resolve flatrate/flarum-live-chat into Flarum 1.8.19
         run: |
           set -euo pipefail

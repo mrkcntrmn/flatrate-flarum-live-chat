@@ -109,6 +109,10 @@ return [
                 \FlatRate\LiveChat\Auth\GeneralLiveGate::isEnabled(
                     $settings->get(\FlatRate\LiveChat\Auth\GeneralLiveGate::SETTING_KEY)
                 );
+            // Actor-effective pinned MAIN gate. Raw rollout settings stay admin-only.
+            $mainRollout = new \FlatRate\LiveChat\Auth\GeneralLiveMainRollout($settings);
+            $attributes[\FlatRate\LiveChat\Auth\GeneralLiveMainRollout::FORUM_ATTRIBUTE] =
+                $mainRollout->availableTo($actor);
             $attributes['flatrate-live-chat.realtime.decision'] = 'CENTRIFUGO_SELF_HOSTED';
             $attributes['flatrate-live-chat.rollout.profile'] = 'general-live-first';
             $attributes['flatrate-live-chat.canPreviewHidden'] = resolve(\FlatRate\LiveChat\Auth\ChatAuthorization::class)
@@ -126,6 +130,8 @@ return [
 
     (new Extend\Settings())
         ->default('flatrate-live-chat.live_chats_navigation_enabled', '0')
+        ->default('flatrate-live-chat.general_live_admin_preview_enabled', '0')
+        ->default('flatrate-live-chat.general_live_user_enabled', '0')
         ->serializeToForum('flatrate-live-chat.settings.charlimit', 'flatrate-live-chat.settings.charlimit')
         ->serializeToForum('flatrate-live-chat.settings.display.minimize', 'flatrate-live-chat.settings.display.minimize')
         ->serializeToForum('flatrate-live-chat.settings.display.censor', 'flatrate-live-chat.settings.display.censor'),

@@ -30,6 +30,7 @@ test('tracked forum dist embeds Live presence-stats provider path', () => {
 test('tracked forum dist embeds MAIN Live provider contract', () => {
   const dist = readFileSync(DIST, 'utf8');
   assert.match(dist, /flatRateLiveMain/);
+  assert.match(dist, /main_live_available/);
   assert.match(dist, /flatrate:general-live-presence:v1/);
   assert.match(dist, /persistent_user_live/);
   assert.match(dist, /active_conversation/);

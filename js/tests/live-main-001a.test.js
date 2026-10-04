@@ -163,9 +163,7 @@ function createLiveMainProvider(options = {}) {
   function available() {
     const a = getApp();
     if (!a?.session?.user) return false;
-    if (!a.forum?.attribute?.('flatrate-live-chat.permissions.enabled')) return false;
-    if (a.forum.attribute('flatrate-live-chat.general_live_enabled') !== true) return false;
-    return true;
+    return a.forum?.attribute?.('flatrate-live-chat.main_live_available') === true;
   }
   function userLive() {
     return preferredLive && available();
@@ -268,6 +266,7 @@ async function main() {
   const forumAttrs = {
     'flatrate-live-chat.permissions.enabled': true,
     'flatrate-live-chat.general_live_enabled': true,
+    'flatrate-live-chat.main_live_available': true,
     'flatrate-live-chat.realtime.connect': true,
   };
   const providerApp = {
@@ -310,6 +309,7 @@ async function main() {
 
   // admin off: available false, preference retained, presence released
   forumAttrs['flatrate-live-chat.general_live_enabled'] = false;
+  forumAttrs['flatrate-live-chat.main_live_available'] = false;
   assert.strictEqual(provider.available(), false);
   assert.strictEqual(provider.userLive(), false);
   assert.strictEqual(provider.preferredLive(), true);
@@ -319,6 +319,7 @@ async function main() {
 
   // guest / missing provider fail-closed
   forumAttrs['flatrate-live-chat.general_live_enabled'] = true;
+  forumAttrs['flatrate-live-chat.main_live_available'] = true;
   providerApp.session.user = null;
   assert.strictEqual(provider.available(), false);
 
@@ -329,6 +330,9 @@ async function main() {
   assert.ok(rtSrc.includes('roomReasons'));
   const providerSrc = fs.readFileSync(path.join(__dirname, '../src/forum/liveMainProvider.js'), 'utf8');
   assert.ok(providerSrc.includes('flatrate:general-live-presence:v1'));
+  assert.ok(providerSrc.includes('flatrate-live-chat.main_live_available'));
+  assert.ok(!providerSrc.includes('general_live_admin_preview_enabled'));
+  assert.ok(!providerSrc.includes('general_live_user_enabled'));
   assert.ok(providerSrc.includes('persistent_user_live'));
   assert.ok(providerSrc.includes('/messages/live/community-general-live'));
   const registerSrc = fs.readFileSync(path.join(__dirname, '../src/forum/registerLiveMainProvider.js'), 'utf8');
