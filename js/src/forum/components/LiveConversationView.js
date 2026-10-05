@@ -16,8 +16,26 @@ export default class LiveConversationView extends Component {
         super.oninit(vnode);
         this.unavailable = false;
         this.selecting = false;
+        this.conversationOwner = {};
         this.ensureChat();
         this.selectRoom(this.attrs.roomKey);
+    }
+
+    onremove(vnode) {
+        super.onremove(vnode);
+        this.releaseRoomView(this.attrs.roomKey || this.lastSelectedKey);
+    }
+
+    releaseRoomView(roomKey) {
+        if (app.chat && typeof app.chat.releaseActiveConversation === 'function') {
+            app.chat.releaseActiveConversation(roomKey, this.conversationOwner);
+        }
+    }
+
+    holdRoomView(roomKey) {
+        if (app.chat && typeof app.chat.holdActiveConversation === 'function') {
+            app.chat.holdActiveConversation(roomKey, this.conversationOwner);
+        }
     }
 
     onupdate(vnode) {
@@ -35,11 +53,15 @@ export default class LiveConversationView extends Component {
 
     selectRoom(roomKey) {
         this.ensureChat();
+        if (this.lastSelectedKey !== roomKey) {
+            this.releaseRoomView(this.lastSelectedKey);
+        }
         this.lastSelectedKey = roomKey;
 
         if (!roomKey) {
             this.unavailable = true;
             this.selecting = false;
+            this.releaseRoomView();
             return;
         }
 
@@ -48,6 +70,7 @@ export default class LiveConversationView extends Component {
             this.unavailable = false;
             this.selecting = false;
             app.chat.setCurrentChat(match);
+            this.holdRoomView(roomKey);
             return;
         }
 
@@ -55,12 +78,15 @@ export default class LiveConversationView extends Component {
             this.selecting = true;
             this.unavailable = false;
             app.chat.apiFetchChats().then(() => {
+                if (this.lastSelectedKey !== roomKey) return;
                 const found = findChatByRoomKey(roomKey);
                 if (found) {
                     this.unavailable = false;
                     app.chat.setCurrentChat(found);
+                    this.holdRoomView(roomKey);
                 } else {
                     this.unavailable = true;
+                    this.releaseRoomView(roomKey);
                     if (app.chat.getCurrentChat && roomKeyOf(app.chat.getCurrentChat()) !== roomKey) {
                         app.chat.setCurrentChat(null);
                     }
@@ -73,6 +99,7 @@ export default class LiveConversationView extends Component {
 
         this.unavailable = true;
         this.selecting = false;
+        this.releaseRoomView(roomKey);
     }
 
     view() {

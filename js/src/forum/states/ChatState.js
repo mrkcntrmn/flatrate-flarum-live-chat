@@ -8,6 +8,7 @@ import * as resources from '../resources';
 import ViewportState from './ViewportState';
 import { throttle } from 'flarum/utils/throttleDebounce';
 import { runChatMessagesFetch } from '../utils/chatMessagesFetchLifecycle';
+import { createActiveConversationLifecycle, ACTIVE_CONVERSATION_REASON } from '../activeConversationLifecycle';
 
 var refAudio = new Audio();
 refAudio.src = resources.base64AudioNotificationRef;
@@ -26,6 +27,8 @@ export default class ChatState {
         this.chatsLoading = true;
         this.curChat = null;
         this.totalHiddenCount = 0;
+        this.activeConversation = null;
+        this.activeConversationRealtime = null;
 
         let neonchatState = JSON.parse(localStorage.getItem('neonchat')) ?? {};
 
@@ -249,7 +252,11 @@ export default class ChatState {
 
     deleteChat(model) {
         this.chats = this.chats.filter((mdl) => mdl != model);
-        if (this.getCurrentChat() == model) this.setCurrentChat(null);
+        if (this.getCurrentChat() == model) {
+            const roomKey = model.room_key?.() || model.roomKey?.();
+            this.setCurrentChat(null);
+            if (roomKey) this.releaseActiveConversation(roomKey);
+        }
     }
 
     isChatPM(model) {
@@ -426,18 +433,35 @@ export default class ChatState {
         m.redraw();
     }
 
-    setCurrentChat(model) {
-        const prev = this.curChat;
-        if (prev && prev !== model) {
-            const prevKey = prev.room_key?.() || prev.roomKey?.();
-            if (prevKey) this.unsubscribeRoomChannel(prevKey);
+    ensureActiveConversation() {
+        const realtime = app.flatrateLiveRealtime || null;
+        if (!this.activeConversation || this.activeConversationRealtime !== realtime) {
+            this.activeConversation = createActiveConversationLifecycle({
+                acquire: (roomKey) => this.subscribeRoomChannel(roomKey),
+                release: (roomKey) => this.unsubscribeRoomChannel(roomKey),
+                hasReason: (roomKey) => !!(realtime && realtime.hasReason && realtime.hasReason(roomKey, ACTIVE_CONVERSATION_REASON)),
+            });
+            this.activeConversationRealtime = realtime;
         }
+        return this.activeConversation;
+    }
+
+    holdActiveConversation(roomKey, owner) {
+        if (!roomKey || !app.session.user || !app.flatrateLiveRealtime || !app.flatrateLiveRealtime.isConfigured()) return null;
+        this.activeConversationOwner = owner || null;
+        return this.ensureActiveConversation().enter(roomKey);
+    }
+
+    releaseActiveConversation(roomKey, owner) {
+        if (!this.activeConversation) return;
+        if (owner && this.activeConversationOwner && owner !== this.activeConversationOwner) return;
+        this.activeConversationOwner = null;
+        this.activeConversation.leave(roomKey);
+    }
+
+    setCurrentChat(model) {
         this.curChat = model;
         this.saveFrameState('selectedChat', model ? model.id() : null);
-        if (model && app.session.user && app.flatrateLiveRealtime && app.flatrateLiveRealtime.isConfigured()) {
-            const roomKey = model.room_key?.() || model.roomKey?.();
-            if (roomKey) this.subscribeRoomChannel(roomKey);
-        }
     }
 
     getCurrentChat() {
