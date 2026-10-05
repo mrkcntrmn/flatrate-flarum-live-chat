@@ -270,7 +270,7 @@ class GeneralLiveMainRolloutTest extends TestCase
         }
         $this->assertStringContainsString('general_live_admin_preview_enabled:', $locale);
         $this->assertStringContainsString('general_live_user_enabled:', $locale);
-        $this->assertStringContainsString('Admin Preview', $locale);
+        $this->assertStringContainsString('Admin Live Preview', $locale);
         $this->assertStringContainsString('User Live', $locale);
         $this->assertStringContainsString('GeneralLiveMainRollout::FORUM_ATTRIBUTE', $extend);
         $this->assertStringContainsString('GeneralLiveMainRollout', $extend);
