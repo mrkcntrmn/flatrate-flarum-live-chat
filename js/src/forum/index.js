@@ -9,6 +9,7 @@ import ChatState from './states/ChatState';
 import addLiveChatsNavigation from './addLiveChatsNavigation';
 import registerLiveMessagingProvider from './registerLiveMessagingProvider';
 import registerLiveMainProvider, { startLiveMainProvider } from './registerLiveMainProvider';
+import registerLiveBoardProvider from './registerLiveBoardProvider';
 import FlatRateRealtimeClient from './realtime/FlatRateRealtimeClient';
 
 app.initializers.add('flatrate-live-chat', (app) => {
@@ -44,6 +45,7 @@ app.initializers.add('flatrate-live-chat', (app) => {
     addLiveChatsNavigation();
     registerLiveMessagingProvider();
     registerLiveMainProvider();
+    registerLiveBoardProvider();
 
     extend(Application.prototype, 'mount', function () {
         if (!app.forum.attribute('flatrate-live-chat.permissions.enabled')) return;
