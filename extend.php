@@ -113,6 +113,8 @@ return [
             $mainRollout = new \FlatRate\LiveChat\Auth\GeneralLiveMainRollout($settings);
             $attributes[\FlatRate\LiveChat\Auth\GeneralLiveMainRollout::FORUM_ATTRIBUTE] =
                 $mainRollout->availableTo($actor);
+            $attributes[\FlatRate\LiveChat\Auth\BrandLiveAdminPreview::FORUM_ATTRIBUTE] =
+                (new \FlatRate\LiveChat\Auth\BrandLiveAdminPreview($settings))->availableTo($actor);
             $attributes['flatrate-live-chat.realtime.decision'] = 'CENTRIFUGO_SELF_HOSTED';
             $attributes['flatrate-live-chat.rollout.profile'] = 'general-live-first';
             $attributes['flatrate-live-chat.canPreviewHidden'] = resolve(\FlatRate\LiveChat\Auth\ChatAuthorization::class)

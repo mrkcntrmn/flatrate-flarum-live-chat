@@ -36,3 +36,9 @@ test('tracked forum dist embeds MAIN Live provider contract', () => {
   assert.match(dist, /active_conversation/);
   assert.match(dist, /messages\/live\/community-general-live/);
 });
+
+test('tracked forum dist embeds Brand Live preview provider contract', () => {
+  const dist = readFileSync(DIST, 'utf8');
+  assert.match(dist, /flatRateLiveBoard/);
+  assert.match(dist, /brand_live_admin_preview_available/);
+});
