@@ -173,3 +173,5 @@ flatrate-live-chat:
       general_live_admin_preview_enabled_help: Preview General Live on MAIN and Brand Live on Brand boards as an administrator before user rollout.
       general_live_user_enabled: User Live
       general_live_user_enabled_help: Show the pinned General Live experience and personal LIVE control to signed-in members.
+      member_beta_enabled: Member beta
+      member_beta_enabled_help: Allow approved beta testers to use General Live on MAIN and open an exact canonical Brand room. Room lists stay unchanged.

@@ -22,9 +22,10 @@ use Flarum\User\User;
  *   master enabled
  *   AND authenticated
  *   AND chat view permission (existing provider requirement)
- *   AND (user rollout OR (admin AND admin preview))
+ *   AND (user rollout OR (admin AND admin preview) OR (member beta AND approved projection))
  *
  * Admin means User::isAdmin(). Moderators are not an Admin Preview audience.
+ * The member-beta clause does not change the user-live or admin-preview clauses.
  */
 class GeneralLiveMainRollout
 {
@@ -32,8 +33,10 @@ class GeneralLiveMainRollout
     public const USER_LIVE_SETTING_KEY = 'flatrate-live-chat.general_live_user_enabled';
     public const FORUM_ATTRIBUTE = 'flatrate-live-chat.main_live_available';
 
-    public function __construct(private ?SettingsRepositoryInterface $settings = null)
-    {
+    public function __construct(
+        private ?SettingsRepositoryInterface $settings = null,
+        private ?MemberBetaGate $memberBeta = null
+    ) {
     }
 
     /**
@@ -96,7 +99,19 @@ class GeneralLiveMainRollout
         if ($actor->isAdmin() && $this->adminPreviewEnabled()) {
             return true;
         }
+        if ($this->memberBeta()->allowsActor($actor)) {
+            return true;
+        }
 
         return false;
+    }
+
+    private function memberBeta(): MemberBetaGate
+    {
+        if ($this->memberBeta === null) {
+            $this->memberBeta = new MemberBetaGate($this->settings);
+        }
+
+        return $this->memberBeta;
     }
 }
