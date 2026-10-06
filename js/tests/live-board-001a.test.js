@@ -26,15 +26,16 @@ test('brand catalog is a 45-key bijection with the room catalog', () => {
   assert.equal(brandRoomHref('not-a-brand'), null);
 });
 
-function harness({ preview = true, connected = true } = {}) {
+function harness({ available = true, adminPreview = false, connected = true, signedIn = true } = {}) {
   const requests = [];
   let payload = { available: true, liveUserCount: 1 };
   const timers = [];
   const app = {
-    session: { user: { id: 2 } },
+    session: { user: signedIn ? { id: 2 } : null },
     forum: {
       attribute(name) {
-        if (name === 'flatrate-live-chat.brand_live_admin_preview_available') return preview;
+        if (name === 'flatrate-live-chat.brand_live_available') return available;
+        if (name === 'flatrate-live-chat.brand_live_admin_preview_available') return adminPreview;
         if (name === 'flatrate-live-chat.realtime.connect') return connected;
         if (name === 'apiUrl') return 'https://forum.example';
         return null;
@@ -74,17 +75,27 @@ function harness({ preview = true, connected = true } = {}) {
   };
 }
 
-test('provider stays closed without admin preview and for unknown keys', () => {
-  const closed = harness({ preview: false });
+test('provider reads actor-effective availability and stays canonical', () => {
+  const closed = harness({ available: false, adminPreview: true });
   assert.equal(closed.provider.available('ford'), false);
   assert.equal(closed.provider.href('ford'), null);
-  const open = harness();
+
+  const absent = harness({ available: null, adminPreview: true });
+  assert.equal(absent.provider.available('ford'), false);
+
+  const open = harness({ available: true, adminPreview: false });
   assert.equal(open.provider.available('ford'), true);
+  assert.equal(open.provider.available('toyota'), true);
   assert.equal(open.provider.available('not-a-brand'), false);
+  assert.equal(open.provider.available('not-a-real-board'), false);
   assert.equal(open.provider.href('ford'), '/messages/live/ford-live');
+  assert.equal(open.provider.href('toyota'), '/messages/live/toyota-live');
   assert.equal(open.provider.href('range-rover'), '/messages/live/range-rover-live');
   assert.equal(open.provider.href('alfa-romeo'), '/messages/live/alfa-romeo-live');
   assert.equal(open.provider.href('nope'), null);
+
+  const guest = harness({ available: true, signedIn: false });
+  assert.equal(guest.provider.available('ford'), false);
 });
 
 test('count is positive, zero, or unknown and only the active board is polled', async () => {
