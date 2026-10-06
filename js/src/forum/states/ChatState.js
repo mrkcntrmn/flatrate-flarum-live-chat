@@ -9,6 +9,7 @@ import ViewportState from './ViewportState';
 import { throttle } from 'flarum/utils/throttleDebounce';
 import { runChatMessagesFetch } from '../utils/chatMessagesFetchLifecycle';
 import { applyPostedChatMessage } from '../utils/reconcilePostedChatMessage';
+import { messagesForChat as selectMessagesForChat } from '../utils/messagesForChat';
 import { isDirectoryListedChat, rememberHydratedRoom } from '../utils/selectRoutedLiveRoom';
 import { createActiveConversationLifecycle, ACTIVE_CONVERSATION_REASON } from '../activeConversationLifecycle';
 
@@ -294,6 +295,14 @@ export default class ChatState {
     getChatMessages(filter) {
         let list = this.chatmessages.sort((a, b) => this.comporatorAscButZerosDesc(a.id(), b.id()));
         return filter ? list.filter(filter) : list;
+    }
+
+    /**
+     * Shared storage stays global. Rendering callers use this to keep one chat's models.
+     * A missing chat, or a message without that chat relationship, renders nothing.
+     */
+    messagesForChat(chat) {
+        return selectMessagesForChat(this.getChatMessages(), chat);
     }
 
     apiFetchChatMessages(model, query, options = {}) {
