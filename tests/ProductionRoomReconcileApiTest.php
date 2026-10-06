@@ -523,4 +523,436 @@ class ProductionRoomReconcileApiTest extends TestCase
         $this->assertStringNotContainsString('jwt', strtolower($blob));
         $this->assertStringNotContainsString('cookie', strtolower($blob));
     }
+
+    public function testExactFourMissingOnlyRepairLeavesExistingRowsUntouched(): void
+    {
+        $repairWrites = 0;
+        $service = $this->repairService($repairWrites);
+        $this->store = $this->buildWithoutKeys(ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS);
+        $this->nextId = 1000;
+        $original = $this->store;
+        $originalIds = array_column($original, 'id', 'room_key');
+
+        $preview = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_READY_MISSING_ONLY_REPAIR, $preview['classification']);
+        $this->assertSame(46, $preview['catalogCount']);
+        $this->assertSame(42, $preview['existingCanonicalCount']);
+        $this->assertSame(4, $preview['missingCount']);
+        $this->assertSame(0, $preview['extraCount']);
+        $this->assertSame(0, $preview['driftedCount']);
+        $this->assertSame(ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS, $preview['missingRoomKeys']);
+
+        $payload = [
+            'expectedCatalogSha256' => $preview['catalogSha256'],
+            'expectedStateSha256' => $preview['stateSha256'],
+            'expectedExistingCanonicalCount' => 42,
+            'expectedMissingRoomKeys' => array_reverse(ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS),
+            'confirm' => $this->snapshot->expectedConfirmation($preview['stateSha256']),
+        ];
+        $result = $service->reconcile($payload);
+        $this->assertSame(200, $result['status']);
+        $this->assertTrue($result['body']['ok']);
+        $this->assertSame(4, $result['body']['createdCount']);
+        $this->assertSame(0, $result['body']['updatedCount']);
+        $this->assertTrue($result['body']['writesApplied']);
+        $this->assertSame(RoomReconcileSnapshot::CLASS_ALREADY_RECONCILED, $result['body']['classification']);
+        $this->assertSame(46, $result['body']['existingCanonicalCount']);
+        $this->assertSame(0, $result['body']['missingCount']);
+        $this->assertSame(0, $result['body']['extraCount']);
+        $this->assertSame(0, $result['body']['driftedCount']);
+        $this->assertSame(1, $repairWrites);
+        $this->assertSame(0, $this->writeCalls);
+        $this->assertCount(46, $this->store);
+
+        $after = [];
+        foreach ($this->store as $row) {
+            $after[$row['room_key']] = $row;
+        }
+        foreach ($original as $row) {
+            $this->assertSame($row, $after[$row['room_key']]);
+            $this->assertSame($originalIds[$row['room_key']], $after[$row['room_key']]['id']);
+        }
+        $catalogByKey = [];
+        foreach ($this->catalog->rooms() as $room) {
+            $catalogByKey[$room['roomKey']] = $room;
+        }
+        foreach (ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS as $key) {
+            $this->assertSame(RoomVisibility::HIDDEN, $after[$key]['visibility']);
+            $this->assertSame(RoomAudience::STAFF_PREVIEW, $after[$key]['audience']);
+            $this->assertSame($catalogByKey[$key]['scopeType'], $after[$key]['scope_type']);
+            $this->assertSame($catalogByKey[$key]['scopeKey'], $after[$key]['scope_key']);
+            $this->assertSame(1, $after[$key]['type']);
+        }
+        $this->assertSame(RoomVisibility::VISIBLE, $after['community-general-live']['visibility']);
+        $this->assertSame(RoomAudience::MEMBERS, $after['community-general-live']['audience']);
+        $brandHidden = 0;
+        foreach ($after as $key => $row) {
+            if ($key !== 'community-general-live'
+                && $row['visibility'] === RoomVisibility::HIDDEN
+                && $row['audience'] === RoomAudience::STAFF_PREVIEW
+            ) {
+                $brandHidden++;
+            }
+        }
+        $this->assertSame(45, $brandHidden);
+
+        $again = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_ALREADY_RECONCILED, $again['classification']);
+        $this->assertSame(46, $again['existingCanonicalCount']);
+        $this->assertSame([], $again['missingRoomKeys']);
+    }
+
+    public function testMissingOnlyRepairStaysFailClosed(): void
+    {
+        $repairWrites = 0;
+        $service = $this->repairService($repairWrites);
+
+        $this->store = $this->buildWithoutKeys(['ford-live', 'alfa-romeo-live', 'genesis-live', 'toyota-live']);
+        $otherPreview = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_REVIEW_REQUIRED, $otherPreview['classification']);
+        $this->assertSame(4, $otherPreview['missingCount']);
+        $this->assertNotSame(ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS, $otherPreview['missingRoomKeys']);
+        $other = $service->reconcile([
+            'expectedCatalogSha256' => $otherPreview['catalogSha256'],
+            'expectedStateSha256' => $otherPreview['stateSha256'],
+            'expectedExistingCanonicalCount' => 42,
+            'expectedMissingRoomKeys' => $otherPreview['missingRoomKeys'],
+            'confirm' => $this->snapshot->expectedConfirmation($otherPreview['stateSha256']),
+        ]);
+        $this->assertSame(409, $other['status']);
+        $this->assertSame(ProductionRoomReconcileService::ERR_REQUIRES_REVIEW, $other['body']['code']);
+        $this->assertFalse($other['body']['writesApplied']);
+        $this->assertSame(0, $repairWrites);
+        $this->assertCount(42, $this->store);
+
+        $this->store = $this->buildWithoutKeys(['aston-martin-live', 'jlr-live', 'land-rover-live', 'ford-live']);
+        $overlapPreview = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_REVIEW_REQUIRED, $overlapPreview['classification']);
+        $overlap = $service->reconcile([
+            'expectedCatalogSha256' => $overlapPreview['catalogSha256'],
+            'expectedStateSha256' => $overlapPreview['stateSha256'],
+            'expectedExistingCanonicalCount' => 42,
+            'expectedMissingRoomKeys' => ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS,
+            'confirm' => $this->snapshot->expectedConfirmation($overlapPreview['stateSha256']),
+        ]);
+        $this->assertSame(409, $overlap['status']);
+        $this->assertSame(ProductionRoomReconcileService::ERR_REQUIRES_REVIEW, $overlap['body']['code']);
+        $this->assertSame(0, $repairWrites);
+
+        $this->store = $this->buildWithoutKeys(ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS);
+        $preview = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_READY_MISSING_ONLY_REPAIR, $preview['classification']);
+        $omitted = $service->reconcile([
+            'expectedCatalogSha256' => $preview['catalogSha256'],
+            'expectedStateSha256' => $preview['stateSha256'],
+            'expectedExistingCanonicalCount' => 42,
+            'confirm' => $this->snapshot->expectedConfirmation($preview['stateSha256']),
+        ]);
+        $this->assertSame(400, $omitted['status']);
+        $this->assertSame(ProductionRoomReconcileService::ERR_BAD_REQUEST, $omitted['body']['code']);
+        $this->assertSame(0, $repairWrites);
+        $this->assertCount(42, $this->store);
+
+        $wrongSet = $service->reconcile([
+            'expectedCatalogSha256' => $preview['catalogSha256'],
+            'expectedStateSha256' => $preview['stateSha256'],
+            'expectedExistingCanonicalCount' => 42,
+            'expectedMissingRoomKeys' => ['ford-live', 'alfa-romeo-live', 'genesis-live', 'toyota-live'],
+            'confirm' => $this->snapshot->expectedConfirmation($preview['stateSha256']),
+        ]);
+        $this->assertSame(409, $wrongSet['status']);
+        $this->assertSame(ProductionRoomReconcileService::ERR_STATE_CHANGED, $wrongSet['body']['code']);
+        $this->assertSame(0, $repairWrites);
+        $this->assertCount(42, $this->store);
+
+        $this->store[0]['title'] = 'Mutated Title';
+        $driftPreview = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_REVIEW_REQUIRED, $driftPreview['classification']);
+        $this->assertSame(1, $driftPreview['driftedCount']);
+        $drifted = $service->reconcile([
+            'expectedCatalogSha256' => $driftPreview['catalogSha256'],
+            'expectedStateSha256' => $driftPreview['stateSha256'],
+            'expectedExistingCanonicalCount' => 42,
+            'expectedMissingRoomKeys' => ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS,
+            'confirm' => $this->snapshot->expectedConfirmation($driftPreview['stateSha256']),
+        ]);
+        $this->assertSame(409, $drifted['status']);
+        $this->assertSame(ProductionRoomReconcileService::ERR_REQUIRES_REVIEW, $drifted['body']['code']);
+        $this->assertSame('Mutated Title', $this->store[0]['title']);
+        $this->assertSame(0, $repairWrites);
+
+        $this->store = [];
+        $initial = $service->preview();
+        $rejected = $service->reconcile([
+            'expectedCatalogSha256' => $initial['catalogSha256'],
+            'expectedStateSha256' => $initial['stateSha256'],
+            'expectedExistingCanonicalCount' => 0,
+            'expectedMissingRoomKeys' => ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS,
+            'confirm' => $this->snapshot->expectedConfirmation($initial['stateSha256']),
+        ]);
+        $this->assertSame(400, $rejected['status']);
+        $this->assertSame(0, $repairWrites);
+        $this->assertSame(0, $this->writeCalls);
+        $this->assertCount(0, $this->store);
+    }
+
+    public function testMissingOnlyRepairRejectsOtherPartialsAndBadBindings(): void
+    {
+        $repairWrites = 0;
+        $service = $this->repairService($repairWrites);
+
+        $this->store = $this->buildWithoutKeys(['aston-martin-live', 'jlr-live', 'land-rover-live']);
+        $three = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_REVIEW_REQUIRED, $three['classification']);
+        $this->assertSame(43, $three['existingCanonicalCount']);
+        $this->assertSame(3, $three['missingCount']);
+        $threeResult = $service->reconcile($this->repairBody($three, [
+            'expectedExistingCanonicalCount' => 43,
+            'expectedMissingRoomKeys' => $three['missingRoomKeys'],
+        ]));
+        $this->assertSame(409, $threeResult['status']);
+        $this->assertSame(ProductionRoomReconcileService::ERR_REQUIRES_REVIEW, $threeResult['body']['code']);
+        $this->assertCount(43, $this->store);
+
+        $fiveKeys = array_merge(ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS, ['ford-live']);
+        $this->store = $this->buildWithoutKeys($fiveKeys);
+        $five = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_REVIEW_REQUIRED, $five['classification']);
+        $this->assertSame(41, $five['existingCanonicalCount']);
+        $this->assertSame(5, $five['missingCount']);
+        $fiveResult = $service->reconcile($this->repairBody($five, [
+            'expectedExistingCanonicalCount' => 41,
+            'expectedMissingRoomKeys' => $five['missingRoomKeys'],
+        ]));
+        $this->assertSame(409, $fiveResult['status']);
+        $this->assertSame(ProductionRoomReconcileService::ERR_REQUIRES_REVIEW, $fiveResult['body']['code']);
+        $this->assertCount(41, $this->store);
+
+        $this->store = $this->buildWithoutKeys(ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS);
+        $this->store[] = [
+            'id' => 999,
+            'type' => 1,
+            'title' => 'Rogue',
+            'room_key' => 'rogue-noncatalog-live',
+            'scope_type' => 'board',
+            'scope_key' => 'rogue',
+            'visibility' => RoomVisibility::HIDDEN,
+            'audience' => RoomAudience::STAFF_PREVIEW,
+        ];
+        $extra = $service->preview();
+        $this->assertSame(1, $extra['extraCount']);
+        $this->assertSame(RoomReconcileSnapshot::CLASS_REVIEW_REQUIRED, $extra['classification']);
+        $extraResult = $service->reconcile($this->repairBody($extra));
+        $this->assertSame(409, $extraResult['status']);
+        $this->assertSame(ProductionRoomReconcileService::ERR_REQUIRES_REVIEW, $extraResult['body']['code']);
+        $this->assertCount(43, $this->store);
+
+        $preview = $this->readyRepairPreview($service);
+        $bindingCases = [
+            $this->repairBody($preview, ['expectedStateSha256' => str_repeat('0', 64)]),
+            $this->repairBody($preview, ['expectedCatalogSha256' => str_repeat('a', 64)]),
+            $this->repairBody($preview, ['expectedExistingCanonicalCount' => 41]),
+            $this->repairBody($preview, ['confirm' => 'YES']),
+            $this->repairBody($preview, [
+                'expectedMissingRoomKeys' => array_merge(
+                    ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS,
+                    ['aston-martin-live']
+                ),
+            ]),
+        ];
+        foreach ($bindingCases as $body) {
+            $writesBefore = $repairWrites;
+            $result = $service->reconcile($body);
+            $this->assertSame(409, $result['status'], json_encode($body));
+            $this->assertSame(ProductionRoomReconcileService::ERR_STATE_CHANGED, $result['body']['code']);
+            $this->assertFalse($result['body']['writesApplied']);
+            $this->assertSame($writesBefore, $repairWrites);
+            $this->assertCount(42, $this->store);
+        }
+
+        $this->store = $this->buildExact46();
+        $complete = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_ALREADY_RECONCILED, $complete['classification']);
+        $completeResult = $service->reconcile($this->repairBody($complete, [
+            'expectedExistingCanonicalCount' => 46,
+            'expectedMissingRoomKeys' => ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS,
+        ]));
+        $this->assertSame(400, $completeResult['status']);
+        $this->assertSame(ProductionRoomReconcileService::ERR_BAD_REQUEST, $completeResult['body']['code']);
+        $this->assertSame(0, $repairWrites);
+        $this->assertSame(0, $this->writeCalls);
+        $this->assertCount(46, $this->store);
+    }
+
+    public function testRepairPostconditionFailureRollsBack(): void
+    {
+        $repairWrites = 0;
+        $service = new ProductionRoomReconcileService(
+            $this->catalog,
+            $this->rollout,
+            $this->snapshot,
+            fn () => $this->store,
+            function (callable $cb) {
+                $snap = $this->store;
+                $next = $this->nextId;
+                try {
+                    return $cb();
+                } catch (\Throwable $e) {
+                    $this->store = $snap;
+                    $this->nextId = $next;
+                    throw $e;
+                }
+            },
+            function (RoomProvisioner $provisioner) {
+                $this->writeCalls++;
+                throw new \RuntimeException('initial reconcile writer must not run for missing-only repair');
+            },
+            function (RoomProvisioner $provisioner, array $keys) use (&$repairWrites) {
+                $repairWrites++;
+                foreach ($this->catalog->rooms() as $room) {
+                    if (!in_array($room['roomKey'], $keys, true)) {
+                        continue;
+                    }
+                    $id = $this->nextId++;
+                    $this->store[] = [
+                        'id' => $id,
+                        'type' => 1,
+                        'title' => $room['name'],
+                        'room_key' => $room['roomKey'],
+                        'scope_type' => $room['scopeType'],
+                        'scope_key' => $room['scopeKey'],
+                        'visibility' => RoomVisibility::VISIBLE,
+                        'audience' => RoomAudience::MEMBERS,
+                    ];
+                }
+
+                return [
+                    'created' => array_map(
+                        static fn (string $key) => ['roomKey' => $key],
+                        $keys
+                    ),
+                    'updated' => [],
+                ];
+            }
+        );
+
+        $this->store = $this->buildWithoutKeys(ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS);
+        $before = $this->store;
+        $preview = $service->preview();
+        $result = $service->reconcile($this->repairBody($preview));
+
+        $this->assertSame(500, $result['status']);
+        $this->assertSame('ROOM_RECONCILE_FAILED', $result['body']['code']);
+        $this->assertFalse($result['body']['writesApplied']);
+        $this->assertSame(0, $result['body']['createdCount']);
+        $this->assertSame(0, $result['body']['updatedCount']);
+        $this->assertSame(1, $repairWrites);
+        $this->assertSame($before, $this->store);
+        $this->assertCount(42, $this->store);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function readyRepairPreview(ProductionRoomReconcileService $service): array
+    {
+        $this->store = $this->buildWithoutKeys(ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS);
+        $preview = $service->preview();
+        $this->assertSame(RoomReconcileSnapshot::CLASS_READY_MISSING_ONLY_REPAIR, $preview['classification']);
+        $this->assertSame(46, $preview['catalogCount']);
+        $this->assertSame(42, $preview['existingCanonicalCount']);
+        $this->assertSame(4, $preview['missingCount']);
+        $this->assertSame(0, $preview['extraCount']);
+        $this->assertSame(0, $preview['driftedCount']);
+        $this->assertSame(ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS, $preview['missingRoomKeys']);
+
+        return $preview;
+    }
+
+    /**
+     * @param array<string,mixed> $preview
+     * @param array<string,mixed> $overrides
+     * @return array<string,mixed>
+     */
+    private function repairBody(array $preview, array $overrides = []): array
+    {
+        return array_replace([
+            'expectedCatalogSha256' => $preview['catalogSha256'],
+            'expectedStateSha256' => $preview['stateSha256'],
+            'expectedExistingCanonicalCount' => $preview['existingCanonicalCount'],
+            'expectedMissingRoomKeys' => ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS,
+            'confirm' => $this->snapshot->expectedConfirmation($preview['stateSha256']),
+        ], $overrides);
+    }
+
+    private function repairService(int &$repairWrites): ProductionRoomReconcileService
+    {
+        return new ProductionRoomReconcileService(
+            $this->catalog,
+            $this->rollout,
+            $this->snapshot,
+            fn () => $this->store,
+            function (callable $cb) {
+                $snap = $this->store;
+                $next = $this->nextId;
+                try {
+                    return $cb();
+                } catch (\Throwable $e) {
+                    $this->store = $snap;
+                    $this->nextId = $next;
+                    throw $e;
+                }
+            },
+            function (RoomProvisioner $provisioner) {
+                $this->writeCalls++;
+                throw new \RuntimeException('initial reconcile writer must not run for missing-only repair');
+            },
+            function (RoomProvisioner $provisioner, array $keys) use (&$repairWrites) {
+                $repairWrites++;
+                $this->assertSame(ProductionRoomReconcileService::MISSING_ONLY_REPAIR_KEYS, $keys);
+                $existing = [];
+                foreach ($this->store as $row) {
+                    $existing[$row['room_key']] = true;
+                }
+                $created = [];
+                foreach ($this->catalog->rooms() as $room) {
+                    if (!in_array($room['roomKey'], $keys, true) || isset($existing[$room['roomKey']])) {
+                        continue;
+                    }
+                    $policy = $this->rollout->policyForRoomKey($room['roomKey']);
+                    $id = $this->nextId++;
+                    $this->store[] = [
+                        'id' => $id,
+                        'type' => 1,
+                        'title' => $room['name'],
+                        'room_key' => $room['roomKey'],
+                        'scope_type' => $room['scopeType'],
+                        'scope_key' => $room['scopeKey'],
+                        'visibility' => $policy['visibility'],
+                        'audience' => $policy['audience'],
+                    ];
+                    $created[] = ['roomKey' => $room['roomKey'], 'id' => $id];
+                }
+
+                return ['created' => $created, 'updated' => []];
+            }
+        );
+    }
+
+    /**
+     * @param list<string> $keys
+     * @return list<array<string,mixed>>
+     */
+    private function buildWithoutKeys(array $keys): array
+    {
+        $drop = array_fill_keys($keys, true);
+        $rows = [];
+        foreach ($this->buildExact46() as $row) {
+            if (!isset($drop[$row['room_key']])) {
+                $rows[] = $row;
+            }
+        }
+
+        return $rows;
+    }
 }
