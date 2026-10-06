@@ -183,12 +183,15 @@ test('selected chat assignment does not own active_conversation', () => {
         assert.match(view, /releaseActiveConversation\(/);
         assert.match(view, /this\.selectionGeneration = 0/);
         assert.match(view, /this\.selectionGeneration \+= 1/);
-        assert.match(view, /const selectionGeneration = \+\+this\.selectionGeneration/);
-        assert.match(
-            view,
-            /selectionGeneration !== this\.selectionGeneration \|\| this\.lastSelectedKey !== roomKey/
-        );
+        assert.match(view, /selectRoutedLiveRoom\(this, roomKey\)/);
     }
+
+    const selector = readFileSync(join(root, '../src/forum/utils/selectRoutedLiveRoom.js'), 'utf8');
+    assert.match(selector, /const selectionGeneration = \+\+view\.selectionGeneration/);
+    assert.match(
+        selector,
+        /selectionGeneration !== view\.selectionGeneration \|\| view\.lastSelectedKey !== roomKey/
+    );
 });
 
 test('room selection callbacks are invalidated when the owning view exits', () => {
@@ -200,9 +203,14 @@ test('room selection callbacks are invalidated when the owning view exits', () =
         assert.ok(removeIndex >= 0);
         assert.ok(invalidateIndex > removeIndex);
         assert.ok(releaseIndex > invalidateIndex);
-        assert.match(
-            view,
-            /app\.chat\.apiFetchChats\(\)\.then\(\(\) => \{\s*if \(selectionGeneration !== this\.selectionGeneration \|\| this\.lastSelectedKey !== roomKey\) return;/
-        );
     }
+    const selector = readFileSync(join(root, '../src/forum/utils/selectRoutedLiveRoom.js'), 'utf8');
+    assert.match(
+        selector,
+        /\.then\(\(found\) => \{\s*if \(selectionGeneration !== view\.selectionGeneration \|\| view\.lastSelectedKey !== roomKey\) return;/
+    );
+    assert.match(
+        selector,
+        /\.catch\(\(\) => \{\s*if \(selectionGeneration !== view\.selectionGeneration \|\| view\.lastSelectedKey !== roomKey\) return;/
+    );
 });
