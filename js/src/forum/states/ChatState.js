@@ -8,6 +8,7 @@ import * as resources from '../resources';
 import ViewportState from './ViewportState';
 import { throttle } from 'flarum/utils/throttleDebounce';
 import { runChatMessagesFetch } from '../utils/chatMessagesFetchLifecycle';
+import { applyPostedChatMessage } from '../utils/reconcilePostedChatMessage';
 import { createActiveConversationLifecycle, ACTIVE_CONVERSATION_REASON } from '../activeConversationLifecycle';
 
 var refAudio = new Audio();
@@ -371,14 +372,11 @@ export default class ChatState {
     postChatMessage(model) {
         return model.save({ message: model.content, created_at: new Date(), chat_id: model.chat().id() }).then(
             (r) => {
-                // another ugly workaround. I can't even imagine why pushPayload (pushObject) fails
-                model.pushData(r.data);
-                model.exists = true;
-
-                model.isTimedOut = false;
-                model.isNeedToFlash = true;
-                model.isEditing = false;
-                model.chat().pushData({ relationships: { last_message: model } });
+                // another ugly workaround. I can't even imagine why pushPayload (pushObject) fails.
+                // Flarum indexes the POST payload as its own store record. A Centrifugo refetch can
+                // insert that record before this callback copies the persisted id onto the optimistic
+                // model, leaving two objects with the same id. Reconcile by that id only.
+                return applyPostedChatMessage(this, model, r.data);
             },
             (r) => {
                 model.isTimedOut = true;
