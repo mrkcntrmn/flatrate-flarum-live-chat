@@ -18,6 +18,7 @@ final class RoomReconcileSnapshot
     public const CLASS_READY_INITIAL_CREATE = 'READY_INITIAL_CREATE';
     public const CLASS_ALREADY_RECONCILED = 'ALREADY_RECONCILED';
     public const CLASS_REVIEW_REQUIRED = 'REVIEW_REQUIRED';
+    public const CLASS_READY_MISSING_ONLY_REPAIR = 'READY_MISSING_ONLY_REPAIR';
 
     public const CONFIRM_PREFIX = 'FORUM-CHAT-001D:RECONCILE:46:general-live-first:';
 
@@ -113,7 +114,8 @@ final class RoomReconcileSnapshot
      *   rolloutProfile:string,
      *   catalogSha256:string,
      *   stateSha256:string,
-     *   classification:string
+     *   classification:string,
+     *   missingRoomKeys:list<string>
      * }
      */
     public function analyze(array $keyedRows): array
@@ -143,7 +145,15 @@ final class RoomReconcileSnapshot
             }
         }
 
-        $missing = count($diff['missing']);
+        $missingKeys = [];
+        foreach ($diff['missing'] as $room) {
+            $key = (string) ($room['roomKey'] ?? '');
+            if ($key !== '') {
+                $missingKeys[] = $key;
+            }
+        }
+        sort($missingKeys);
+        $missing = count($missingKeys);
         $extra = count($diff['extra']);
 
         // Production classification is stricter than RoomProvisioner drift:
@@ -189,6 +199,7 @@ final class RoomReconcileSnapshot
             'catalogSha256' => $catalogSha,
             'stateSha256' => $stateSha,
             'classification' => $classification,
+            'missingRoomKeys' => $missingKeys,
         ];
     }
 
