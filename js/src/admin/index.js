@@ -58,6 +58,13 @@ app.initializers.add('flatrate-live-chat', (app) => {
             type: 'boolean',
             default: false,
         })
+        .registerSetting({
+            setting: 'flatrate-live-chat.member_beta_enabled',
+            label: app.translator.trans('flatrate-live-chat.admin.settings.member_beta_enabled'),
+            help: app.translator.trans('flatrate-live-chat.admin.settings.member_beta_enabled_help'),
+            type: 'boolean',
+            default: false,
+        })
         .registerPermission(
             {
                 icon: 'fas fa-eye',
