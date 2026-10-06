@@ -8,6 +8,7 @@
 
 namespace FlatRate\LiveChat\Auth;
 
+use FlatRate\LiveChat\Catalog\RoomCatalog;
 use FlatRate\LiveChat\Chat;
 use FlatRate\LiveChat\Rollout\RoomAudience;
 use FlatRate\LiveChat\Rollout\RoomVisibility;
@@ -29,8 +30,11 @@ class ChatAuthorization
     public const PERM_MODERATE = 'flatrate-live-chat.permissions.moderate';
     public const PERM_ADMIN_ROOMS = 'flatrate-live-chat.permissions.admin-rooms';
 
-    public function __construct(private ?SettingsRepositoryInterface $settings = null)
-    {
+    public function __construct(
+        private ?SettingsRepositoryInterface $settings = null,
+        private ?MemberBetaGate $memberBeta = null,
+        private ?RoomCatalog $catalog = null
+    ) {
     }
 
     public function assertEnabled(User $actor): void
@@ -148,12 +152,53 @@ class ChatAuthorization
             return true;
         }
 
-        // Hidden / staff-preview rooms: staff only.
+        // Hidden / staff-preview rooms: staff preview first, unchanged.
+        // Approved member beta may open an exact canonical Brand room only.
         if ($visibility === RoomVisibility::HIDDEN || $audience === RoomAudience::STAFF_PREVIEW) {
-            return $this->canPreviewHiddenChatRooms($actor);
+            if ($this->canPreviewHiddenChatRooms($actor)) {
+                return true;
+            }
+
+            return $this->approvedBetaCanAccessCanonicalBrandRoom($actor, $chat);
         }
 
         return false;
+    }
+
+    /**
+     * Member beta does not grant staff preview. Moderators stay on
+     * canPreviewHiddenChatRooms and are not routed through this gate.
+     */
+    public function allowsApprovedMemberBeta(User $actor): bool
+    {
+        return $this->memberBeta()->allowsActor($actor);
+    }
+
+    private function approvedBetaCanAccessCanonicalBrandRoom(User $actor, Chat $chat): bool
+    {
+        if (!$this->allowsApprovedMemberBeta($actor)) {
+            return false;
+        }
+
+        return $this->roomCatalog()->isCanonicalBrandRoomKey((string) $chat->room_key);
+    }
+
+    private function memberBeta(): MemberBetaGate
+    {
+        if ($this->memberBeta === null) {
+            $this->memberBeta = new MemberBetaGate($this->settings);
+        }
+
+        return $this->memberBeta;
+    }
+
+    private function roomCatalog(): RoomCatalog
+    {
+        if ($this->catalog === null) {
+            $this->catalog = new RoomCatalog();
+        }
+
+        return $this->catalog;
     }
 
     public function assertCanListRooms(User $actor): void

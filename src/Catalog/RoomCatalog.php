@@ -64,4 +64,33 @@ class RoomCatalog
         }
         return null;
     }
+
+    /**
+     * Canonical Brand rooms are catalog rows whose scopeType is board.
+     * General Live is a navigation group and is not a brand room.
+     *
+     * @return list<string>
+     */
+    public function canonicalBrandRoomKeys(): array
+    {
+        $keys = [];
+        foreach ($this->rooms() as $room) {
+            if (($room['scopeType'] ?? null) !== 'board') {
+                continue;
+            }
+            if (!isset($room['roomKey']) || $room['roomKey'] === '') {
+                continue;
+            }
+            $keys[] = (string) $room['roomKey'];
+        }
+
+        return $keys;
+    }
+
+    public function isCanonicalBrandRoomKey(string $roomKey): bool
+    {
+        $room = $this->findByRoomKey($roomKey);
+
+        return is_array($room) && ($room['scopeType'] ?? null) === 'board';
+    }
 }
