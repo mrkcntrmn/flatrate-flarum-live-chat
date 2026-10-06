@@ -25,7 +25,9 @@ export function createLiveBoardProvider(options = {}) {
     function actorAvailable() {
         const a = getApp();
         if (!a?.session?.user) return false;
-        return a.forum?.attribute?.('flatrate-live-chat.brand_live_admin_preview_available') === true;
+        // Fail closed when the actor-effective field is absent.
+        // Do not fall back to the admin-preview attribute.
+        return a.forum?.attribute?.('flatrate-live-chat.brand_live_available') === true;
     }
 
     function available(boardKey) {
