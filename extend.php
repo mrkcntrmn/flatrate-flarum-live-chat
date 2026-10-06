@@ -115,8 +115,13 @@ return [
             $mainRollout = new \FlatRate\LiveChat\Auth\GeneralLiveMainRollout($settings);
             $attributes[\FlatRate\LiveChat\Auth\GeneralLiveMainRollout::FORUM_ATTRIBUTE] =
                 $mainRollout->availableTo($actor);
+            $brandPreview = new \FlatRate\LiveChat\Auth\BrandLiveAdminPreview($settings);
             $attributes[\FlatRate\LiveChat\Auth\BrandLiveAdminPreview::FORUM_ATTRIBUTE] =
-                (new \FlatRate\LiveChat\Auth\BrandLiveAdminPreview($settings))->availableTo($actor);
+                $brandPreview->availableTo($actor);
+            // Actor-effective Brand pin. Admin Preview and Member Beta stay separate.
+            // Absent in an older client means the provider fails closed.
+            $attributes[\FlatRate\LiveChat\Auth\BrandLiveAvailability::FORUM_ATTRIBUTE] =
+                (new \FlatRate\LiveChat\Auth\BrandLiveAvailability($settings, $brandPreview))->availableTo($actor);
             $attributes['flatrate-live-chat.realtime.decision'] = 'CENTRIFUGO_SELF_HOSTED';
             $attributes['flatrate-live-chat.rollout.profile'] = 'general-live-first';
             $attributes['flatrate-live-chat.canPreviewHidden'] = resolve(\FlatRate\LiveChat\Auth\ChatAuthorization::class)
