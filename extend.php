@@ -28,6 +28,7 @@ use FlatRate\LiveChat\Api\Controllers\RealtimeSubscriptionTokenController;
 use FlatRate\LiveChat\Api\Controllers\RoomReconcileController;
 use FlatRate\LiveChat\Api\Controllers\RoomReconcilePreviewController;
 use FlatRate\LiveChat\Api\Controllers\ListLiveChatsController;
+use FlatRate\LiveChat\Api\Controllers\ShowLiveRoomController;
 use FlatRate\LiveChat\Api\Controllers\SubscribeRoomController;
 use FlatRate\LiveChat\Api\Controllers\UnsubscribeRoomController;
 use FlatRate\LiveChat\Console\DoctorCommand;
@@ -72,6 +73,7 @@ return [
         ->get('/flatrate-live-chat/admin/rooms/reconcile-preview', 'flatrate-live-chat.admin.rooms.reconcile-preview', RoomReconcilePreviewController::class)
         ->post('/flatrate-live-chat/admin/rooms/reconcile', 'flatrate-live-chat.admin.rooms.reconcile', RoomReconcileController::class)
         ->get('/flatrate-live-chat/live-chats', 'flatrate-live-chat.live-chats', ListLiveChatsController::class)
+        ->get('/flatrate-live-chat/rooms/{roomKey}', 'flatrate-live-chat.rooms.show', ShowLiveRoomController::class)
         ->post('/flatrate-live-chat/rooms/{roomKey}/subscription', 'flatrate-live-chat.rooms.subscribe', SubscribeRoomController::class)
         ->delete('/flatrate-live-chat/rooms/{roomKey}/subscription', 'flatrate-live-chat.rooms.unsubscribe', UnsubscribeRoomController::class),
 

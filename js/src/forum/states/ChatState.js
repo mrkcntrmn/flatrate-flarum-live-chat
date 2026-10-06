@@ -9,6 +9,7 @@ import ViewportState from './ViewportState';
 import { throttle } from 'flarum/utils/throttleDebounce';
 import { runChatMessagesFetch } from '../utils/chatMessagesFetchLifecycle';
 import { applyPostedChatMessage } from '../utils/reconcilePostedChatMessage';
+import { isDirectoryListedChat, rememberHydratedRoom } from '../utils/selectRoutedLiveRoom';
 import { createActiveConversationLifecycle, ACTIVE_CONVERSATION_REASON } from '../activeConversationLifecycle';
 
 var refAudio = new Audio();
@@ -101,6 +102,11 @@ export default class ChatState {
 
     getViewportState(model) {
         return this.viewportStates[model.id()];
+    }
+
+    ensureViewportState(model) {
+        if (!model || this.viewportStates[model.id()]) return;
+        this.viewportStates[model.id()] = new ViewportState({ model });
     }
 
     listenSocketChannels(socket) {
@@ -207,7 +213,10 @@ export default class ChatState {
     }
 
     getChats() {
-        return this.chats.filter((chat) => (this.q() && chat.matches(this.q().toLowerCase())) || (!this.q() && !chat.removed_at()));
+        return this.chats.filter((chat) => {
+            if (!isDirectoryListedChat(chat)) return false;
+            return (this.q() && chat.matches(this.q().toLowerCase())) || (!this.q() && !chat.removed_at());
+        });
     }
 
     getChatsSortedByLastUpdate() {
@@ -472,6 +481,22 @@ export default class ChatState {
             this.chatsLoading = false;
             m.redraw();
         });
+    }
+
+    apiFetchChatByRoomKey(roomKey) {
+        const key = String(roomKey || '');
+        if (!key) return Promise.reject(new Error('missing room'));
+        return app
+            .request({
+                method: 'GET',
+                url: app.forum.attribute('apiUrl') + '/flatrate-live-chat/rooms/' + encodeURIComponent(key),
+            })
+            .then((payload) => {
+                const pushed = app.store.pushPayload(payload);
+                const model = Array.isArray(pushed) ? pushed[0] : pushed;
+                if (!model) throw new Error('empty room');
+                return rememberHydratedRoom(this, model);
+            });
     }
 
     messageNotify(model) {
