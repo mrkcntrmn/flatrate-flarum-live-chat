@@ -3,11 +3,7 @@ import LoadingIndicator from 'flarum/components/LoadingIndicator';
 import ChatViewport from './ChatViewport';
 import ChatState from '../states/ChatState';
 import { roomKeyOf } from '../utils/liveChatPresentation';
-
-function findChatByRoomKey(roomKey) {
-    if (!roomKey || !app.chat || !Array.isArray(app.chat.chats)) return null;
-    return app.chat.chats.find((c) => roomKeyOf(c) === roomKey) || null;
-}
+import { selectRoutedLiveRoom } from '../utils/selectRoutedLiveRoom';
 
 /**
  * Messages V2 Live surface. Shell owns the conversation header.
@@ -19,12 +15,14 @@ export default class MessagesLiveConversationView extends Component {
         this.unavailable = false;
         this.selecting = false;
         this.conversationOwner = {};
+        this.selectionGeneration = 0;
         this.ensureChat();
         this.selectRoom(this.attrs.roomKey);
     }
 
     onremove(vnode) {
         super.onremove(vnode);
+        this.selectionGeneration += 1;
         this.releaseRoomView(this.attrs.roomKey || this.lastSelectedKey);
     }
 
@@ -54,54 +52,7 @@ export default class MessagesLiveConversationView extends Component {
     }
 
     selectRoom(roomKey) {
-        this.ensureChat();
-        if (this.lastSelectedKey !== roomKey) {
-            this.releaseRoomView(this.lastSelectedKey);
-        }
-        this.lastSelectedKey = roomKey;
-
-        if (!roomKey) {
-            this.unavailable = true;
-            this.selecting = false;
-            this.releaseRoomView();
-            return;
-        }
-
-        const match = findChatByRoomKey(roomKey);
-        if (match) {
-            this.unavailable = false;
-            this.selecting = false;
-            app.chat.setCurrentChat(match);
-            this.holdRoomView(roomKey);
-            return;
-        }
-
-        if (typeof app.chat.apiFetchChats === 'function') {
-            this.selecting = true;
-            this.unavailable = false;
-            app.chat.apiFetchChats().then(() => {
-                if (this.lastSelectedKey !== roomKey) return;
-                const found = findChatByRoomKey(roomKey);
-                if (found) {
-                    this.unavailable = false;
-                    app.chat.setCurrentChat(found);
-                    this.holdRoomView(roomKey);
-                } else {
-                    this.unavailable = true;
-                    this.releaseRoomView(roomKey);
-                    if (app.chat.getCurrentChat && roomKeyOf(app.chat.getCurrentChat()) !== roomKey) {
-                        app.chat.setCurrentChat(null);
-                    }
-                }
-                this.selecting = false;
-                m.redraw();
-            });
-            return;
-        }
-
-        this.unavailable = true;
-        this.selecting = false;
-        this.releaseRoomView(roomKey);
+        selectRoutedLiveRoom(this, roomKey);
     }
 
     view() {
