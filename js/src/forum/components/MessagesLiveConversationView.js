@@ -19,12 +19,14 @@ export default class MessagesLiveConversationView extends Component {
         this.unavailable = false;
         this.selecting = false;
         this.conversationOwner = {};
+        this.selectionGeneration = 0;
         this.ensureChat();
         this.selectRoom(this.attrs.roomKey);
     }
 
     onremove(vnode) {
         super.onremove(vnode);
+        this.selectionGeneration += 1;
         this.releaseRoomView(this.attrs.roomKey || this.lastSelectedKey);
     }
 
@@ -55,6 +57,7 @@ export default class MessagesLiveConversationView extends Component {
 
     selectRoom(roomKey) {
         this.ensureChat();
+        const selectionGeneration = ++this.selectionGeneration;
         if (this.lastSelectedKey !== roomKey) {
             this.releaseRoomView(this.lastSelectedKey);
         }
@@ -80,7 +83,7 @@ export default class MessagesLiveConversationView extends Component {
             this.selecting = true;
             this.unavailable = false;
             app.chat.apiFetchChats().then(() => {
-                if (this.lastSelectedKey !== roomKey) return;
+                if (selectionGeneration !== this.selectionGeneration || this.lastSelectedKey !== roomKey) return;
                 const found = findChatByRoomKey(roomKey);
                 if (found) {
                     this.unavailable = false;
