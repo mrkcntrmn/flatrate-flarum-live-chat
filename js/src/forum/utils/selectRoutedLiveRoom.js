@@ -1,4 +1,5 @@
 import { roomKeyOf } from './liveChatPresentation.js';
+import { scheduleSelectedRoomPresence } from './selectedRoomPresence.js';
 
 export function isHiddenStaffPreviewRoom(model) {
     if (!model) return false;
@@ -47,6 +48,7 @@ export function selectRoutedLiveRoom(view, roomKey) {
         view.releaseRoomView(view.lastSelectedKey);
     }
     view.lastSelectedKey = roomKey;
+    scheduleSelectedRoomPresence(view, roomKey);
 
     if (!roomKey) {
         view.unavailable = true;
