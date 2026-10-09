@@ -122,8 +122,7 @@ test('the provider method is read-only and does not fetch or list hidden rooms',
 test('a different room key and a stale session do not receive the Audi snapshot', async () => {
     resetSelectedRoomPresenceCache();
     const state = installApp([], '7');
-    state.fetchImpl = async () =>
-        rememberHydratedRoom(state, room('audi-live', 2, 'Audi Live', { visibility: 'hidden', audience: 'staff-preview' }));
+    state.fetchImpl = async () => rememberHydratedRoom(state, room('audi-live', 2, 'Audi Live', { visibility: 'hidden', audience: 'staff-preview' }));
     selectRoutedLiveRoom(view(), 'audi-live');
     await Promise.resolve();
     await Promise.resolve();
@@ -163,9 +162,7 @@ test('room switching ignores an in-flight response for the previous room', async
                     resolve(rememberHydratedRoom(state, room('audi-live', 2, 'Audi Live', { visibility: 'hidden', audience: 'staff-preview' })));
             });
         }
-        return Promise.resolve(
-            rememberHydratedRoom(state, room('ford-live', 3, 'Ford Live', { visibility: 'hidden', audience: 'staff-preview' }))
-        );
+        return Promise.resolve(rememberHydratedRoom(state, room('ford-live', 3, 'Ford Live', { visibility: 'hidden', audience: 'staff-preview' })));
     };
     const surface = view();
     selectRoutedLiveRoom(surface, 'audi-live');
@@ -184,8 +181,7 @@ test('room switching ignores an in-flight response for the previous room', async
 test('session change drops the previously authorized hidden room', async () => {
     resetSelectedRoomPresenceCache();
     const state = installApp([], '7');
-    state.fetchImpl = async () =>
-        rememberHydratedRoom(state, room('audi-live', 2, 'Audi Live', { visibility: 'hidden', audience: 'staff-preview' }));
+    state.fetchImpl = async () => rememberHydratedRoom(state, room('audi-live', 2, 'Audi Live', { visibility: 'hidden', audience: 'staff-preview' }));
     selectRoutedLiveRoom(view(), 'audi-live');
     await Promise.resolve();
     await Promise.resolve();
@@ -201,7 +197,23 @@ test('session change drops the previously authorized hidden room', async () => {
     const snapshot = readSelectedConversation(globalThis.app, 'audi-live');
     assert.equal(snapshot.unavailable, true);
     assert.equal(snapshot.title, undefined);
-    assert.equal(state.chats.some((chat) => chat.room_key() === 'audi-live' && chat.flatratePresentationSessionUserId === '7'), false);
+    assert.equal(
+        state.chats.some((chat) => chat.room_key() === 'audi-live' && chat.flatratePresentationSessionUserId === '7'),
+        false
+    );
+});
+
+test('an unstamped in-memory room is confirmed with one exact lookup before the header can trust it', async () => {
+    resetSelectedRoomPresenceCache();
+    const stale = room('audi-live', 2, 'Audi Live', { visibility: 'hidden', audience: 'staff-preview' });
+    const state = installApp([stale], '7');
+    state.fetchImpl = async () => rememberHydratedRoom(state, stale);
+    selectRoutedLiveRoom(view(), 'audi-live');
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.equal(state.fetchCount, 1);
+    assert.equal(state.chats.length, 1);
+    assert.equal(readSelectedConversation(globalThis.app, 'audi-live').title, 'Audi Live');
 });
 
 test('selected-room presentation does not add a fetch, subscription, or directory enumeration', () => {

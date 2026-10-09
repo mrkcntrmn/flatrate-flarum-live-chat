@@ -65,12 +65,13 @@ export function selectRoutedLiveRoom(view, roomKey) {
     }
 
     const match = findChatByRoomKey(roomKey);
-    if (match) {
+    const trustedMatch = Boolean(sessionUserId && match && match.flatratePresentationSessionUserId === sessionUserId);
+    if (match && (!sessionUserId || trustedMatch)) {
         view.unavailable = false;
         view.selecting = false;
         app.chat.setCurrentChat(match);
         view.holdRoomView(roomKey);
-        if (sessionUserId && match.flatratePresentationSessionUserId === sessionUserId) {
+        if (trustedMatch) {
             noteExactRoomResult(app.chat, { status: 'ready', roomKey, sessionUserId });
         }
         return;
