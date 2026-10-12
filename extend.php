@@ -31,11 +31,13 @@ use FlatRate\LiveChat\Api\Controllers\ListLiveChatsController;
 use FlatRate\LiveChat\Api\Controllers\ShowLiveRoomController;
 use FlatRate\LiveChat\Api\Controllers\SubscribeRoomController;
 use FlatRate\LiveChat\Api\Controllers\UnsubscribeRoomController;
+use FlatRate\LiveChat\Api\Controllers\AdminDashboardController;
 use FlatRate\LiveChat\Console\DoctorCommand;
 use FlatRate\LiveChat\Realtime\CentrifugoClientConfig;
 
 return [
     (new Extend\Frontend('admin'))
+        ->css(__DIR__ . '/resources/less/admin.less')
         ->js(__DIR__ . '/js/dist/admin.js'),
 
     (new Extend\Frontend('forum'))
@@ -71,6 +73,7 @@ return [
         ->post('/flatrate-live-chat/realtime/presence-stats', 'flatrate-live-chat.realtime.presence-stats', RealtimePresenceStatsController::class)
         ->get('/flatrate-live-chat/realtime/egress-probe', 'flatrate-live-chat.realtime.egress-probe', RealtimeEgressProbeController::class)
         ->get('/flatrate-live-chat/admin/rooms/reconcile-preview', 'flatrate-live-chat.admin.rooms.reconcile-preview', RoomReconcilePreviewController::class)
+        ->get('/flatrate-live-chat/admin/dashboard', 'flatrate-live-chat.admin.dashboard', AdminDashboardController::class)
         ->post('/flatrate-live-chat/admin/rooms/reconcile', 'flatrate-live-chat.admin.rooms.reconcile', RoomReconcileController::class)
         ->get('/flatrate-live-chat/live-chats', 'flatrate-live-chat.live-chats', ListLiveChatsController::class)
         ->get('/flatrate-live-chat/rooms/{roomKey}', 'flatrate-live-chat.rooms.show', ShowLiveRoomController::class)
@@ -138,6 +141,7 @@ return [
         ->set('chat-message', Api\Throttler\ChatMessage::class),
 
     (new Extend\Settings())
+        ->default('flatrate-live-chat.admin_dashboard_enabled', '0')
         ->default('flatrate-live-chat.live_chats_navigation_enabled', '0')
         ->default('flatrate-live-chat.general_live_admin_preview_enabled', '0')
         ->default('flatrate-live-chat.general_live_user_enabled', '0')

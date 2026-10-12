@@ -5,6 +5,7 @@
 
 namespace FlatRate\LiveChat;
 
+use FlatRate\LiveChat\Admin\AdminDashboardService;
 use FlatRate\LiveChat\Auth\ChatAuthorization;
 use FlatRate\LiveChat\Catalog\RoomCatalog;
 use FlatRate\LiveChat\Provisioner\ProductionRoomReconcileService;
@@ -74,6 +75,7 @@ class LiveChatServiceProvider extends AbstractServiceProvider
             );
         });
         $this->container->singleton(ProductionRoomReconcileService::class);
+        $this->container->singleton(AdminDashboardService::class);
 
         $this->container->bind(RoomProvisioner::class, function (Container $container) {
             $allow = getenv('FLATRATE_LIVE_CHAT_ALLOW_WRITES');
