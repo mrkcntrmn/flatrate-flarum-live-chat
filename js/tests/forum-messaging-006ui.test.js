@@ -63,3 +63,18 @@ test('normalizeLiveConversation still uses created_at only for activity', () => 
   assert.doesNotMatch(src, /last\.message/);
   assert.doesNotMatch(src, /preview|snippet|excerpt|lastMessageText/);
 });
+
+test('UNSENT PREVIEWS: Live V1/V2 share a viewport with no draft echo bubble', () => {
+  const viewport = read('js/src/forum/components/ChatViewport.js');
+  const renderStart = viewport.indexOf('componentsChatMessages(chat) {');
+  const renderEnd = viewport.indexOf('componentsChatMessageGroups(messages) {', renderStart);
+  assert.ok(renderStart > 0 && renderEnd > renderStart, 'both Live rendering methods are present');
+  const render = viewport.slice(renderStart, renderEnd);
+  assert.match(render, /messagesForChat/);
+  assert.doesNotMatch(render, /messages\\.push\\(preview\\)|input\\.previewModel|writingPreview/);
+  const input = read('js/src/forum/components/ChatInput.js');
+  const state = read('js/src/forum/states/ViewportState.js');
+  assert.match(input, /inputPreviewStart/);
+  assert.match(state, /messagePost\\(this\\.input\\.previewModel\\)/);
+  assert.match(state, /insertChatMessage/);
+});
