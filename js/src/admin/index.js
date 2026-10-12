@@ -1,10 +1,24 @@
 import { extend } from 'flarum/extend';
 import app from 'flarum/app';
 import PermissionGrid from 'flarum/components/PermissionGrid';
+import LiveChatAdminPage from './components/LiveChatAdminPage';
+
+const ADMIN_DASHBOARD_SETTING = 'flatrate-live-chat.admin_dashboard_enabled';
+
+function enabled(value) {
+    return value === true || value === 1 || value === '1' || value === 'true';
+}
 
 app.initializers.add('flatrate-live-chat', (app) => {
     app.extensionData
         .for('flatrate-live-chat')
+        .registerSetting({
+            setting: ADMIN_DASHBOARD_SETTING,
+            label: 'Enable Live Chat Rooms monitoring dashboard',
+            help: 'Adds a private, read-only room monitoring page for administrators. Default: off.',
+            type: 'boolean',
+            default: false,
+        })
         .registerSetting({
             setting: 'flatrate-live-chat.settings.charlimit',
             label: app.translator.trans('flatrate-live-chat.admin.settings.charlimit'),
@@ -130,4 +144,8 @@ app.initializers.add('flatrate-live-chat', (app) => {
             },
             'moderate'
         );
+
+    if (enabled(app.data.settings[ADMIN_DASHBOARD_SETTING])) {
+        app.extensionData.for('flatrate-live-chat').registerPage(LiveChatAdminPage);
+    }
 });
