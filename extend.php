@@ -27,6 +27,7 @@ use FlatRate\LiveChat\Api\Controllers\RealtimePresenceStatsController;
 use FlatRate\LiveChat\Api\Controllers\RealtimeSubscriptionTokenController;
 use FlatRate\LiveChat\Api\Controllers\RoomReconcileController;
 use FlatRate\LiveChat\Api\Controllers\RoomReconcilePreviewController;
+use FlatRate\LiveChat\Api\Controllers\AdminDashboardController;
 use FlatRate\LiveChat\Api\Controllers\ListLiveChatsController;
 use FlatRate\LiveChat\Api\Controllers\ShowLiveRoomController;
 use FlatRate\LiveChat\Api\Controllers\SubscribeRoomController;
@@ -70,6 +71,7 @@ return [
         ->post('/flatrate-live-chat/realtime/subscription-token', 'flatrate-live-chat.realtime.subscription-token', RealtimeSubscriptionTokenController::class)
         ->post('/flatrate-live-chat/realtime/presence-stats', 'flatrate-live-chat.realtime.presence-stats', RealtimePresenceStatsController::class)
         ->get('/flatrate-live-chat/realtime/egress-probe', 'flatrate-live-chat.realtime.egress-probe', RealtimeEgressProbeController::class)
+        ->get('/flatrate-live-chat/admin/rooms/dashboard', 'flatrate-live-chat.admin.rooms.dashboard', AdminDashboardController::class)
         ->get('/flatrate-live-chat/admin/rooms/reconcile-preview', 'flatrate-live-chat.admin.rooms.reconcile-preview', RoomReconcilePreviewController::class)
         ->post('/flatrate-live-chat/admin/rooms/reconcile', 'flatrate-live-chat.admin.rooms.reconcile', RoomReconcileController::class)
         ->get('/flatrate-live-chat/live-chats', 'flatrate-live-chat.live-chats', ListLiveChatsController::class)
@@ -138,6 +140,7 @@ return [
         ->set('chat-message', Api\Throttler\ChatMessage::class),
 
     (new Extend\Settings())
+        ->default('flatrate-live-chat.admin_dashboard_enabled', '0')
         ->default('flatrate-live-chat.live_chats_navigation_enabled', '0')
         ->default('flatrate-live-chat.general_live_admin_preview_enabled', '0')
         ->default('flatrate-live-chat.general_live_user_enabled', '0')
