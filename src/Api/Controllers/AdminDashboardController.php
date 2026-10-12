@@ -133,8 +133,10 @@ final class AdminDashboardController implements RequestHandlerInterface
             $policy = $this->rollout->policyForRoomKey($key);
             $found = $actual !== null;
             $drift = $matches && $matches->count() > 1;
-            if ($found) {
+            if ($matches && $matches->count() > 0) {
                 $presentCount++;
+            }
+            if ($found) {
                 $drift = $drift
                     || (int) $actual->type !== 1
                     || (string) $actual->title !== (string) $canonical['name']
