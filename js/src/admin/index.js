@@ -1,10 +1,18 @@
 import { extend } from 'flarum/extend';
 import app from 'flarum/app';
 import PermissionGrid from 'flarum/components/PermissionGrid';
+import LiveChatMonitoringPanel from './LiveChatMonitoringPanel';
 
 app.initializers.add('flatrate-live-chat', (app) => {
     app.extensionData
         .for('flatrate-live-chat')
+        .registerSetting(() => m(LiveChatMonitoringPanel), 100)
+        .registerSetting({
+            setting: 'flatrate-live-chat.admin_dashboard_enabled',
+            label: 'Live Chat room monitoring dashboard (admin-only, read-only)',
+            type: 'boolean',
+            default: false,
+        }, 95)
         .registerSetting({
             setting: 'flatrate-live-chat.settings.charlimit',
             label: app.translator.trans('flatrate-live-chat.admin.settings.charlimit'),
