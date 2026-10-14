@@ -25,6 +25,8 @@ test('tracked forum dist embeds Live presence-stats provider path', () => {
   assert.match(dist, /presence-stats/);
   assert.match(dist, /liveUserCount/);
   assert.match(dist, /flatrate-live-chat\/realtime\/presence-stats/);
+  assert.match(dist, /getSelectedConversation/);
+  assert.match(dist, /flatratePresentationSessionUserId/);
 });
 
 test('tracked forum dist embeds MAIN Live provider contract', () => {

@@ -1,4 +1,6 @@
 import { roomKeyOf } from './liveChatPresentation.js';
+import { resetSelectedRoomPresenceCache, scheduleSelectedRoomPresence } from './selectedRoomPresence.js';
+import { bindPresentationSession, noteExactRoomResult, presentationSessionUserId, stampAuthorizedRoom } from './selectedRoomPresentation.js';
 
 export function isHiddenStaffPreviewRoom(model) {
     if (!model) return false;
@@ -42,11 +44,18 @@ function redraw() {
  */
 export function selectRoutedLiveRoom(view, roomKey) {
     view.ensureChat();
+    const sessionUserId = presentationSessionUserId(app);
+    const previousSessionUserId = app.chat ? app.chat.flatratePresentationSessionUserId : undefined;
+    bindPresentationSession(app.chat, sessionUserId);
+    if (previousSessionUserId !== undefined && previousSessionUserId !== sessionUserId) {
+        resetSelectedRoomPresenceCache();
+    }
     const selectionGeneration = ++view.selectionGeneration;
     if (view.lastSelectedKey !== roomKey) {
         view.releaseRoomView(view.lastSelectedKey);
     }
     view.lastSelectedKey = roomKey;
+    scheduleSelectedRoomPresence(view, roomKey);
 
     if (!roomKey) {
         view.unavailable = true;
@@ -56,11 +65,15 @@ export function selectRoutedLiveRoom(view, roomKey) {
     }
 
     const match = findChatByRoomKey(roomKey);
-    if (match) {
+    const trustedMatch = Boolean(sessionUserId && match && match.flatratePresentationSessionUserId === sessionUserId);
+    if (match && (!sessionUserId || trustedMatch)) {
         view.unavailable = false;
         view.selecting = false;
         app.chat.setCurrentChat(match);
         view.holdRoomView(roomKey);
+        if (trustedMatch) {
+            noteExactRoomResult(app.chat, { status: 'ready', roomKey, sessionUserId });
+        }
         return;
     }
 
@@ -69,19 +82,25 @@ export function selectRoutedLiveRoom(view, roomKey) {
         view.unavailable = true;
         view.selecting = false;
         view.releaseRoomView(roomKey);
+        noteExactRoomResult(app.chat, { status: 'unavailable', roomKey, sessionUserId });
         return;
     }
 
     view.selecting = true;
     view.unavailable = false;
+    noteExactRoomResult(app.chat, { status: 'pending', roomKey, sessionUserId });
+    const sessionAtStart = sessionUserId;
     fetchExact
         .call(app.chat, roomKey)
         .then((found) => {
             if (selectionGeneration !== view.selectionGeneration || view.lastSelectedKey !== roomKey) return;
+            if (!exactRoomResultCurrent(view, selectionGeneration, roomKey, sessionAtStart)) return;
             if (!found) {
-                markUnavailable(view, roomKey);
+                markUnavailable(view, roomKey, sessionAtStart);
                 return;
             }
+            stampAuthorizedRoom(found, sessionAtStart);
+            noteExactRoomResult(app.chat, { status: 'ready', roomKey, sessionUserId: sessionAtStart });
             view.unavailable = false;
             app.chat.setCurrentChat(found);
             view.holdRoomView(roomKey);
@@ -90,16 +109,23 @@ export function selectRoutedLiveRoom(view, roomKey) {
         })
         .catch(() => {
             if (selectionGeneration !== view.selectionGeneration || view.lastSelectedKey !== roomKey) return;
-            markUnavailable(view, roomKey);
+            if (!exactRoomResultCurrent(view, selectionGeneration, roomKey, sessionAtStart)) return;
+            markUnavailable(view, roomKey, sessionAtStart);
         });
 }
 
-function markUnavailable(view, roomKey) {
+function exactRoomResultCurrent(view, selectionGeneration, roomKey, sessionUserId) {
+    if (selectionGeneration !== view.selectionGeneration || view.lastSelectedKey !== roomKey) return false;
+    return presentationSessionUserId(app) === sessionUserId;
+}
+
+function markUnavailable(view, roomKey, sessionUserId) {
     view.unavailable = true;
     view.releaseRoomView(roomKey);
     if (app.chat.getCurrentChat && roomKeyOf(app.chat.getCurrentChat()) !== roomKey) {
         app.chat.setCurrentChat(null);
     }
+    noteExactRoomResult(app.chat, { status: 'unavailable', roomKey, sessionUserId });
     view.selecting = false;
     redraw();
 }
