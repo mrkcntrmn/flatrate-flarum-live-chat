@@ -1,0 +1,217 @@
+.FlatRateLiveAdminDashboard {
+  max-width: 100%;
+  padding-bottom: 48px;
+}
+
+.FlatRateLiveAdminHeader,
+.FlatRateLiveAdminDetailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.FlatRateLiveAdminHeader h2,
+.FlatRateLiveAdminDetailHeader h3 {
+  margin: 0 0 6px;
+}
+
+.FlatRateLiveAdminLoading,
+.FlatRateLiveAdminPanel {
+  margin-top: 18px;
+  padding: 22px;
+  border: 1px solid var(--control-bg);
+  border-radius: 12px;
+  background: var(--body-bg);
+}
+
+.FlatRateLiveAdminHealth {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #fff7df;
+  color: #7a5500;
+}
+
+.FlatRateLiveAdminHealth.is-catalog {
+  background: #eef3f8;
+  color: #243446;
+}
+
+.FlatRateLiveAdminTabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 18px;
+  border-bottom: 1px solid var(--control-bg);
+}
+
+.FlatRateLiveAdminTabs button {
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--muted-color);
+  font-weight: 600;
+}
+
+.FlatRateLiveAdminTabs button.is-active {
+  border-bottom-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.FlatRateLiveAdminCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.FlatRateLiveAdminCard {
+  display: flex;
+  min-height: 112px;
+  box-sizing: border-box;
+  flex-direction: column;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--control-bg);
+}
+
+.FlatRateLiveAdminCard > span,
+.FlatRateLiveAdminCard > small,
+.FlatRateLiveAdminTable td small {
+  display: block;
+  color: var(--muted-color);
+}
+
+.FlatRateLiveAdminCard > strong {
+  margin: 5px 0;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.FlatRateLiveAdminGates {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.FlatRateLiveAdminGates > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  border-left: 4px solid #9aa4b2;
+  border-radius: 6px;
+  background: var(--control-bg);
+}
+
+.FlatRateLiveAdminGates > div.is-on {
+  border-left-color: #22a06b;
+}
+
+.FlatRateLiveAdminNotice,
+.FlatRateLiveAdminPrivacy {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #eef5ff;
+  color: #27496f;
+}
+
+.FlatRateLiveAdminFilters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 240px);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.FlatRateLiveAdminTableWrap {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.FlatRateLiveAdminTable {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.FlatRateLiveAdminTable th,
+.FlatRateLiveAdminTable td {
+  padding: 10px;
+  border-bottom: 1px solid var(--control-bg);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.FlatRateLiveAdminBadge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #fff1cc;
+  color: #805c00;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.FlatRateLiveAdminBadge.is-present {
+  background: #e1f6e9;
+  color: #176536;
+}
+
+.FlatRateLiveAdminBadge.is-missing,
+.FlatRateLiveAdminBadge.is-drifted {
+  background: #ffe7e7;
+  color: #9a2525;
+}
+
+.FlatRateLiveAdminDefinitionList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  margin-top: 18px;
+}
+
+.FlatRateLiveAdminDefinitionList > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--control-bg);
+}
+
+.FlatRateLiveAdminDefinitionList dt {
+  color: var(--muted-color);
+}
+
+@media (max-width: 900px) {
+  .FlatRateLiveAdminCards,
+  .FlatRateLiveAdminGates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .FlatRateLiveAdminHeader,
+  .FlatRateLiveAdminDetailHeader,
+  .FlatRateLiveAdminHealth {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .FlatRateLiveAdminCards,
+  .FlatRateLiveAdminGates,
+  .FlatRateLiveAdminFilters,
+  .FlatRateLiveAdminDefinitionList {
+    grid-template-columns: 1fr;
+  }
+
+  .FlatRateLiveAdminPanel {
+    padding: 14px;
+  }
+}

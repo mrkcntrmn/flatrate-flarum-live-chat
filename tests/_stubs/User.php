@@ -5,6 +5,7 @@ class User {
     public $id;
     public $suspended_until = null;
     public $isAdmin = false;
+    public $domainRole = null;
     public $permissions = [];
     public function __construct($id = null) { $this->id = $id; }
     public function isAdmin(): bool { return (bool) $this->isAdmin; }
