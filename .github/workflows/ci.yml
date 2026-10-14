@@ -8,6 +8,19 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: disposable-local
+          MARIADB_DATABASE: flarum
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -32,6 +45,17 @@ jobs:
         run: composer update --no-interaction --prefer-dist
       - name: PHPUnit security/domain/rollout/realtime tests
         run: vendor/bin/phpunit --colors=always
+      - name: Prefixed MariaDB timestamp inversion regression
+        env:
+          DASHBOARD_PLAN_HOST: 127.0.0.1
+          DASHBOARD_PLAN_PORT: "3306"
+          DASHBOARD_PLAN_USER: root
+          DASHBOARD_PLAN_PASSWORD: disposable-local
+          DASHBOARD_PLAN_DATABASE: flarum
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mariadb-client
+          python3 tests/support/dashboard-metrics-plan.py
       - name: JS install, test, build
         working-directory: js
         env:

@@ -152,13 +152,7 @@ final class AdminDashboardService
             'schemaVersion' => 1,
             'sampledAt' => $sampledAt,
             'freshnessSeconds' => 60,
-            'health' => [
-                'status' => ($reconcile['missingCount'] ?? 1) === 0
-                    && ($reconcile['extraCount'] ?? 1) === 0
-                    && ($reconcile['driftedCount'] ?? 1) === 0 ? 'operational' : 'degraded',
-                'presenceMode' => 'selected-room-on-demand',
-                'historicalRealtimeMetrics' => 'not_instrumented',
-            ],
+            'health' => $this->health($reconcile),
             'reconciliation' => $reconcile,
             'gates' => $gates,
             'totals' => $totals,
@@ -259,32 +253,130 @@ final class AdminDashboardService
     }
 
     /**
+     * Catalog reconciliation only. This is not a realtime transport SLO.
+     *
+     * @param array<string,mixed> $reconcile
+     * @return array<string,string>
+     */
+    private function health(array $reconcile): array
+    {
+        $catalogOk = ($reconcile['missingCount'] ?? 1) === 0
+            && ($reconcile['extraCount'] ?? 1) === 0
+            && ($reconcile['driftedCount'] ?? 1) === 0;
+
+        return [
+            'status' => $catalogOk ? 'catalog_reconciled' : 'catalog_attention',
+            'catalog' => $catalogOk ? 'reconciled' : 'attention',
+            'presenceMode' => 'selected-room-on-demand',
+            'historicalRealtimeMetrics' => 'not_instrumented',
+        ];
+    }
+
+    /**
+     * Rolling counts use created_at bounds. Lifetime last activity is
+     * MAX(created_at) among non-deleted rows. Message ids are not a time order:
+     * callers may supply created_at, so an id floor can drop an in-window row.
+     *
      * @param list<int> $chatIds
      * @return list<array<string,mixed>>
      */
     public function defaultLoadMetrics(array $chatIds, int $now): array
     {
+        $chatIds = array_values(array_unique(array_filter(
+            array_map(static fn ($id): int => (int) $id, $chatIds),
+            static fn (int $id): bool => $id > 0
+        )));
         if ($chatIds === []) {
             return [];
         }
 
-        $oneHour = gmdate('Y-m-d H:i:s', $now - 3600);
-        $oneDay = gmdate('Y-m-d H:i:s', $now - 86400);
-        $sevenDays = gmdate('Y-m-d H:i:s', $now - 604800);
+        $bounds = DashboardMetricCalculator::bounds($now);
+        $window = $this->loadWindowMetrics($chatIds, $bounds);
+        $activity = $this->loadLifetimeLastActivity($chatIds);
+        $merged = [];
+        foreach ($window as $row) {
+            $id = (int) ($row['chat_id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $row['last_activity_at'] = $activity[$id] ?? null;
+            $merged[$id] = $row;
+        }
+        foreach ($activity as $id => $createdAt) {
+            if (isset($merged[$id]) || $createdAt === null) {
+                continue;
+            }
+            $merged[$id] = [
+                'chat_id' => $id,
+                'messages_1h' => 0,
+                'messages_24h' => 0,
+                'messages_7d' => 0,
+                'event_messages_24h' => 0,
+                'unique_posters_24h' => 0,
+                'last_activity_at' => $createdAt,
+            ];
+        }
 
-        return Message::query()
+        return array_values($merged);
+    }
+
+    /**
+     * @param list<int> $chatIds
+     * @param array{hour:string,day:string,week:string} $bounds
+     * @return list<array<string,mixed>>
+     */
+    private function loadWindowMetrics(array $chatIds, array $bounds): array
+    {
+        $query = Message::query()
             ->select('chat_id')
-            ->selectRaw('SUM(CASE WHEN type = 0 AND created_at >= ? THEN 1 ELSE 0 END) AS messages_1h', [$oneHour])
-            ->selectRaw('SUM(CASE WHEN type = 0 AND created_at >= ? THEN 1 ELSE 0 END) AS messages_24h', [$oneDay])
-            ->selectRaw('SUM(CASE WHEN type = 0 AND created_at >= ? THEN 1 ELSE 0 END) AS messages_7d', [$sevenDays])
-            ->selectRaw('SUM(CASE WHEN type <> 0 AND created_at >= ? THEN 1 ELSE 0 END) AS event_messages_24h', [$oneDay])
-            ->selectRaw('COUNT(DISTINCT CASE WHEN type = 0 AND created_at >= ? THEN user_id END) AS unique_posters_24h', [$oneDay])
-            ->selectRaw('MAX(created_at) AS last_activity_at')
+            ->selectRaw('SUM(CASE WHEN type = 0 AND created_at >= ? THEN 1 ELSE 0 END) AS messages_1h', [$bounds['hour']])
+            ->selectRaw('SUM(CASE WHEN type = 0 AND created_at >= ? THEN 1 ELSE 0 END) AS messages_24h', [$bounds['day']])
+            ->selectRaw('SUM(CASE WHEN type = 0 AND created_at >= ? THEN 1 ELSE 0 END) AS messages_7d', [$bounds['week']])
+            ->selectRaw('SUM(CASE WHEN type <> 0 AND created_at >= ? THEN 1 ELSE 0 END) AS event_messages_24h', [$bounds['day']])
+            ->selectRaw('COUNT(DISTINCT CASE WHEN type = 0 AND created_at >= ? THEN user_id END) AS unique_posters_24h', [$bounds['day']])
             ->whereNull('deleted_by')
+            ->where('created_at', '>=', $bounds['week'])
             ->whereIn('chat_id', $chatIds)
-            ->groupBy('chat_id')
+            ->groupBy('chat_id');
+
+        return $query
             ->get()
             ->map(static fn (Message $message): array => $message->getAttributes())
             ->all();
+    }
+
+    /**
+     * Latest non-deleted timestamp per chat. This is not the highest id.
+     *
+     * @param list<int> $chatIds
+     * @return array<int,?string>
+     */
+    private function loadLifetimeLastActivity(array $chatIds): array
+    {
+        $activity = [];
+        foreach (array_chunk($chatIds, 40) as $chunk) {
+            $rows = Message::query()
+                ->select('chat_id')
+                ->selectRaw('MAX(created_at) AS last_activity_at')
+                ->whereNull('deleted_by')
+                ->whereIn('chat_id', $chunk)
+                ->groupBy('chat_id')
+                ->get();
+            foreach ($rows as $row) {
+                $id = (int) $row->chat_id;
+                if ($id <= 0) {
+                    continue;
+                }
+                $createdAt = $row->last_activity_at;
+                if ($createdAt instanceof \DateTimeInterface) {
+                    $createdAt = $createdAt->format('Y-m-d H:i:s');
+                }
+                $activity[$id] = $createdAt === null || $createdAt === ''
+                    ? null
+                    : (string) $createdAt;
+            }
+        }
+
+        return $activity;
     }
 }

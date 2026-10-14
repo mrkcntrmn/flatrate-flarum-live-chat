@@ -3,6 +3,8 @@
 namespace FlatRate\LiveChat\Tests;
 
 use FlatRate\LiveChat\Admin\AdminDashboardService;
+use FlatRate\LiveChat\Admin\DashboardMetricCalculator;
+use FlatRate\LiveChat\Auth\MemberBetaGate;
 use FlatRate\LiveChat\Api\Controllers\AdminDashboardController;
 use FlatRate\LiveChat\Auth\ChatAuthorization;
 use FlatRate\LiveChat\Catalog\RoomCatalog;
@@ -58,7 +60,7 @@ class AdminLiveChatDashboardTest extends TestCase
         $this->presenceCalls = 0;
     }
 
-    private function service(bool $enabled = true): AdminDashboardService
+    private function service(bool $enabled = true, ?callable $presence = null): AdminDashboardService
     {
         $settings = new AdminDashboardSettings([
             AdminDashboardService::ENABLED_SETTING_KEY => $enabled ? '1' : '0',
@@ -78,8 +80,12 @@ class AdminLiveChatDashboardTest extends TestCase
         $presence = new CentrifugoPresenceStatsReader(
             $config,
             null,
-            function (): array {
+            function () use ($presence): array {
                 $this->presenceCalls++;
+                if ($presence !== null) {
+                    return $presence();
+                }
+
                 return ['status' => 200, 'body' => json_encode(['result' => ['num_users' => 3]])];
             }
         );
@@ -118,7 +124,10 @@ class AdminLiveChatDashboardTest extends TestCase
         $overview = $dashboard->snapshot();
 
         $this->assertSame(46, count($overview['rooms']));
-        $this->assertSame('operational', $overview['health']['status']);
+        $this->assertSame('catalog_reconciled', $overview['health']['status']);
+        $this->assertSame('reconciled', $overview['health']['catalog']);
+        $this->assertSame('not_instrumented', $overview['health']['historicalRealtimeMetrics']);
+        $this->assertNotSame('operational', $overview['health']['status']);
         $this->assertSame('selected-room-on-demand', $overview['health']['presenceMode']);
         $this->assertSame(7, $overview['totals']['messages24h']);
         $this->assertSame(0, $this->presenceCalls);
@@ -151,7 +160,8 @@ class AdminLiveChatDashboardTest extends TestCase
         $states = array_column($data['rooms'], 'catalogState', 'roomKey');
         $this->assertSame('missing', $states['acura-live']);
         $this->assertSame('drifted', $states['alfa-romeo-live']);
-        $this->assertSame('degraded', $data['health']['status']);
+        $this->assertSame('catalog_attention', $data['health']['status']);
+        $this->assertSame('attention', $data['health']['catalog']);
 
         $this->expectException(\InvalidArgumentException::class);
         $dashboard->snapshot('not-a-canonical-room');
@@ -180,5 +190,182 @@ class AdminLiveChatDashboardTest extends TestCase
             ->withAttribute('actor', $this->admin())
             ->withQueryParams(['url' => 'https://example.com']);
         $this->assertSame(400, $enabled->handle($bad)->getStatusCode());
+    }
+
+    public function testAuthorizationMatrixDeniesHiddenCatalogData(): void
+    {
+        $member = new User(8);
+        $beta = new User(21);
+        $betaGate = new MemberBetaGate(new AdminDashboardSettings([
+            MemberBetaGate::SETTING_KEY => '1',
+        ]), new class {
+            public function isActive(User $actor): bool
+            {
+                return true;
+            }
+        }, true);
+        $this->assertTrue($betaGate->allowsActor($beta));
+        $this->assertFalse($beta->isAdmin());
+
+        $moderator = new User(14);
+        $moderator->permissions = [ChatAuthorization::PERM_MODERATE => true];
+        $this->assertFalse($moderator->isAdmin());
+
+        $suspended = new User(3);
+        $suspended->isAdmin = true;
+        $suspended->suspended_until = date('c', time() + 3600);
+
+        $rootOnly = new User(1);
+        $rootOnly->domainRole = 'OWNER_ROOT';
+        $this->assertFalse($rootOnly->isAdmin());
+
+        $denied = [
+            'guest' => new User(null),
+            'member' => $member,
+            'beta' => $beta,
+            'moderator' => $moderator,
+            'suspended-admin' => $suspended,
+            'owner-root' => $rootOnly,
+        ];
+
+        foreach ([false, true] as $enabledFlag) {
+            $controller = new AdminDashboardController($this->service($enabledFlag), new ChatAuthorization());
+            foreach ($denied as $label => $actor) {
+                $response = $controller->handle($this->request($actor));
+                $this->assertSame(403, $response->getStatusCode(), $label . ($enabledFlag ? ' on' : ' off'));
+                $this->assertPrivateHeaders($response);
+                $this->assertNoCatalogLeak((string) $response->getBody());
+            }
+        }
+
+        $off = new AdminDashboardController($this->service(false), new ChatAuthorization());
+        $disabledAdmin = $off->handle($this->request($this->admin()));
+        $this->assertSame(404, $disabledAdmin->getStatusCode());
+        $this->assertPrivateHeaders($disabledAdmin);
+        $this->assertNoCatalogLeak((string) $disabledAdmin->getBody());
+
+        $on = new AdminDashboardController($this->service(true), new ChatAuthorization());
+        $allowed = $on->handle($this->request($this->admin()));
+        $this->assertSame(200, $allowed->getStatusCode());
+        $this->assertPrivateHeaders($allowed);
+    }
+
+    public function testPresenceZeroIsDistinctFromUnavailableAndOnlyOneRoomIsPolled(): void
+    {
+        $zero = $this->service(true, static fn (): array => [
+            'status' => 200,
+            'body' => json_encode(['result' => ['num_users' => 0]]),
+        ]);
+        $detail = $zero->snapshot('honda-live');
+        $honda = $this->room($detail, 'honda-live');
+        $general = $this->room($detail, 'community-general-live');
+        $this->assertSame(0, $honda['presence']['uniqueUsers']);
+        $this->assertTrue($honda['presence']['available']);
+        $this->assertNull($general['presence']);
+        $this->assertSame(1, $this->presenceCalls);
+        $this->assertFalse($honda['effectiveAvailability']['broadMember']);
+        $this->assertTrue($general['effectiveAvailability']['adminPreview']);
+        $this->assertFalse($general['effectiveAvailability']['broadMember']);
+
+        $down = $this->service(true, static function (): array {
+            throw new \RuntimeException('presence timeout');
+        });
+        $failed = $this->room($down->snapshot('audi-live'), 'audi-live');
+        $this->assertFalse($failed['presence']['available']);
+        $this->assertNull($failed['presence']['uniqueUsers']);
+
+        $http = $this->service(true, static fn (): array => ['status' => 503, 'body' => '{"error":"down"}']);
+        $provider = $this->room($http->snapshot('bmw-live'), 'bmw-live');
+        $this->assertFalse($provider['presence']['available']);
+        $this->assertNull($provider['presence']['uniqueUsers']);
+    }
+
+    public function testUtcWindowsExcludeDeletedRowsAndKeepLifetimeLastActivity(): void
+    {
+        $now = 1791828000;
+        $bounds = DashboardMetricCalculator::bounds($now);
+        $this->assertSame('2026-10-12 17:00:00', $bounds['hour']);
+        $this->assertSame('2026-10-11 18:00:00', $bounds['day']);
+        $this->assertSame('2026-10-05 18:00:00', $bounds['week']);
+
+        $rows = [
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 9, 'created_at' => '2026-09-01 00:00:00', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 9, 'created_at' => '2026-10-12 17:00:00', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 9, 'created_at' => '2026-10-12 16:59:59', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 4, 'created_at' => '2026-10-12 17:30:00', 'deleted_by' => 2],
+            ['chat_id' => 1, 'type' => 1, 'user_id' => 9, 'created_at' => '2026-10-12 17:45:00', 'deleted_by' => null],
+            ['chat_id' => 2, 'type' => 0, 'user_id' => 5, 'created_at' => '2026-08-01 00:00:00', 'deleted_by' => null],
+            ['chat_id' => 2, 'type' => 0, 'user_id' => null, 'created_at' => '2026-10-11 18:00:00', 'deleted_by' => null],
+            ['chat_id' => 3, 'type' => 0, 'user_id' => 7, 'created_at' => '2026-10-12 17:50:00', 'deleted_by' => 1],
+        ];
+        $metrics = DashboardMetricCalculator::aggregate($rows, $now);
+
+        $this->assertSame(1, $metrics[1]['messages_1h']);
+        $this->assertSame(2, $metrics[1]['messages_24h']);
+        $this->assertSame(2, $metrics[1]['messages_7d']);
+        $this->assertSame(1, $metrics[1]['event_messages_24h']);
+        $this->assertSame(1, $metrics[1]['unique_posters_24h']);
+        $this->assertSame('2026-10-12 17:45:00', $metrics[1]['last_activity_at']);
+        $this->assertSame(0, $metrics[2]['messages_1h']);
+        $this->assertSame(1, $metrics[2]['messages_24h']);
+        $this->assertSame(0, $metrics[2]['unique_posters_24h']);
+        $this->assertSame('2026-10-11 18:00:00', $metrics[2]['last_activity_at']);
+        $this->assertArrayNotHasKey(3, $metrics);
+    }
+
+    public function testNonmonotonicTimestampsKeepEarlierIdsAndLatestCreatedAt(): void
+    {
+        $now = 1791828000;
+        $rows = [
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 9, 'created_at' => '2026-10-12 17:50:00', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 9, 'created_at' => '2026-09-01 00:00:00', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 9, 'created_at' => '2026-09-01 00:00:00', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 4, 'created_at' => '2026-10-10 10:00:00', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 4, 'created_at' => '2026-10-11 10:00:00', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 4, 'created_at' => '2026-10-13 00:00:00', 'deleted_by' => 2],
+            ['chat_id' => 2, 'type' => 0, 'user_id' => 3, 'created_at' => '2026-10-12 12:00:00', 'deleted_by' => null],
+            ['chat_id' => 2, 'type' => 0, 'user_id' => 3, 'created_at' => '2026-09-01 00:00:00', 'deleted_by' => null],
+            ['chat_id' => 3, 'type' => 0, 'user_id' => 7, 'created_at' => '2026-10-12 17:50:00', 'deleted_by' => 1],
+        ];
+        $metrics = DashboardMetricCalculator::aggregate($rows, $now);
+
+        $this->assertSame(1, $metrics[1]['messages_1h']);
+        $this->assertSame(1, $metrics[1]['messages_24h']);
+        $this->assertSame(3, $metrics[1]['messages_7d']);
+        $this->assertSame('2026-10-12 17:50:00', $metrics[1]['last_activity_at']);
+        $this->assertSame('2026-10-12 12:00:00', $metrics[2]['last_activity_at']);
+        $this->assertArrayNotHasKey(3, $metrics);
+    }
+
+    private function request(User $actor): ServerRequest
+    {
+        return (new ServerRequest('GET', '/api/flatrate-live-chat/admin/dashboard'))
+            ->withAttribute('actor', $actor);
+    }
+
+    private function assertPrivateHeaders($response): void
+    {
+        $this->assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        $this->assertSame('noindex, nofollow', $response->getHeaderLine('X-Robots-Tag'));
+    }
+
+    private function assertNoCatalogLeak(string $body): void
+    {
+        $this->assertStringNotContainsString('staff-preview', $body);
+        foreach ($this->catalog->rooms() as $room) {
+            $this->assertStringNotContainsString($room['name'], $body);
+            $this->assertStringNotContainsString($room['roomKey'], $body);
+        }
+    }
+
+    /** @param array<string,mixed> $snapshot */
+    private function room(array $snapshot, string $roomKey): array
+    {
+        foreach ($snapshot['rooms'] as $room) {
+            if ($room['roomKey'] === $roomKey) {
+                return $room;
+            }
+        }
+        $this->fail('missing room ' . $roomKey);
     }
 }

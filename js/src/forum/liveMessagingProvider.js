@@ -1,5 +1,7 @@
 import { PRIMARY_ROOM_KEY, roomKeyOf } from './utils/liveChatPresentation.js';
 import { normalizeLiveDirectory, unreadCountOf } from './utils/normalizeLiveConversation.js';
+import { applyCachedPresence } from './utils/selectedRoomPresence.js';
+import { readSelectedConversation } from './utils/selectedRoomPresentation.js';
 
 export function createLiveMessagingProvider(options = {}) {
     const getApp = () => options.app || app;
@@ -67,7 +69,8 @@ export function createLiveMessagingProvider(options = {}) {
         await listConversations();
     }
 
-    function headerOverflowItems({ key } = {}) {
+    function headerOverflowItems({ key, conversation } = {}) {
+        applyCachedPresence(conversation, key);
         const a = getApp();
         const build = options.buildHeaderOverflowItems;
         if (typeof build !== 'function' || !a.chat) return null;
@@ -113,5 +116,8 @@ export function createLiveMessagingProvider(options = {}) {
         headerOverflowItems,
         directoryOverflowItems,
         refresh,
+        getSelectedConversation({ key } = {}) {
+            return readSelectedConversation(getApp(), key);
+        },
     };
 }
