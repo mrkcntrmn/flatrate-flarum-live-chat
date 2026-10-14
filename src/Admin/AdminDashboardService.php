@@ -273,8 +273,9 @@ final class AdminDashboardService
     }
 
     /**
-     * Rolling counts are limited to seven days. Lifetime last activity is a
-     * separate indexed lookup so the window aggregate does not scan history.
+     * Rolling counts use created_at bounds. Lifetime last activity is
+     * MAX(created_at) among non-deleted rows. Message ids are not a time order:
+     * callers may supply created_at, so an id floor can drop an in-window row.
      *
      * @param list<int> $chatIds
      * @return list<array<string,mixed>>
@@ -338,11 +339,6 @@ final class AdminDashboardService
             ->whereIn('chat_id', $chatIds)
             ->groupBy('chat_id');
 
-        $floor = $this->recentInsertFloor($bounds['week']);
-        if ($floor !== null) {
-            $query->where('id', '>=', $floor);
-        }
-
         return $query
             ->get()
             ->map(static fn (Message $message): array => $message->getAttributes())
@@ -350,29 +346,24 @@ final class AdminDashboardService
     }
 
     /**
-     * Newest non-deleted row per chat. Inserts use Carbon::now() with an
-     * autoincrement id, so the primary-key tail is the lifetime last activity.
-     * The (chat_id, id) foreign-key index can stop at the first non-deleted row.
+     * Latest non-deleted timestamp per chat. This is not the highest id.
      *
      * @param list<int> $chatIds
      * @return array<int,?string>
      */
     private function loadLifetimeLastActivity(array $chatIds): array
     {
-        $table = $this->wrappedMessagesTable();
-        $connection = Message::query()->getConnection();
         $activity = [];
         foreach (array_chunk($chatIds, 40) as $chunk) {
-            $parts = [];
-            $bindings = [];
-            foreach ($chunk as $chatId) {
-                $parts[] = "SELECT ? AS chat_id, (SELECT created_at FROM {$table} WHERE chat_id = ? AND deleted_by IS NULL ORDER BY id DESC LIMIT 1) AS last_activity_at";
-                $bindings[] = $chatId;
-                $bindings[] = $chatId;
-            }
-            $rows = $connection->select(implode(' UNION ALL ', $parts), $bindings);
+            $rows = Message::query()
+                ->select('chat_id')
+                ->selectRaw('MAX(created_at) AS last_activity_at')
+                ->whereNull('deleted_by')
+                ->whereIn('chat_id', $chunk)
+                ->groupBy('chat_id')
+                ->get();
             foreach ($rows as $row) {
-                $id = (int) ($row->chat_id ?? 0);
+                $id = (int) $row->chat_id;
                 if ($id <= 0) {
                     continue;
                 }
@@ -387,62 +378,5 @@ final class AdminDashboardService
         }
 
         return $activity;
-    }
-
-    /**
-     * Lowest id at or after the seven-day bound when created_at is
-     * nondecreasing with id. A boundary inversion abandons the floor and the
-     * created_at predicate remains the correctness filter.
-     */
-    private function recentInsertFloor(string $weekStart): ?int
-    {
-        $table = $this->wrappedMessagesTable();
-        $connection = Message::query()->getConnection();
-        $span = $connection->selectOne("SELECT MIN(id) AS min_id, MAX(id) AS max_id FROM {$table}");
-        if ($span === null || $span->min_id === null || $span->max_id === null) {
-            return null;
-        }
-
-        $lo = (int) $span->min_id;
-        $hi = (int) $span->max_id;
-        $floor = null;
-        for ($attempt = 0; $attempt < 48 && $lo <= $hi; $attempt++) {
-            $mid = intdiv($lo + $hi, 2);
-            $row = $connection->selectOne(
-                "SELECT id, (created_at >= ?) AS in_window FROM {$table} WHERE id >= ? ORDER BY id ASC LIMIT 1",
-                [$weekStart, $mid]
-            );
-            if ($row === null || (int) $row->id > $hi) {
-                $hi = $mid - 1;
-                continue;
-            }
-            $id = (int) $row->id;
-            if ((int) $row->in_window === 1) {
-                $floor = $id;
-                $hi = $id - 1;
-                continue;
-            }
-            $lo = $id + 1;
-        }
-        if ($floor === null) {
-            return null;
-        }
-
-        $previous = $connection->selectOne(
-            "SELECT (created_at >= ?) AS in_window FROM {$table} WHERE id < ? ORDER BY id DESC LIMIT 1",
-            [$weekStart, $floor]
-        );
-        if ($previous !== null && (int) $previous->in_window === 1) {
-            return null;
-        }
-
-        return $floor;
-    }
-
-    private function wrappedMessagesTable(): string
-    {
-        $model = new Message();
-
-        return $model->newQuery()->getQuery()->getGrammar()->wrapTable($model->getTable());
     }
 }

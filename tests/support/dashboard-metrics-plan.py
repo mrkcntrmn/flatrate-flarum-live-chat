@@ -50,6 +50,7 @@ def sql(statement: str) -> str:
 
 
 def main() -> None:
+    prove_timestamp_inversion()
     sql(
         textwrap.dedent(
             f"""
@@ -147,9 +148,6 @@ def main() -> None:
             FROM flarum_neonchat_messages
             WHERE deleted_by IS NULL
               AND created_at >= '{WEEK}'
-              AND id >= (
-                SELECT MIN(id) FROM flarum_neonchat_messages WHERE created_at >= '{WEEK}'
-              )
               AND chat_id IN (1,2,46,47)
             GROUP BY chat_id
             ORDER BY chat_id;
@@ -159,135 +157,199 @@ def main() -> None:
     activity = sql(
         textwrap.dedent(
             """
-            SELECT 1, (SELECT created_at FROM flarum_neonchat_messages
-                       WHERE chat_id = 1 AND deleted_by IS NULL ORDER BY id DESC LIMIT 1)
-            UNION ALL
-            SELECT 2, (SELECT created_at FROM flarum_neonchat_messages
-                       WHERE chat_id = 2 AND deleted_by IS NULL ORDER BY id DESC LIMIT 1)
-            UNION ALL
-            SELECT 46, (SELECT created_at FROM flarum_neonchat_messages
-                        WHERE chat_id = 46 AND deleted_by IS NULL ORDER BY id DESC LIMIT 1)
-            UNION ALL
-            SELECT 47, (SELECT created_at FROM flarum_neonchat_messages
-                        WHERE chat_id = 47 AND deleted_by IS NULL ORDER BY id DESC LIMIT 1);
+            SELECT chat_id, MAX(created_at)
+            FROM flarum_neonchat_messages
+            WHERE deleted_by IS NULL AND chat_id IN (1,2,46,47)
+            GROUP BY chat_id
+            ORDER BY chat_id;
             """
         )
     )
+    def table(text: str) -> dict[str, list[str]]:
+        parsed: dict[str, list[str]] = {}
+        for line in text.strip().splitlines():
+            parts = line.split("\t")
+            parsed[parts[0]] = parts[1:]
+        return parsed
+
+    oracle_rows = table(oracle)
+    window_rows = table(bounded)
+    activity_rows = table(activity)
+    if not oracle_rows or not window_rows or not activity_rows:
+        raise SystemExit("volume fixture returned no rows")
+    for chat_id, columns in oracle_rows.items():
+        counts, last = columns[:-1], columns[-1]
+        in_window = any(value != "0" for value in counts)
+        if in_window and window_rows.get(chat_id) != counts:
+            raise SystemExit(f"window counts diverged for chat {chat_id}")
+        if not in_window and chat_id in window_rows:
+            raise SystemExit(f"historical-only chat {chat_id} entered the window query")
+        if activity_rows.get(chat_id) != [last]:
+            raise SystemExit(f"lifetime activity diverged for chat {chat_id}")
+    if set(activity_rows) != set(oracle_rows):
+        raise SystemExit("lifetime activity chat set diverged from the oracle")
+    print("VOLUME_ORACLE_MATCH=PASS")
     print("ORACLE_COUNTS_AND_MAX")
     print(oracle)
-    print("BOUNDED_WINDOW")
+    print("WINDOW_NO_ID_FLOOR")
     print(bounded)
-    print("INDEXED_LAST_ACTIVITY")
+    print("MAX_LAST_ACTIVITY")
     print(activity)
 
-    def probe_floor() -> str:
-        span = sql("SELECT MIN(id), MAX(id) FROM flarum_neonchat_messages").strip().split("\t")
-        lo, hi = int(span[0]), int(span[1])
-        floor = None
-        probes = 0
-        while lo <= hi and probes < 48:
-            probes += 1
-            mid = (lo + hi) // 2
-            row = sql(
-                f"SELECT id, created_at >= '{WEEK}' FROM flarum_neonchat_messages "
-                f"WHERE id >= {mid} ORDER BY id ASC LIMIT 1"
-            ).strip()
-            if not row:
-                hi = mid - 1
-                continue
-            ident, in_window = row.split("\t")
-            ident = int(ident)
-            if ident > hi:
-                hi = mid - 1
-                continue
-            if in_window == "1":
-                floor = ident
-                hi = ident - 1
-            else:
-                lo = ident + 1
-        print(f"ID_FLOOR {floor} PROBES {probes}")
-        if floor is None:
-            raise SystemExit("expected a seven-day id floor")
-        return str(floor)
+    window_sql = textwrap.dedent(
+        f"""
+        SELECT chat_id,
+          SUM(CASE WHEN type = 0 AND created_at >= '{HOUR}' THEN 1 ELSE 0 END)
+        FROM flarum_neonchat_messages
+        WHERE deleted_by IS NULL AND created_at >= '{WEEK}'
+          AND chat_id BETWEEN 1 AND 46
+        GROUP BY chat_id
+        """
+    )
+    activity_sql = textwrap.dedent(
+        """
+        SELECT chat_id, MAX(created_at)
+        FROM flarum_neonchat_messages
+        WHERE deleted_by IS NULL AND chat_id BETWEEN 1 AND 46
+        GROUP BY chat_id
+        """
+    )
+    measure("window_created_at", window_sql)
+    measure("lifetime_max_created_at", activity_sql)
+    print("EXPLAIN_WINDOW")
+    print(sql("EXPLAIN " + window_sql))
+    print("EXPLAIN_LIFETIME")
+    print(sql("EXPLAIN " + activity_sql))
+    print("DASHBOARD_METRICS_PLAN=PASS")
 
-    floor = probe_floor()
 
-    def timed(label: str, statement: str) -> None:
-        elapsed = sql(
-            f"SET @t = NOW(6); {statement}; SELECT TIMESTAMPDIFF(MICROSECOND, @t, NOW(6));"
-        ).strip().splitlines()[-1]
-        print(f"ELAPSED_US {label} {elapsed}")
-
-    timed(
-        "unbounded_group",
+def prove_timestamp_inversion() -> None:
+    """Review counterexample: an early id can be newer than later ids."""
+    sql(
+        textwrap.dedent(
+            """
+            DROP TABLE IF EXISTS flarum_neonchat_messages;
+            CREATE TABLE flarum_neonchat_messages (
+              id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+              message VARCHAR(32) NOT NULL,
+              user_id INT UNSIGNED NULL,
+              created_at DATETIME NOT NULL,
+              edited_at DATETIME NULL,
+              deleted_by INT UNSIGNED NULL,
+              chat_id INT UNSIGNED NOT NULL,
+              type TINYINT NOT NULL DEFAULT 0,
+              is_readed TINYINT NOT NULL DEFAULT 0,
+              ip_address VARCHAR(45) NULL,
+              PRIMARY KEY (id),
+              KEY flarum_neonchat_messages_chat_id_foreign (chat_id)
+            ) ENGINE=InnoDB;
+            INSERT INTO flarum_neonchat_messages
+              (id, message, user_id, created_at, chat_id, type, deleted_by)
+            VALUES
+              (1, 'body-hidden', 9, '2026-10-12 17:50:00', 1, 0, NULL),
+              (2, 'body-hidden', 9, '2026-09-01 00:00:00', 1, 0, NULL),
+              (3, 'body-hidden', 9, '2026-09-01 00:00:00', 1, 0, NULL),
+              (4, 'body-hidden', 4, '2026-10-10 10:00:00', 1, 0, NULL),
+              (5, 'body-hidden', 4, '2026-10-11 10:00:00', 1, 0, NULL),
+              (7, 'body-hidden', 4, '2026-10-13 00:00:00', 1, 0, 2),
+              (10, 'body-hidden', 3, '2026-10-12 12:00:00', 2, 0, NULL),
+              (11, 'body-hidden', 3, '2026-09-01 00:00:00', 2, 0, NULL),
+              (12, 'body-hidden', 3, '2026-10-01 00:00:00', 2, 0, NULL),
+              (20, 'body-hidden', 7, '2026-10-12 17:50:00', 3, 0, 1);
+            """
+        )
+    )
+    oracle = sql(
         textwrap.dedent(
             f"""
             SELECT chat_id,
               SUM(CASE WHEN type = 0 AND created_at >= '{HOUR}' THEN 1 ELSE 0 END),
+              SUM(CASE WHEN type = 0 AND created_at >= '{DAY}' THEN 1 ELSE 0 END),
+              SUM(CASE WHEN type = 0 AND created_at >= '{WEEK}' THEN 1 ELSE 0 END),
+              SUM(CASE WHEN type <> 0 AND created_at >= '{DAY}' THEN 1 ELSE 0 END),
+              COUNT(DISTINCT CASE WHEN type = 0 AND created_at >= '{DAY}' THEN user_id END),
               MAX(created_at)
             FROM flarum_neonchat_messages
-            WHERE deleted_by IS NULL AND chat_id BETWEEN 1 AND 46
+            WHERE deleted_by IS NULL AND chat_id IN (1, 2, 3)
             GROUP BY chat_id
+            ORDER BY chat_id;
             """
-        ),
-    )
-    timed(
-        "bounded_window",
+        )
+    ).strip()
+    broken_window = sql(
         textwrap.dedent(
             f"""
-            SELECT chat_id,
-              SUM(CASE WHEN type = 0 AND created_at >= '{HOUR}' THEN 1 ELSE 0 END)
+            SELECT SUM(CASE WHEN type = 0 AND created_at >= '{WEEK}' THEN 1 ELSE 0 END)
             FROM flarum_neonchat_messages
-            WHERE deleted_by IS NULL AND created_at >= '{WEEK}'
-              AND id >= {floor}
-              AND chat_id BETWEEN 1 AND 46
-            GROUP BY chat_id
+            WHERE deleted_by IS NULL AND chat_id = 1
+              AND created_at >= '{WEEK}' AND id >= 4;
             """
-        ),
-    )
-    timed(
-        "one_chat_last_activity",
+        )
+    ).strip()
+    broken_activity = sql(
         """
         SELECT created_at FROM flarum_neonchat_messages
         WHERE chat_id = 1 AND deleted_by IS NULL
-        ORDER BY id DESC LIMIT 1
-        """,
+        ORDER BY id DESC LIMIT 1;
+        """
+    ).strip()
+    corrected = sql(
+        textwrap.dedent(
+            f"""
+            SELECT chat_id,
+              SUM(CASE WHEN type = 0 AND created_at >= '{HOUR}' THEN 1 ELSE 0 END),
+              SUM(CASE WHEN type = 0 AND created_at >= '{DAY}' THEN 1 ELSE 0 END),
+              SUM(CASE WHEN type = 0 AND created_at >= '{WEEK}' THEN 1 ELSE 0 END),
+              SUM(CASE WHEN type <> 0 AND created_at >= '{DAY}' THEN 1 ELSE 0 END),
+              COUNT(DISTINCT CASE WHEN type = 0 AND created_at >= '{DAY}' THEN user_id END)
+            FROM flarum_neonchat_messages
+            WHERE deleted_by IS NULL AND created_at >= '{WEEK}' AND chat_id IN (1, 2, 3)
+            GROUP BY chat_id
+            ORDER BY chat_id;
+            """
+        )
+    ).strip()
+    corrected_activity = sql(
+        """
+        SELECT chat_id, MAX(created_at)
+        FROM flarum_neonchat_messages
+        WHERE deleted_by IS NULL AND chat_id IN (1, 2, 3)
+        GROUP BY chat_id
+        ORDER BY chat_id;
+        """
+    ).strip()
+    print("INVERSION_ORACLE")
+    print(oracle)
+    print("BROKEN_ID_FLOOR_7D", broken_window)
+    print("BROKEN_ID_ORDER_LAST", broken_activity)
+    if broken_window == "3" or broken_activity == "2026-10-12 17:50:00":
+        raise SystemExit("id-ordered query did not reproduce the timestamp inversion")
+    oracle_counts = "\n".join(line.rsplit("\t", 1)[0] for line in oracle.splitlines())
+    oracle_activity = "\n".join(
+        f"{line.split(chr(9), 1)[0]}\t{line.rsplit(chr(9), 1)[1]}" for line in oracle.splitlines()
     )
+    if corrected != oracle_counts or corrected_activity != oracle_activity:
+        print(corrected)
+        print(corrected_activity)
+        raise SystemExit("timestamp query diverged from the unoptimized oracle")
+    if "2026-10-12 17:50:00" not in corrected_activity.splitlines()[0]:
+        raise SystemExit("chat 1 lifetime activity lost the earlier id")
+    if sql(
+        "SELECT COUNT(*) FROM flarum_neonchat_messages WHERE chat_id = 3 AND deleted_by IS NULL"
+    ).strip() != "0":
+        raise SystemExit("deleted-only chat leaked a row")
+    print("TIMESTAMP_INVERSION_REGRESSION=PASS")
 
-    print("EXPLAIN_UNBOUNDED")
-    print(
-        sql(
-            f"""
-            EXPLAIN SELECT chat_id, MAX(created_at)
-            FROM flarum_neonchat_messages
-            WHERE deleted_by IS NULL AND chat_id BETWEEN 1 AND 46
-            GROUP BY chat_id
-            """
-        )
+
+def measure(label: str, statement: str) -> None:
+    output = sql(
+        "FLUSH STATUS; SET @t = NOW(6); "
+        + statement
+        + "; SELECT CONCAT('ELAPSED ', TIMESTAMPDIFF(MICROSECOND, @t, NOW(6))); "
+        + "SHOW SESSION STATUS LIKE 'Handler_read%';"
     )
-    print("EXPLAIN_BOUNDED")
-    print(
-        sql(
-            f"""
-            EXPLAIN SELECT chat_id
-            FROM flarum_neonchat_messages
-            WHERE deleted_by IS NULL AND created_at >= '{WEEK}' AND id >= {floor}
-              AND chat_id BETWEEN 1 AND 46
-            GROUP BY chat_id
-            """
-        )
-    )
-    print("EXPLAIN_LAST_ACTIVITY")
-    print(
-        sql(
-            """
-            EXPLAIN SELECT created_at FROM flarum_neonchat_messages
-            WHERE chat_id = 1 AND deleted_by IS NULL
-            ORDER BY id DESC LIMIT 1
-            """
-        )
-    )
-    print("DASHBOARD_METRICS_PLAN=PASS")
+    print(f"MEASURE {label}")
+    print(output)
 
 
 if __name__ == "__main__":

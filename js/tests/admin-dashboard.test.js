@@ -38,9 +38,11 @@ assert.match(service, /not_instrumented/);
 assert.doesNotMatch(service, /'operational'/);
 assert.match(service, /whereNull\('deleted_by'\)/);
 assert.match(service, /where\('created_at', '>=', \$bounds\['week'\]\)/);
-assert.match(service, /ORDER BY id DESC LIMIT 1/);
+assert.match(service, /MAX\(created_at\) AS last_activity_at/);
 assert.match(service, /COUNT\(DISTINCT CASE WHEN type = 0/);
-assert.doesNotMatch(service, /MAX\(created_at\)/);
+assert.doesNotMatch(service, /ORDER BY id DESC/);
+assert.doesNotMatch(service, /recentInsertFloor/);
+assert.doesNotMatch(service, /where\('id'/);
 assert.doesNotMatch(service, /->message\b|\['message'\]/);
 
 console.log('FORUM_LIVE_ADMIN_001_UI=PASS');

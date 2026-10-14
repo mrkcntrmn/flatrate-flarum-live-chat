@@ -313,6 +313,30 @@ class AdminLiveChatDashboardTest extends TestCase
         $this->assertArrayNotHasKey(3, $metrics);
     }
 
+    public function testNonmonotonicTimestampsKeepEarlierIdsAndLatestCreatedAt(): void
+    {
+        $now = 1791828000;
+        $rows = [
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 9, 'created_at' => '2026-10-12 17:50:00', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 9, 'created_at' => '2026-09-01 00:00:00', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 9, 'created_at' => '2026-09-01 00:00:00', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 4, 'created_at' => '2026-10-10 10:00:00', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 4, 'created_at' => '2026-10-11 10:00:00', 'deleted_by' => null],
+            ['chat_id' => 1, 'type' => 0, 'user_id' => 4, 'created_at' => '2026-10-13 00:00:00', 'deleted_by' => 2],
+            ['chat_id' => 2, 'type' => 0, 'user_id' => 3, 'created_at' => '2026-10-12 12:00:00', 'deleted_by' => null],
+            ['chat_id' => 2, 'type' => 0, 'user_id' => 3, 'created_at' => '2026-09-01 00:00:00', 'deleted_by' => null],
+            ['chat_id' => 3, 'type' => 0, 'user_id' => 7, 'created_at' => '2026-10-12 17:50:00', 'deleted_by' => 1],
+        ];
+        $metrics = DashboardMetricCalculator::aggregate($rows, $now);
+
+        $this->assertSame(1, $metrics[1]['messages_1h']);
+        $this->assertSame(1, $metrics[1]['messages_24h']);
+        $this->assertSame(3, $metrics[1]['messages_7d']);
+        $this->assertSame('2026-10-12 17:50:00', $metrics[1]['last_activity_at']);
+        $this->assertSame('2026-10-12 12:00:00', $metrics[2]['last_activity_at']);
+        $this->assertArrayNotHasKey(3, $metrics);
+    }
+
     private function request(User $actor): ServerRequest
     {
         return (new ServerRequest('GET', '/api/flatrate-live-chat/admin/dashboard'))
