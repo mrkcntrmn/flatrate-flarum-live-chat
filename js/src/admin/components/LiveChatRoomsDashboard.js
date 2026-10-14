@@ -106,9 +106,9 @@ export default class LiveChatRoomsDashboard extends Component {
         const sampled = this.data.sampledAt ? new Date(this.data.sampledAt).toLocaleString() : 'Unknown';
         return (
             <div>
-                <div className={`FlatRateLiveAdminHealth is-${this.data.health.status}`}>
-                    <strong>{this.data.health.status === 'operational' ? 'Operational' : 'Attention needed'}</strong>
-                    <span>Sampled {sampled} · refreshes every 60 seconds</span>
+                <div className={`FlatRateLiveAdminHealth ${this.data.health.status === 'catalog_reconciled' ? 'is-catalog' : 'is-attention'}`}>
+                    <strong>{this.data.health.status === 'catalog_reconciled' ? 'Catalog reconciled' : 'Catalog needs attention'}</strong>
+                    <span>Catalog integrity only. Presence is on demand. Historical realtime health is not instrumented. Sampled {sampled}.</span>
                 </div>
                 {this.tabs()}
                 {this.viewMode === 'overview' ? this.overview() : null}
@@ -158,8 +158,8 @@ export default class LiveChatRoomsDashboard extends Component {
                     {this.gate('Broad User Live', this.data.gates.userLiveEnabled)}
                 </div>
                 <div className="FlatRateLiveAdminNotice">
-                    Presence is sampled only for the room you open. Historical realtime availability and latency are marked{' '}
-                    <strong>not instrumented</strong> until a durable collector exists.
+                    Presence is sampled only for the room you open. A provider result of zero is a real count. If presence is unavailable, this
+                    dashboard shows Unavailable rather than zero. Historical realtime availability and latency are <strong>not instrumented</strong>.
                 </div>
             </section>
         );
