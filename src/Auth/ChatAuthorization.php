@@ -35,7 +35,8 @@ class ChatAuthorization
         private ?MemberBetaGate $memberBeta = null,
         private ?RoomCatalog $catalog = null,
         private ?GeneralBetaOnlyGate $generalBetaOnly = null,
-        private ?BrandMemberGate $brandMember = null
+        private ?BrandMemberGate $brandMember = null,
+        private ?BrandModeratorGate $brandModerator = null
     ) {
     }
 
@@ -288,6 +289,24 @@ class ChatAuthorization
         $this->assertNotSuspended($actor);
         $actor->assertCan(self::PERM_CHAT);
         $this->assertCanReadRoom($actor, $chat);
+    }
+
+    public function allowsScopedBrandModeration(User $actor, Chat $chat): bool
+    {
+        if ($this->brandModerator === null) {
+            $this->brandModerator = new BrandModeratorGate($this->settings, $this->roomCatalog());
+        }
+        return $this->brandModerator->allows($actor, $chat);
+    }
+
+    /** Scope new delegation to the actual target room, never a global group. */
+    public function assertCanModerateMessage(User $actor, Chat $chat): void
+    {
+        $this->assertNotSuspended($actor);
+        if ($actor->can(self::PERM_MODERATE) || $this->allowsScopedBrandModeration($actor, $chat)) {
+            return;
+        }
+        throw new PermissionDeniedException();
     }
 
     public function assertCanModerate(User $actor): void
