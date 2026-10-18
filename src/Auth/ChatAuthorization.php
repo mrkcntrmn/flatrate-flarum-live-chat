@@ -34,7 +34,8 @@ class ChatAuthorization
         private ?SettingsRepositoryInterface $settings = null,
         private ?MemberBetaGate $memberBeta = null,
         private ?RoomCatalog $catalog = null,
-        private ?GeneralBetaOnlyGate $generalBetaOnly = null
+        private ?GeneralBetaOnlyGate $generalBetaOnly = null,
+        private ?BrandMemberGate $brandMember = null
     ) {
     }
 
@@ -149,6 +150,33 @@ class ChatAuthorization
         return $this->generalBetaOnly->allowsActor($actor);
     }
 
+    public function allowsBrandMemberRooms(User $actor): bool
+    {
+        if ($this->brandMember === null) {
+            $this->brandMember = new BrandMemberGate($this->settings);
+        }
+        return $this->brandMember->allowsActor($actor);
+    }
+
+    /** @return list<array{roomKey:string,name:string,scopeType:string,scopeKey:string}> */
+    public function canonicalBrandRoomScopes(): array
+    {
+        return array_values(array_filter($this->roomCatalog()->rooms(), function ($room) {
+            return ($room['scopeType'] ?? null) === 'board'
+                && !empty($room['roomKey'])
+                && !empty($room['scopeKey']);
+        }));
+    }
+
+    private function isExactCanonicalBrandChat(Chat $chat): bool
+    {
+        $catalogRoom = $this->roomCatalog()->findByRoomKey((string) $chat->room_key);
+        return is_array($catalogRoom)
+            && ($catalogRoom['scopeType'] ?? null) === 'board'
+            && (string) ($chat->scope_type ?? '') === 'board'
+            && (string) ($chat->scope_key ?? '') === (string) ($catalogRoom['scopeKey'] ?? '');
+    }
+
     public function isRoomVisibleToActor(User $actor, Chat $chat): bool
     {
         if ((int) $chat->type !== 1 || !$chat->room_key) {
@@ -173,7 +201,10 @@ class ChatAuthorization
                 return true;
             }
 
-            return $this->approvedBetaCanAccessCanonicalBrandRoom($actor, $chat);
+            // Only exact catalog Brand rooms are released to signed-in members.
+            // Do not broaden noncanonical/private rooms or grant moderation.
+            return $this->approvedBetaCanAccessCanonicalBrandRoom($actor, $chat)
+                || ($this->allowsBrandMemberRooms($actor) && $this->isExactCanonicalBrandChat($chat));
         }
 
         return false;

@@ -14,6 +14,7 @@ use Flarum\User\User;
  * Two independent paths:
  *   admin + Admin Preview  -> BrandLiveAdminPreview
  *   approved member beta   -> MemberBetaGate via ChatAuthorization
+ *   all eligible members    -> independent default-off BrandMemberGate
  *
  * brand_live_admin_preview_available stays admin-preview-only.
  * Hidden-room staff preview does not imply this surface.
@@ -49,7 +50,8 @@ class BrandLiveAvailability
             return false;
         }
 
-        return $this->authorization()->allowsApprovedMemberBeta($actor);
+        return $this->authorization()->allowsApprovedMemberBeta($actor)
+            || $this->authorization()->allowsBrandMemberRooms($actor);
     }
 
     private function adminPreview(): BrandLiveAdminPreview

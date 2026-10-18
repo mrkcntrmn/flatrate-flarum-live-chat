@@ -46,6 +46,26 @@ class ChatRepository
             return $query;
         }
 
+        if ($this->auth->allowsBrandMemberRooms($actor)) {
+            // Exact (room_key, scope_type, scope_key) catalog pairs only.
+            // Keeping Brand rows hidden in storage preserves the dark rollout
+            // and avoids accidentally exposing any noncanonical room.
+            $scopes = $this->auth->canonicalBrandRoomScopes();
+            return $query->where(function ($outer) use ($scopes) {
+                $outer->where(function ($visible) {
+                    $visible->where('visibility', RoomVisibility::VISIBLE)
+                        ->where('audience', RoomAudience::MEMBERS);
+                });
+                foreach ($scopes as $room) {
+                    $outer->orWhere(function ($brand) use ($room) {
+                        $brand->where('room_key', $room['roomKey'])
+                            ->where('scope_type', 'board')
+                            ->where('scope_key', $room['scopeKey']);
+                    });
+                }
+            });
+        }
+
         return $query
             ->where('visibility', RoomVisibility::VISIBLE)
             ->where('audience', RoomAudience::MEMBERS);
