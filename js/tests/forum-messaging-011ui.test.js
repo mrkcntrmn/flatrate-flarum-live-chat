@@ -65,7 +65,10 @@ test('FORUM-MESSAGING-011UI: Remove message locale + DELETE path wiring', () => 
   assert.match(state, /model\.delete\(\)/);
 
   const handler = read('src/Commands/DeleteMessageHandler.php');
-  assert.match(handler, /assertCanModerate\(\$actor\)/);
+  // Deleting someone else's message must be authorized for the exact target room.
+  // Global moderation remains one valid server-side authorization path.
+  assert.match(handler, /assertCanModerateMessage\(\$actor,\s*\$chat\)/);
+  assert.match(handler, /\$isOwner\s*=\s*\(int\) \$message->user_id/);
 });
 
 test('FORUM-MESSAGING-011UI: grouped row mirrors own/incoming without bubble-styling the menu', () => {
