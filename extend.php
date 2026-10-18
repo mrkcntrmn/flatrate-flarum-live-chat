@@ -147,6 +147,7 @@ return [
         ->default('flatrate-live-chat.general_live_user_enabled', '0')
         ->default('flatrate-live-chat.member_beta_enabled', '0')
         ->default('flatrate-live-chat.general_live_beta_only_enabled', '0')
+        ->default('flatrate-live-chat.brand_live_members_enabled', '0')
         ->serializeToForum('flatrate-live-chat.settings.charlimit', 'flatrate-live-chat.settings.charlimit')
         ->serializeToForum('flatrate-live-chat.settings.display.minimize', 'flatrate-live-chat.settings.display.minimize')
         ->serializeToForum('flatrate-live-chat.settings.display.censor', 'flatrate-live-chat.settings.display.censor'),
