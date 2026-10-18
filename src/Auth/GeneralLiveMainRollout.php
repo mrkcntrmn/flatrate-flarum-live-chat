@@ -12,7 +12,8 @@ use Flarum\User\User;
  * Actor-effective gate for the pinned MAIN Live surface.
  *
  * This is not room authorization. The existing General Live room remains
- * governed only by GeneralLiveGate (master operational switch).
+ * governed by GeneralLiveGate (operational switch) and, when enabled,
+ * GeneralBetaOnlyGate (actual room audience; enforced in ChatAuthorization).
  *
  * Fail-closed rollout settings:
  *   absent / empty / 0 / unknown => disabled
@@ -35,7 +36,8 @@ class GeneralLiveMainRollout
 
     public function __construct(
         private ?SettingsRepositoryInterface $settings = null,
-        private ?MemberBetaGate $memberBeta = null
+        private ?MemberBetaGate $memberBeta = null,
+        private ?GeneralBetaOnlyGate $generalBetaOnly = null
     ) {
     }
 
@@ -93,6 +95,10 @@ class GeneralLiveMainRollout
         if (!$actor->can(ChatAuthorization::PERM_ENABLED)) {
             return false;
         }
+        // A legacy User Live setting cannot bypass beta-only General access.
+        if (!$this->generalBetaOnly()->allowsActor($actor)) {
+            return false;
+        }
         if ($this->userEnabled()) {
             return true;
         }
@@ -104,6 +110,14 @@ class GeneralLiveMainRollout
         }
 
         return false;
+    }
+
+    private function generalBetaOnly(): GeneralBetaOnlyGate
+    {
+        if ($this->generalBetaOnly === null) {
+            $this->generalBetaOnly = new GeneralBetaOnlyGate($this->settings, $this->memberBeta());
+        }
+        return $this->generalBetaOnly;
     }
 
     private function memberBeta(): MemberBetaGate
