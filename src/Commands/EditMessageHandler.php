@@ -9,6 +9,7 @@
 namespace FlatRate\LiveChat\Commands;
 
 use Carbon\Carbon;
+use FlatRate\LiveChat\Auth\ChatAuthorization;
 use FlatRate\LiveChat\ChatRepository;
 use FlatRate\LiveChat\MessageRepository;
 use FlatRate\LiveChat\MessageValidator;
@@ -43,7 +44,8 @@ class EditMessageHandler
         MessageRepository $messages,
         MessageValidator $validator,
         ChatRepository $chats,
-        Dispatcher $events
+        Dispatcher $events,
+        private ChatAuthorization $auth
     ) {
         $this->messages  = $messages;
         $this->validator = $validator;
@@ -86,17 +88,28 @@ class EditMessageHandler
 
             $message->save();
         } else if (isset($actions['hide'])) {
-            $actor->assertCan('flatrate-live-chat.permissions.delete');
+            // Brand-scoped moderators may hide another user's message in
+            // their exact assigned Brand only. They may restore only a hide
+            // they themselves performed; global/legacy chat roles retain
+            // their existing hide/restore rules below.
+            $scoped = $this->auth->allowsScopedBrandModeration($actor, $chat);
+            if ($scoped && !$actions['hide']
+                && (int) ($message->deleted_by ?? 0) !== (int) $actor->id) {
+                $scoped = false;
+            }
+            if (!$scoped) {
+                $actor->assertCan('flatrate-live-chat.permissions.delete');
+            }
 
             if ($actions['hide']) {
-                if ($message->user_id != $actor->id) {
+                if (!$scoped && $message->user_id != $actor->id) {
                     $actor->assertPermission(
                         $chatUser && $chatUser->role != 0
                     );
                 }
                 $message->deleted_by = $actor->id;
             } else {
-                if ($message->deleted_by != $actor->id) {
+                if (!$scoped && $message->deleted_by != $actor->id) {
                     $actor->assertPermission(
                         $chatUser && $chatUser->role != 0
                     );
