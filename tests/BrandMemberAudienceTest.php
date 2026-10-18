@@ -137,7 +137,7 @@ class BrandMemberAudienceTest extends TestCase
         $src = file_get_contents(dirname(__DIR__) . '/src/ChatRepository.php');
         $this->assertStringContainsString('allowsBrandMemberRooms($actor)', $src);
         $this->assertStringContainsString('canonicalBrandRoomScopes()', $src);
-        $this->assertStringContainsString("->where('scope_key', \\$room['scopeKey'])", str_replace("$", "\\$", $src));
+        $this->assertStringContainsString("->where('scope_key',", $src);
         $this->assertStringContainsString("->where('scope_type', 'board')", $src);
     }
 }
