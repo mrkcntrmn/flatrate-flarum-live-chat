@@ -35,7 +35,7 @@ class DeleteMessageHandler
 
         $isOwner = (int) $message->user_id === (int) $actor->id;
         if (!$isOwner) {
-            $this->auth->assertCanModerate($actor);
+            $this->auth->assertCanModerateMessage($actor, $chat);
         } else {
             $this->auth->assertNotSuspended($actor);
             $this->auth->assertEnabled($actor);
