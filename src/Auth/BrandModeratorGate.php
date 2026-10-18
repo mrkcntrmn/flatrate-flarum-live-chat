@@ -117,7 +117,8 @@ class BrandModeratorGate
             return $this->projection;
         }
         // No runtime projection exists in this source tranche. Fail closed.
-        if (!class_exists(self::PROJECTION_CLASS) || !function_exists('resolve')) {
+        if (!(class_exists(self::PROJECTION_CLASS) || interface_exists(self::PROJECTION_CLASS))
+            || !function_exists('resolve')) {
             return null;
         }
         try {
