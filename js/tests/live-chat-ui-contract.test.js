@@ -91,6 +91,14 @@ async function main() {
   assert.ok(overflow.includes('toggleSound'));
   assert.ok(overflow.includes('toggleNotifications'));
 
+  const roomInfo = read('js/src/forum/components/ChatEditModal.js');
+  // Read-only Live room info must not enumerate participant names; keep Direct
+  // info and the separately authorized moderator editing path unchanged.
+  assert.match(roomInfo, /this\\.model\\.type\\(\\) \\? null : this\\.componentUsersMentions\\(\\)/);
+  assert.match(roomInfo, /componentFormPM\\(\\)[\\s\\S]*?return this\\.componentChatInfo\\(\\)/);
+  assert.match(roomInfo, /componentFormChannel\\(\\)[\\s\\S]*?this\\.componentFormUsersSelect/);
+  assert.match(roomInfo, /componentFormButtons\\(\\)[\\s\\S]*?ButtonLeave/);
+
   const input = read('js/src/forum/components/ChatInput.js');
   assert.ok(input.includes('ChatInput-send'));
   assert.ok(input.includes('fa-paper-plane'));
