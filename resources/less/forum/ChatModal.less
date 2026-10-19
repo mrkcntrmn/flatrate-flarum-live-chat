@@ -285,3 +285,54 @@
         }
     }
 }
+
+// Phone Chrome's layout viewport is shorter than 100vh. Flarum's phone modal
+// gives .Modal-content min-height: 100vh inside an overflow:auto ModalManager,
+// and the entrance rule starts the dialog at top: 100vh. After .in moves it to
+// top: 0, the manager remains scrolled by that leftover overflow, so
+// .Modal-close sits above the visual viewport. Keep this dialog in the dynamic
+// viewport and scroll its body. Taller desktop windows are outside this query.
+@media @phone, (max-height: 500px) {
+    // Do not freeze .Modal top. Flarum closes a phone modal by transitioning
+    // top back to 100vh, and that transitionend is what dismisses it.
+    .ModalManager:has(> .ChatModal) {
+        overflow: hidden;
+    }
+
+    .ChatModal.Modal {
+        margin: 0 auto;
+        max-height: 100dvh;
+    }
+
+    .ChatModal .Modal-content {
+        min-height: 0 !important;
+        max-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .ChatModal form {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        max-height: 100%;
+        flex: 1 1 auto;
+        overflow: hidden;
+    }
+
+    .ChatModal .Modal-header {
+        flex: 0 0 auto;
+    }
+
+    .ChatModal .Modal-body {
+        overflow-y: auto;
+        min-height: 0;
+        flex: 1 1 auto;
+    }
+
+    .ChatModal .ButtonsPadding {
+        height: 16px;
+    }
+}
