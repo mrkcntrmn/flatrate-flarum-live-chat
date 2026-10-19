@@ -79,3 +79,39 @@ export function canAdministerRoom(chat, user) {
 
     return false;
 }
+
+function modelType(model) {
+    if (!model) return 0;
+    return typeof model.type === 'function' ? model.type() : model.type;
+}
+
+/**
+ * Read-only Room info. Canonical Live rooms are type=1 channels and do not
+ * list participant usernames. Type 0 Direct/group chats still do.
+ * A null chip vnode means no UsersTags container is rendered.
+ */
+export function readOnlyRoomInfoPresentation(model, renderParticipantChips) {
+    const title = model && typeof model.title === 'function' ? model.title() : model && model.title;
+    const showParticipantChips = !modelType(model);
+    return {
+        title: title || '',
+        participantChips: showParticipantChips && typeof renderParticipantChips === 'function' ? renderParticipantChips() : null,
+    };
+}
+
+/**
+ * Which Room info surface the modal should open.
+ * Direct conversations stay read-only even for a participant who is also a moderator.
+ * Channel and group management stays behind the existing moderator flag.
+ */
+export function roomInfoSurface(model, { isDirectPm = false, isModerator = false } = {}) {
+    if (modelType(model)) {
+        return isModerator ? 'channel-moderator' : 'channel-readonly';
+    }
+    if (isDirectPm) return 'direct-readonly';
+    return isModerator ? 'group-moderator' : 'group-readonly';
+}
+
+export function roomInfoShowsParticipantManagement(surface) {
+    return surface === 'channel-moderator' || surface === 'group-moderator';
+}
