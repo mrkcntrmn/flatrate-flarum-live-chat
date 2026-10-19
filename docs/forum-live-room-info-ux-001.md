@@ -58,3 +58,30 @@ A green check is not a deployment. The disposable Flarum 1.8.19 forum compiled t
 | Production verified | no |
 
 **Paired candidate:** `flatrate-flarum-messaging-ui` PR #25 removes the redundant All messages overflow action.
+
+## R3 signed-in acceptance
+
+**Work order:** FORUM-LIVE-UI-CLEANUP-001-R3
+**Date:** 2026-10-19
+**Product source:** unchanged at `87957935b59e0fbc84855abc48a1f6d380029e6d`
+**Bundle:** `js/dist/forum.js` sha256 `7d43baacaf1c0cb43f6fbceb07548fb980617fe88c046f11f2540cff62b252f5`
+**CI still valid for that product head:** run [39310133089](https://github.com/mrkcntrmn/flatrate-flarum-live-chat/actions/runs/39310133089) success. This note does not change JavaScript or `js/dist`.
+
+The R2 statement that signed-in Room info was not walked is historical. R3 reused the isolated Flarum 1.8.19 disposable forum at `http://127.0.0.1:8137` (`DATABASE_ENVIRONMENT=DISPOSABLE`, database host `fr-live-ui-cleanup-db`). Canonical rooms were created with `RoomProvisioner` reconcile: 46 keyed rooms, identities unchanged. General Live and Toyota Live each have three disposable participants at pivot role 0 (`r3member`, `r3peer`, `r3mod`). Inspection did not change that roster. One pre-existing unkeyed chat remains and was not part of the catalog.
+
+| Check | Result |
+| --- | --- |
+| General Live, member `r3member` | Room info title General Live. Loaded usernames `r3member`, `r3peer`, `r3mod`. Rendered participant chips: 0. Leave the chat present and not used. |
+| Toyota Live, moderator `r3mod` (pivot role 0, staff preview) | Header title Toyota Live. Overflow label Room info. Modal text is the title, Leave the chat, and the pre-existing Delete control. Usernames are absent from the modal and the accessibility tree. |
+| Toyota Live, administrator | Overflow label Room settings. Management form lists the three disposable users. Save, Enter, and Delete were not used. |
+| Ordinary member on `/messages/live/toyota-live` | Denied: "This live chat isn't available." Hidden brand rooms were not listed in that member's directory. |
+| Back from Toyota Live | `/t/toyota` |
+| Membership during inspection | unchanged, role 0, three participants |
+
+`r3mod` sees Delete chat because the existing `create.channel` permission is true for that actor. That control is not a participant directory and was not introduced by this change. The ordinary member Room info does not show it.
+
+Desktop and emulated CSS viewports 360, 390, and 412 had no horizontal overflow. Header side slots measured 44 by 44. Room info focus landed on Close. Physical Samsung SM-S916U / Android 16 was not connected. A Pixel 5 on Android 14 was attached and was not used as a substitute. `ANDROID_PHYSICAL_ACCEPTANCE=NOT_PROVEN`.
+
+Local evidence, not committed: `/home/ilove/dev/_disposable/forum-live-ui-cleanup-001-r3/evidence/`.
+
+Messaging UI PR #22 remains independent at `7a31f0e917c1d3939d0ff606883ab094be444e3b`. This acceptance did not merge, rebase, or deploy.
