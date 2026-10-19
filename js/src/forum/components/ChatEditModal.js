@@ -153,7 +153,9 @@ export default class ChatEditModal extends ChatModal {
             <label>
                 <h2>{this.model.title()}</h2>
             </label>,
-            this.componentUsersMentions(),
+            // Public Live room info shows the room title, not a participant directory.
+            // Direct/group chat info still shows users; moderator room editing is separate.
+            this.model.type() ? null : this.componentUsersMentions(),
         ];
     }
 
