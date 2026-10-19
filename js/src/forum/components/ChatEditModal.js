@@ -6,6 +6,7 @@ import Group from 'flarum/models/Group';
 
 import ChatModal from './ChatModal';
 import Stream from 'flarum/utils/Stream';
+import { readOnlyRoomInfoPresentation, roomInfoSurface } from '../utils/liveChatPresentation';
 
 export default class ChatEditModal extends ChatModal {
     oninit(vnode) {
@@ -149,13 +150,15 @@ export default class ChatEditModal extends ChatModal {
     }
 
     componentChatInfo() {
+        // Public Live room info shows the room title, not a participant directory.
+        // Direct/group chat info still shows users; moderator room editing is separate.
+        const info = readOnlyRoomInfoPresentation(this.model, () => this.componentUsersMentions());
+
         return [
             <label>
-                <h2>{this.model.title()}</h2>
+                <h2>{info.title}</h2>
             </label>,
-            // Public Live room info shows the room title, not a participant directory.
-            // Direct/group chat info still shows users; moderator room editing is separate.
-            this.model.type() ? null : this.componentUsersMentions(),
+            info.participantChips,
         ];
     }
 
@@ -181,8 +184,13 @@ export default class ChatEditModal extends ChatModal {
     }
 
     componentForm() {
-        if (this.model.type()) return this.componentFormChannel();
-        if (app.chat.isChatPM(this.model)) return this.componentFormPM();
+        const surface = roomInfoSurface(this.model, {
+            isDirectPm: app.chat.isChatPM(this.model),
+            isModerator: this.isLocalModerator,
+        });
+
+        if (surface === 'channel-moderator' || surface === 'channel-readonly') return this.componentFormChannel();
+        if (surface === 'direct-readonly') return this.componentFormPM();
 
         return this.componentFormChat();
     }
