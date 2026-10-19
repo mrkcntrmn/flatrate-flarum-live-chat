@@ -2,7 +2,10 @@
 
 **Date:** 2026-10-19
 **Work order:** FORUM-LIVE-UI-CLEANUP-001-R2
-**Status:** source implemented and locally built. Draft PR only. Not merged, not deployed, not production-verified.
+**Status:** source implemented, built, and CI-qualified on draft PR #52. Not merged, not deployed, not production-verified.
+
+**Qualified source SHA:** `092b2494d312fc3271bd215deb0ab96416762ca0` (JavaScript and bundle). This documentation note does not change those assets.
+**CI:** pull request run [39308825430](https://github.com/mrkcntrmn/flatrate-flarum-live-chat/actions/runs/39308825430) success (`flarum-resolve`, `test`). Push run [39308817160](https://github.com/mrkcntrmn/flatrate-flarum-live-chat/actions/runs/39308817160) success on the same SHA.
 
 ## Work contract
 
@@ -40,7 +43,7 @@ This does not anonymize message authors, delete members, hide the aggregate LIVE
 - A second `npm run build` produced byte-identical `js/dist` output.
 - Bundle contains `channel-readonly`, `channel-moderator`, `direct-readonly`, `group-moderator`, `UsersTags`, and `ButtonLeave`.
 
-GitHub check run IDs are recorded after the exact-head CI result. A green check is not a deployment.
+A green check is not a deployment. The disposable Flarum 1.8.19 forum compiled these assets into `public/assets/forum.js` (`channel-readonly` present). Signed-in Room info was not walked because that disposable forum has no provisioned Live rooms. Physical Android acceptance was not run.
 
 ## Lifecycle
 
@@ -48,8 +51,8 @@ GitHub check run IDs are recorded after the exact-head CI result. A green check 
 | --- | --- |
 | Source implemented | yes, on draft PR #52 |
 | Built | yes, local Node 20 production build |
-| CI qualified | pending the exact-head run for this revision |
-| Draft PR ready | after that run is green |
+| CI qualified | yes, runs 39308825430 and 39308817160 at `092b2494` |
+| Draft PR ready | yes, still draft |
 | Merged | no |
 | Deployed | no |
 | Production verified | no |
