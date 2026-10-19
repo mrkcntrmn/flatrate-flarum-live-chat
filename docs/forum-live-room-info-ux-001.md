@@ -85,3 +85,37 @@ Desktop and emulated CSS viewports 360, 390, and 412 had no horizontal overflow.
 Local evidence, not committed: `/home/ilove/dev/_disposable/forum-live-ui-cleanup-001-r3/evidence/`.
 
 Messaging UI PR #22 remains independent at `7a31f0e917c1d3939d0ff606883ab094be444e3b`. This acceptance did not merge, rebase, or deploy.
+
+## R5 Pixel 5 physical acceptance
+
+**Work order:** FORUM-LIVE-UI-CLEANUP-001-R5
+**Date:** 2026-10-19
+**Merged:** PR #52 merge commit `c82056534e95aec9d2408972327dbbb960b2396a`
+**Installed revision during the phone test:** `7106f635ea44e63d35f34cb8a42a4900edad0d80`
+
+The earlier Samsung SM-S916U / Android 16 result stays `NOT_PROVEN`. That device is not a release gate for this browser presentation change. Physical acceptance used the connected Google Pixel 5, Android 14, SDK 34, Chrome 155.0.8059.79. Chrome's user-agent string says Android 10; `getprop ro.build.version.release` is 14.
+
+Portrait CSS viewport was 392 by 721 at devicePixelRatio 2.75. The phone panel is 1080 by 2340. Signed-in General Live and Toyota Live Room info showed the room title and Leave, with the three disposable usernames loaded and no participant chips. Toyota Back went to `/t/toyota`. An ordinary member remained denied on the exact Toyota route. Membership stayed three participants at role 0.
+
+On first open, the Room info close control was above Chrome's visual viewport. That observation is the R6 defect below. It was not a participant-list failure, and R5 remains `PHYSICAL_ANDROID_WEB_UI_ACCEPTANCE=PASS` for the two merged presentation changes.
+
+Samsung and Android 16 were not tested. Production was not deployed.
+
+`SAMSUNG_SM_S916U_TESTED=false`. `ANDROID_16_TESTED=false`.
+
+## R6 Room info close control
+
+Pixel 5 portrait measurements, before this change, with Room info just opened:
+
+| Measurement | Value |
+| --- | --- |
+| Layout viewport | 392 by 721 |
+| `.Modal-content` min-height | 801.455px (`100vh`) |
+| `.ModalManager` | `scrollTop` 80, `scrollHeight` 801, `clientHeight` 721 |
+| `.Modal-close` | top -80, bottom -34, 40 by 46 |
+
+Flarum's phone modal puts `min-height: 100vh` on `.Modal-content` and starts `.Modal` at `top: 100vh` inside an `overflow-y: auto` manager. Chrome's large viewport was 801px while the layout viewport was 721px. After the dialog moved to `top: 0`, the manager stayed scrolled by the 80px difference, so Close was above the visible area.
+
+The correction is scoped to `.ChatModal` at `@phone` and at `max-height: 500px`. The modal manager does not scroll this dialog, its content is limited to `100dvh`, and `.Modal-body` scrolls. `top` is left alone so Flarum's phone close transition can finish. The 350px button spacer remains for taller desktop windows and becomes 16px inside that query. This does not change membership, authorization, or other Flarum modals.
+
+Pixel 5 retest, Chrome 155.0.8059.79: portrait 392 by 721, Close top 0, manager scroll 0, and the first physical tap closed General Live Room info. Toyota Live Close was at the same position and a physical tap dismissed it. Emulated widths 360, 390, and 412 kept Close visible with no horizontal overflow. At 1280 by 800, Back stays hidden and Close remains on the desktop dialog. Landscape 801 by 284 kept Close at top 10, and a physical tap dismissed it. Membership stayed three participants at role 0.
