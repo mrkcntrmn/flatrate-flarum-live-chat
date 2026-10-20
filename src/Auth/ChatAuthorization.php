@@ -33,7 +33,8 @@ class ChatAuthorization
     public function __construct(
         private ?SettingsRepositoryInterface $settings = null,
         private ?MemberBetaGate $memberBeta = null,
-        private ?RoomCatalog $catalog = null
+        private ?RoomCatalog $catalog = null,
+        private ?GeneralBetaOnlyGate $generalBetaOnly = null
     ) {
     }
 
@@ -140,9 +141,22 @@ class ChatAuthorization
         }
     }
 
+    public function allowsGeneralRoomActor(User $actor): bool
+    {
+        if ($this->generalBetaOnly === null) {
+            $this->generalBetaOnly = new GeneralBetaOnlyGate($this->settings, $this->memberBeta);
+        }
+        return $this->generalBetaOnly->allowsActor($actor);
+    }
+
     public function isRoomVisibleToActor(User $actor, Chat $chat): bool
     {
         if ((int) $chat->type !== 1 || !$chat->room_key) {
+            return false;
+        }
+        // A visible General room is not public member authorization when
+        // the independently enabled beta-only audience gate is active.
+        if (GeneralLiveGate::isGeneralLiveRoom($chat) && !$this->allowsGeneralRoomActor($actor)) {
             return false;
         }
         $visibility = (string) ($chat->visibility ?? RoomVisibility::VISIBLE);

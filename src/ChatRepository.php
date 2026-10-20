@@ -38,7 +38,7 @@ class ChatRepository
             ->where('type', 1)
             ->whereNotNull('room_key');
 
-        if (!$this->auth->isGeneralLiveEnabled()) {
+        if (!$this->auth->isGeneralLiveEnabled() || !$this->auth->allowsGeneralRoomActor($actor)) {
             $query->where('room_key', '!=', GeneralLiveGate::ROOM_KEY);
         }
 
