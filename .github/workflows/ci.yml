@@ -8,6 +8,14 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            lane: f1
+          - php: '8.4'
+            lane: f2
     services:
       mariadb:
         image: mariadb:10.11
@@ -25,10 +33,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: ${{ matrix.php }}
           tools: composer:v2
           coverage: none
-          extensions: dom, mbstring, xmlwriter, tokenizer, curl
+          extensions: curl, dom, fileinfo, gd, intl, mbstring, pdo, tokenizer, xml, xmlwriter, zip
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -36,13 +44,23 @@ jobs:
           cache-dependency-path: js/package-lock.json
       - name: Composer validate
         run: composer validate --no-check-publish --strict
-      # Composer 2.10 blocks league/flysystem 1.x, which Flarum 1.8.19 requires.
-      # Ignore only those advisory IDs so the existing 1.8.19 lock can install.
+      # Flarum 1.8.19 requires league/flysystem 1.x. Composer 2.10 blocks those
+      # advisories. The exception stays on the Flarum 1 lane only.
       - name: Allow Flarum 1.8.19 flysystem advisories
+        if: matrix.lane == 'f1'
         run: composer config --global --json policy.advisories.ignore-id '["PKSA-w9tt-7782-78jx","PKSA-pwh8-d4fr-nywn"]'
-      - name: Install dependencies (platform-strict)
-        # PHP 8.2 + declared platform extensions; no blanket --ignore-platform-reqs.
+      - name: Install Flarum 1 dependencies
+        if: matrix.lane == 'f1'
         run: composer update --no-interaction --prefer-dist
+      - name: Install Flarum 2 lock
+        if: matrix.lane == 'f2'
+        run: composer install --no-interaction --prefer-dist
+      - name: Assert Flarum 2 dependency graph
+        if: matrix.lane == 'f2'
+        run: |
+          composer show flarum/core | grep -E '^versions\s+:\s+\* v2\.0\.2$'
+          composer show flarum/markdown | grep -E '^versions\s+:\s+\* v2\.0\.1$'
+          composer show league/flysystem | grep -E '^versions\s+:\s+\* 3\.'
       - name: PHPUnit security/domain/rollout/realtime tests
         run: vendor/bin/phpunit --colors=always
       - name: Prefixed MariaDB timestamp inversion regression

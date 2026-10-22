@@ -12,6 +12,9 @@ spl_autoload_register(function ($class) {
         'Flarum\\Api\\Serializer\\UserSerializer' => __DIR__ . '/_stubs/UserSerializer.php',
         'Flarum\\Foundation\\AbstractServiceProvider' => __DIR__ . '/_stubs/AbstractServiceProvider.php',
         'Flarum\\Http\\RequestUtil' => __DIR__ . '/_stubs/RequestUtil.php',
+        'Flarum\\Api\\Controller\\AbstractShowController' => __DIR__ . '/_stubs/AbstractControllers.php',
+        'Flarum\\Api\\Controller\\AbstractListController' => __DIR__ . '/_stubs/AbstractControllers.php',
+        'Tobscure\\JsonApi\\Document' => __DIR__ . '/_stubs/JsonApiDocument.php',
         'Illuminate\\Database\\Eloquent\\ModelNotFoundException' => __DIR__ . '/_stubs/Illuminate/Database/Eloquent/ModelNotFoundException.php',
     ];
     if (isset($stubs[$class]) && file_exists($stubs[$class])) {
