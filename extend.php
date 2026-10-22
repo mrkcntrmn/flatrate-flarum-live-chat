@@ -35,6 +35,10 @@ use FlatRate\LiveChat\Api\Controllers\AdminDashboardController;
 use FlatRate\LiveChat\Console\DoctorCommand;
 use FlatRate\LiveChat\Realtime\CentrifugoClientConfig;
 
+if (!class_exists(\Flarum\Api\Controller\AbstractShowController::class)) {
+    return require __DIR__.'/extend-f2.php';
+}
+
 return [
     (new Extend\Frontend('admin'))
         ->css(__DIR__ . '/resources/less/admin.less')
