@@ -20,7 +20,13 @@ class F2BackendContractTest extends TestCase
     {
         $extend = (string) file_get_contents(dirname(__DIR__).'/extend.php');
         $f2 = (string) file_get_contents(dirname(__DIR__).'/extend-f2.php');
-        $actions = (string) file_get_contents(dirname(__DIR__).'/src/F2/Api/LiveRoomActions.php');
+        $actions = '';
+        foreach (glob(dirname(__DIR__).'/src/F2/Api/*.php') as $file) {
+            $actions .= (string) file_get_contents($file);
+        }
+        $this->assertFileDoesNotExist(dirname(__DIR__).'/src/F2/Api/LiveRoomActions.php');
+        $this->assertStringNotContainsString('final class EditMessageAction', $actions);
+        $this->assertStringContainsString('class DeleteMessageAction extends EditMessageAction', $actions);
 
         $this->assertStringContainsString('AbstractShowController::class', $extend);
         $this->assertStringContainsString('extend-f2.php', $extend);
@@ -34,5 +40,9 @@ class F2BackendContractTest extends TestCase
         $this->assertStringContainsString("->default('flatrate-live-chat.live_chats_navigation_enabled', '0')", $f2);
         $this->assertStringContainsString('noindex, nofollow', $f2);
         $this->assertStringNotContainsString("js(__DIR__", $f2);
+        $this->assertStringContainsString('RequestUtil::getActor($request)', $actions);
+        $this->assertStringNotContainsString("getAttribute('actor')", $actions);
+        $this->assertStringContainsString('$message->message', $actions);
+        $this->assertStringNotContainsString('$message->content', $actions);
     }
 }
