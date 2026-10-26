@@ -11,7 +11,6 @@ import timedRedraw from '../utils/timedRedraw';
 import { processVisibleUnread } from '../utils/processVisibleUnread';
 import { startInitialHistoryFetch, settleInitialHistoryFetch } from '../utils/chatMessagesFetchLifecycle';
 import { groupChatMessages } from '../utils/groupChatMessages';
-import { messageBelongsToChat } from '../utils/messagesForChat';
 
 export default class ChatViewport extends Component {
     oninit(vnode) {
@@ -106,12 +105,9 @@ export default class ChatViewport extends Component {
     componentsChatMessages(chat) {
         const messages = app.chat.messagesForChat(chat || this.model).slice();
 
-        // Include optimistic writing preview in the same ordered collection so V2 grouping
-        // can attach it to the latest same-author group within the gap window.
-        const preview = this.state && this.state.input && this.state.input.previewModel;
-        if (this.state && this.state.input && this.state.input.writingPreview && preview && messageBelongsToChat(preview, chat || this.model)) {
-            messages.push(preview);
-        }
+        // Do not append unsent composer drafts here. The input state still owns
+        // previewModel for the existing send/optimistic reconciliation path,
+        // but no draft may appear as a message bubble before Send.
 
         if (this.attrs.presentationVersion === 2) {
             return this.componentsChatMessageGroups(messages);
