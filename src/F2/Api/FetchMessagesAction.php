@@ -6,13 +6,7 @@
 
 namespace FlatRate\LiveChat\F2\Api;
 
-use FlatRate\LiveChat\Api\ExactRoomLookup;
-use FlatRate\LiveChat\Auth\ChatAuthorization;
-use FlatRate\LiveChat\ChatRepository;
-use FlatRate\LiveChat\Commands\DeleteMessage;
-use FlatRate\LiveChat\Commands\EditMessage;
 use FlatRate\LiveChat\Commands\FetchMessage;
-use FlatRate\LiveChat\Commands\PostMessage;
 use Flarum\Http\RequestUtil;
 use Flarum\User\Exception\PermissionDeniedException;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;

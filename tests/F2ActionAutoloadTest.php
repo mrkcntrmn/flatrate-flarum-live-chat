@@ -19,6 +19,7 @@ class F2ActionAutoloadTest extends TestCase
             'FlatRate\\LiveChat\\F2\\Api\\PostMessageAction' => 'src/F2/Api/PostMessageAction.php',
             'FlatRate\\LiveChat\\F2\\Api\\EditMessageAction' => 'src/F2/Api/EditMessageAction.php',
             'FlatRate\\LiveChat\\F2\\Api\\DeleteMessageAction' => 'src/F2/Api/DeleteMessageAction.php',
+            'FlatRate\\LiveChat\\F2\\Api\\MessageMutationResponder' => 'src/F2/Api/MessageMutationResponder.php',
         ];
 
         foreach ($classes as $class => $relative) {
@@ -28,16 +29,26 @@ class F2ActionAutoloadTest extends TestCase
                 realpath(dirname(__DIR__).'/'.$relative),
                 realpath($ref->getFileName())
             );
-            $this->assertTrue($ref->implementsInterface(RequestHandlerInterface::class));
-            $parent = $ref->getParentClass();
-            if ($parent) {
-                $this->assertTrue(class_exists($parent->getName()));
-                $this->assertFalse($parent->isFinal(), $parent->getName());
-            }
         }
 
-        $delete = new ReflectionClass('FlatRate\\LiveChat\\F2\\Api\\DeleteMessageAction');
-        $this->assertSame('FlatRate\\LiveChat\\F2\\Api\\EditMessageAction', $delete->getParentClass()->getName());
-        $this->assertFalse($delete->getParentClass()->isFinal());
+        $handlers = [
+            'FlatRate\\LiveChat\\F2\\Api\\ShowLiveRoomAction',
+            'FlatRate\\LiveChat\\F2\\Api\\ListLiveChatsAction',
+            'FlatRate\\LiveChat\\F2\\Api\\SubscribeRoomAction',
+            'FlatRate\\LiveChat\\F2\\Api\\UnsubscribeRoomAction',
+            'FlatRate\\LiveChat\\F2\\Api\\FetchMessagesAction',
+            'FlatRate\\LiveChat\\F2\\Api\\PostMessageAction',
+            'FlatRate\\LiveChat\\F2\\Api\\EditMessageAction',
+            'FlatRate\\LiveChat\\F2\\Api\\DeleteMessageAction',
+        ];
+
+        foreach ($handlers as $class) {
+            $ref = new ReflectionClass($class);
+            $this->assertTrue($ref->implementsInterface(RequestHandlerInterface::class), $class);
+            $this->assertTrue($ref->isFinal(), $class);
+            $this->assertFalse($ref->getParentClass(), $class.' must not extend another action');
+        }
+
+        $this->assertFileDoesNotExist(dirname(__DIR__).'/src/F2/Api/LiveRoomActions.php');
     }
 }

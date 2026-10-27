@@ -6,12 +6,6 @@
 
 namespace FlatRate\LiveChat\F2\Api;
 
-use FlatRate\LiveChat\Api\ExactRoomLookup;
-use FlatRate\LiveChat\Auth\ChatAuthorization;
-use FlatRate\LiveChat\ChatRepository;
-use FlatRate\LiveChat\Commands\DeleteMessage;
-use FlatRate\LiveChat\Commands\EditMessage;
-use FlatRate\LiveChat\Commands\FetchMessage;
 use FlatRate\LiveChat\Commands\PostMessage;
 use Flarum\Http\RequestUtil;
 use Flarum\User\Exception\PermissionDeniedException;
@@ -36,7 +30,19 @@ final class PostMessageAction implements RequestHandlerInterface
         if (!is_array($data)) {
             $data = [];
         }
+        if (!isset($data['attributes']) || !is_array($data['attributes'])) {
+            $data['attributes'] = [];
+        }
         unset($data['attributes']['channel'], $data['channel']);
+
+        // Flarum merges the route placeholder into query params. Prefer the body
+        // chat_id when present; otherwise use the path id as the room id.
+        if (!isset($data['attributes']['chat_id']) || $data['attributes']['chat_id'] === '' || $data['attributes']['chat_id'] === null) {
+            $routeId = Arr::get($request->getQueryParams(), 'id');
+            if ($routeId !== null && $routeId !== '') {
+                $data['attributes']['chat_id'] = (int) $routeId;
+            }
+        }
 
         try {
             $message = $this->bus->dispatch(new PostMessage($actor, $data, null));

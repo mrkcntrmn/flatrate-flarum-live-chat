@@ -25,8 +25,13 @@ class F2BackendContractTest extends TestCase
             $actions .= (string) file_get_contents($file);
         }
         $this->assertFileDoesNotExist(dirname(__DIR__).'/src/F2/Api/LiveRoomActions.php');
-        $this->assertStringNotContainsString('final class EditMessageAction', $actions);
-        $this->assertStringContainsString('class DeleteMessageAction extends EditMessageAction', $actions);
+        $this->assertStringContainsString('final class EditMessageAction', $actions);
+        $this->assertStringContainsString('final class DeleteMessageAction', $actions);
+        $this->assertStringNotContainsString('extends EditMessageAction', $actions);
+        $this->assertStringContainsString('MessageMutationResponder', $actions);
+
+        $doctor = (string) file_get_contents(dirname(__DIR__).'/src/Console/DoctorCommand.php');
+        $this->assertStringContainsString('protected function fire(): int', $doctor);
 
         $this->assertStringContainsString('AbstractShowController::class', $extend);
         $this->assertStringContainsString('extend-f2.php', $extend);
