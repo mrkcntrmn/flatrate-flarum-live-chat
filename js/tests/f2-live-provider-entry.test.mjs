@@ -30,9 +30,14 @@ assert.match(provider, /createLiveMessagingProvider/);
 
 assert.match(forumF2Entry, /index-f2/);
 assert.match(webpack, /forum-f2/);
-assert.match(webpack, /F1_TO_F2_ALIAS/);
+// Webpack remaps F1 short imports for F2's flarum.reg.get externals path.
+assert.match(webpack, /F1_TO_F2_REQUEST/);
+assert.match(webpack, /function remapFlarumRequest\s*\(/);
 assert.match(webpack, /flarum\/Model['"]:\s*['"]flarum\/common\/Model['"]/);
 assert.match(webpack, /flarum\/components\/Search['"]:\s*['"]flarum\/forum\/components\/Search['"]/);
+assert.match(webpack, /flarum\/helpers\/avatar['"]:\s*['"]flarum\/common\/components\/Avatar['"]/);
+assert.match(webpack, /flarum\/helpers\/icon['"]:\s*['"]flarum\/common\/components\/Icon['"]/);
+assert.match(webpack, /flarumRegistryExternal/);
 assert.match(extendF2, /js\/dist\/forum-f2\.js/);
 assert.match(extendF2, /Frontend\('forum'\)/);
 
