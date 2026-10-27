@@ -21,9 +21,15 @@ class ChatSocket
     ) {
     }
 
-    public function sendChatEvent($chat_id, $event_id, $options)
+    /**
+     * @param array<string,mixed> $options
+     * @param Chat|null $chat Prefer a server-resolved Chat (never trust client channel names).
+     */
+    public function sendChatEvent($chat_id, $event_id, $options, ?Chat $chat = null)
     {
-        $chat = Chat::find($chat_id);
+        if (!$chat) {
+            $chat = Chat::find($chat_id);
+        }
         if (!$chat || !$chat->room_key) {
             return;
         }

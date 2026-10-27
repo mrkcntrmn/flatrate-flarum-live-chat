@@ -36,8 +36,16 @@ class F2BackendContractTest extends TestCase
         $this->assertStringContainsString('AbstractShowController::class', $extend);
         $this->assertStringContainsString('extend-f2.php', $extend);
         $this->assertStringNotContainsString('ApiSerializer', $f2);
-        $this->assertStringNotContainsString('PushChatEvents', $f2);
-        $this->assertStringNotContainsString('Tobscure', $f2);
+        $this->assertStringContainsString('F2\\Listener\\PushChatEvents', $f2);
+        $this->assertStringContainsString('->subscribe(F2PushChatEvents::class)', $f2);
+        $this->assertStringNotContainsString('use Tobscure\\', $f2);
+        $this->assertStringNotContainsString('Tobscure\\JsonApi', $f2);
+        $f2Listener = (string) file_get_contents(dirname(__DIR__).'/src/F2/Listener/PushChatEvents.php');
+        $this->assertStringNotContainsString('use Tobscure\\', $f2Listener);
+        $this->assertStringNotContainsString('Tobscure\\JsonApi', $f2Listener);
+        $this->assertStringNotContainsString('JsonApi\\Document', $f2Listener);
+        $this->assertStringNotContainsString('JsonApi\\Resource', $f2Listener);
+        $this->assertStringContainsString('sendChatEvent', $f2Listener);
         $this->assertStringContainsString('listLiveDirectory', $actions);
         $this->assertStringContainsString('ExactRoomLookup', $actions);
         $this->assertStringContainsString('subscription-token', $f2);

@@ -4,11 +4,10 @@
  * Flarum 2.0.2 backend for FlatRate Live Chat.
  *
  * Flarum 2 removed the Flarum 1 serializer extender and JSON:API controller
- * base classes. This entry keeps server authorization, room routes, and
- * Centrifugo token issuance. Forum JavaScript and the Flarum 1 event
- * publisher stay off.
- * Realtime publication therefore fails closed until that listener is ported.
- * Feature defaults stay off.
+ * base classes. This entry keeps server authorization, room routes,
+ * Centrifugo token issuance, and an F2-safe realtime publisher (no Tobscure).
+ * Forum JavaScript stays off. Feature defaults stay off.
+ * Incomplete Centrifugo config still fails closed via NullRealtimePublisher.
  */
 
 use Flarum\Extend;
@@ -32,6 +31,7 @@ use FlatRate\LiveChat\F2\Api\PostMessageAction;
 use FlatRate\LiveChat\F2\Api\ShowLiveRoomAction;
 use FlatRate\LiveChat\F2\Api\SubscribeRoomAction;
 use FlatRate\LiveChat\F2\Api\UnsubscribeRoomAction;
+use FlatRate\LiveChat\F2\Listener\PushChatEvents as F2PushChatEvents;
 use FlatRate\LiveChat\LiveChatServiceProvider;
 use FlatRate\LiveChat\Seo\ChatIndexingPolicy;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -84,6 +84,8 @@ return [
 
     (new Extend\ServiceProvider())
         ->register(LiveChatServiceProvider::class),
+
+    (new Extend\Event())->subscribe(F2PushChatEvents::class),
 
     (new Extend\Console())
         ->command(DoctorCommand::class),
