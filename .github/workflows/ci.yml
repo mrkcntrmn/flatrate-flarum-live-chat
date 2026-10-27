@@ -258,3 +258,54 @@ jobs:
           FLARUM_DB_USERNAME: root
           FLARUM_DB_PASSWORD: disposable-local
         run: bash scripts/ci-flarum-f2-realtime.sh
+
+  flarum-f2-centrifugo-e2e:
+    name: Flarum 2.0.2 real Centrifugo WS e2e
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: disposable-local
+          MARIADB_DATABASE: flarum_live_centrifugo_e2e
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+          extensions: curl, dom, fileinfo, gd, mbstring, openssl, pdo, pdo_mysql, tokenizer, xml, xmlwriter, zip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+      - name: Install centrifuge JS client for WS harness
+        working-directory: js
+        run: npm ci
+      - name: Real Centrifugo WebSocket e2e acceptance
+        env:
+          FLARUM_DB_HOST: 127.0.0.1
+          FLARUM_DB_PORT: "3306"
+          FLARUM_DB_DATABASE: flarum_live_centrifugo_e2e
+          FLARUM_DB_USERNAME: root
+          FLARUM_DB_PASSWORD: disposable-local
+          # Reuse Actions MariaDB; script still starts pinned Centrifugo via Docker.
+          CENTRIFUGO_E2E_EVIDENCE: evidence/forum-f2-centrifugo-e2e
+        run: bash scripts/ci-flarum-f2-centrifugo-e2e.sh
+      - name: Upload Centrifugo e2e evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forum-f2-centrifugo-e2e-evidence
+          path: evidence/forum-f2-centrifugo-e2e/
+          if-no-files-found: ignore
