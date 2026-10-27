@@ -68,9 +68,7 @@ export default class MessagesLiveConversationView extends Component {
         const wanted = String(
             this.attrs.roomKey ||
                 this.lastSelectedKey ||
-                (typeof m !== 'undefined' && m.route && typeof m.route.param === 'function'
-                    ? m.route.param('roomKey')
-                    : '') ||
+                (typeof m !== 'undefined' && m.route && typeof m.route.param === 'function' ? m.route.param('roomKey') : '') ||
                 ''
         );
         const currentKey = roomKeyOf(current);
