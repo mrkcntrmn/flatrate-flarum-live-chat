@@ -1,5 +1,4 @@
 import Component from 'flarum/Component';
-import avatar from 'flarum/helpers/avatar';
 import username from 'flarum/helpers/username';
 import fullTime from 'flarum/helpers/fullTime';
 import classList from 'flarum/utils/classList';
@@ -8,6 +7,7 @@ import extractText from 'flarum/utils/extractText';
 import ItemList from 'flarum/utils/ItemList';
 import SubtreeRetainer from 'flarum/utils/SubtreeRetainer';
 
+import Avatar from 'flarum/common/components/Avatar';
 import Dropdown from 'flarum/components/Dropdown';
 import Button from 'flarum/components/Button';
 import Separator from 'flarum/components/Separator';
@@ -19,7 +19,10 @@ export default class ChatMessage extends Component {
 
         this.labels = [];
         this.model = this.attrs.model;
-        if (!this.model.content) this.model.content = this.model.message();
+        // Never assign onto `model.content` — F2 Message defines content as
+        // Model.attribute('content'), so bare `.content` is the getter function
+        // and Mithril would render its source text.
+        this.displayContent = this.model.message();
 
         this.initLabels();
 
@@ -29,7 +32,7 @@ export default class ChatMessage extends Component {
             () => app.chat.getCurrentChat(),
 
             // Reactive attrs
-            () => this.model.content,
+            () => this.displayContent || this.model.message(),
             () => this.model.isDeletedForever,
             () => this.model.isTimedOut,
             () => this.model.isEditing,
@@ -188,24 +191,29 @@ export default class ChatMessage extends Component {
         if (author) {
             return (
                 <Link className="avatar-wrapper" href={app.route.user(author)}>
-                    <span>{avatar(author, { className: 'avatar' })}</span>
+                    <span>
+                        <Avatar user={author} className="avatar" />
+                    </span>
                 </Link>
             );
         }
 
         return (
             <div className="avatar-wrapper">
-                <span>{avatar(author, { className: 'avatar' })}</span>
+                <span>
+                    <Avatar user={author} className="avatar" />
+                </span>
             </div>
         );
     }
 
     messageBody() {
+        const body = this.displayContent != null ? this.displayContent : this.model.message();
         return (
             <div className="message">
                 {this.model.is_censored() ? (
                     <div className="censored actualMessage" title={app.translator.trans('flatrate-live-chat.forum.chat.message.censored')}>
-                        {this.model.content}
+                        {body}
                     </div>
                 ) : (
                     <div
@@ -213,7 +221,7 @@ export default class ChatMessage extends Component {
                         oncreate={this.onContentWrapperCreated.bind(this)}
                         onupdate={this.onContentWrapperUpdated.bind(this)}
                     >
-                        {this.model.content}
+                        {body}
                     </div>
                 )}
             </div>
@@ -407,9 +415,10 @@ export default class ChatMessage extends Component {
             this.model.isNeedToFlash = false;
         }
 
-        if (this.model.content !== this.oldContent) {
-            this.oldContent = this.model.content;
-            app.chat.renderChatMessage(this.model, this.model.content);
+        const body = this.displayContent != null ? this.displayContent : this.model.message();
+        if (body !== this.oldContent) {
+            this.oldContent = body;
+            app.chat.renderChatMessage(this.model, body);
         }
     }
 

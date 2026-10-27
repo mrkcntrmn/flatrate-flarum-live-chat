@@ -1,0 +1,40 @@
+{
+  "tested_at": "2026-10-27T02:34:18Z",
+  "worktree": "/work",
+  "centrifugo_image": "centrifugo/centrifugo:v6.9.4@sha256:78b2fcd11e69f7cd82072924db99865be2beba4a03087d8ce0f5008ae357abe4",
+  "flarum_core": "2.0.2",
+  "publish_path_proven": "CentrifugoRealtimePublisher->local_test_equivalent_edge->Centrifugo_HTTP_API",
+  "cloudflare_edge": "LEFT_UNTESTED",
+  "results": {
+    "REAL_CENTRIFUGO_SERVER": "PASS",
+    "REAL_WS_CONNECT": "PASS",
+    "REAL_WS_SUBSCRIBE": "PASS",
+    "REAL_WS_MESSAGE_DELIVERY": "PASS",
+    "REAL_WS_CROSS_ROOM_DENIAL": "PASS",
+    "REAL_WS_UNAUTHORIZED_DENIAL": "PASS",
+    "REAL_RECONNECT": "PASS",
+    "REVOCATION_WINDOW_SECONDS": "296",
+    "PUBLISHER_OUTAGE_FALLBACK": "PASS"
+  },
+  "denied_cases": {
+    "CLIENT_DIRECT_PUBLISH": "DENIED",
+    "CROSS_ROOM_SUBSCRIPTION": "DENIED",
+    "EXPIRED_SUBSCRIPTION_TOKEN": "DENIED",
+    "GUEST_CONNECTION": "DENIED",
+    "INVALID_SUBSCRIPTION_TOKEN": "DENIED",
+    "MISSING_SUBSCRIPTION_TOKEN": "DENIED",
+    "SUSPENDED_CONNECTION": "DENIED",
+    "TAMPERED_JWT": "DENIED",
+    "UNAUTHORIZED_BRAND_SUBSCRIPTION": "DENIED",
+    "WRONG_USER_SUBSCRIPTION": "DENIED"
+  },
+  "channels": {
+    "general": "$flatrate-live-community-general-live",
+    "brand": "$flatrate-live-aston-martin-live"
+  },
+  "notes": [
+    "App JWT defaults remain 300s; short TTL used only for EXPIRED_SUBSCRIPTION_TOKEN case via test issuer.",
+    "Revocation: new tokens denied after suspend; already-issued JWTs remain valid until exp (no Centrifugo disconnect on suspend).",
+    "Publisher outage: local edge stopped; Cloudflare edge not involved."
+  ]
+}

@@ -13,7 +13,7 @@ use Flarum\Settings\SettingsRepositoryInterface;
 
 class MessageValidator extends AbstractValidator
 {
-	protected function getRules()
+	protected function getRules(): array
 	{
 		$settings = resolve(SettingsRepositoryInterface::class);
 		$max_chars = $settings->get('flatrate-live-chat.settings.charlimit');

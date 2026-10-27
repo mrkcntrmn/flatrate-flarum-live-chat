@@ -276,11 +276,12 @@ async function main() {
     chatMessage.includes('authorForPresentation()') &&
       chatMessage.includes('own && this.isMessagesV2() && app.session.user') &&
       chatMessage.includes('username(author)') &&
-      chatMessage.includes('avatar(author'),
+      (chatMessage.includes('<Avatar user={author}') || chatMessage.includes('avatar(author')),
     'own avatar and nickname must resolve through the same canonical author under V2'
   );
   assert.ok(
-    !/avatar\(app\.session\.user\)[\s\S]*username\(this\.model\.user\(\)\)/.test(chatMessage),
+    !/avatar\(app\.session\.user\)[\s\S]*username\(this\.model\.user\(\)\)/.test(chatMessage) &&
+      !/<Avatar user=\{app\.session\.user\}[\s\S]*username\(this\.model\.user\(\)\)/.test(chatMessage),
     'must not split session avatar from message.user nickname'
   );
 
@@ -305,8 +306,9 @@ async function main() {
   assert.ok(viewportLess.includes('max-width: ~"min(76%'));
   assert.ok(viewportLess.includes('max-width: ~"min(70%'));
   assert.ok(
-    /mix\(\s*@primary-color\s*,\s*@control-bg\s*,\s*18%\s*\)/.test(viewportLess),
-    'own bubbles need subtle outgoing background under V2 (Less-native mix)'
+    /mix\(\s*@primary-color\s*,\s*@control-bg\s*,\s*18%\s*\)/.test(viewportLess) ||
+      /color-mix\(\s*in srgb,\s*var\(--primary-color\)\s*18%,\s*var\(--control-bg\)\s*\)/.test(viewportLess),
+    'own bubbles need subtle outgoing background under V2 (Less mix or CSS color-mix)'
   );
   assert.ok(
     viewportLess.includes('.message-wrapper--grouped'),

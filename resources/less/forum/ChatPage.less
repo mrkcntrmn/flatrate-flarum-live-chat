@@ -115,7 +115,7 @@
         justify-content: center;
         min-height: 44px;
         padding: 14px 16px;
-        border: 1px solid var(--control-bg, fade(@muted-color, 25%));
+        border: 1px solid var(--control-bg);
         border-radius: var(--border-radius, 8px);
         background: var(--body-bg, transparent);
         text-decoration: none;
@@ -124,7 +124,7 @@
 
         &:hover,
         &:focus {
-            border-color: var(--primary-color, @primary-color);
+            border-color: var(--primary-color);
         }
     }
 
@@ -147,7 +147,7 @@
     &-time {
         flex: 0 0 auto;
         font-size: 0.85rem;
-        color: var(--muted-color, @muted-color);
+        color: var(--muted-color);
         white-space: nowrap;
     }
 
@@ -161,11 +161,11 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: 0.9rem;
-        color: var(--muted-color, @muted-color);
+        color: var(--muted-color);
     }
 
     &-empty {
-        color: var(--muted-color, @muted-color);
+        color: var(--muted-color);
     }
 }
 
@@ -183,6 +183,6 @@
 
     &--unavailable {
         padding: 1.5rem;
-        color: var(--muted-color, @muted-color);
+        color: var(--muted-color);
     }
 }

@@ -25,7 +25,7 @@ test('STATIC: V2 grouped content + canonical author remain', () => {
 
   const group = read('js/src/forum/components/ChatMessageGroup.js');
   assert.match(group, /authorForPresentation/);
-  assert.match(group, /avatar\(author/);
+  assert.match(group, /<Avatar user=\{author\}|avatar\(author/);
   assert.match(group, /username\(author\)/);
 });
 

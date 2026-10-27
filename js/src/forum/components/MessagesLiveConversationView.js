@@ -65,8 +65,17 @@ export default class MessagesLiveConversationView extends Component {
         }
 
         const current = app.chat && app.chat.getCurrentChat ? app.chat.getCurrentChat() : null;
-        const matches = roomKeyOf(current) === this.attrs.roomKey;
-        const loading = this.selecting || app.chat?.chatsLoading || !matches;
+        const wanted = String(
+            this.attrs.roomKey ||
+                this.lastSelectedKey ||
+                (typeof m !== 'undefined' && m.route && typeof m.route.param === 'function' ? m.route.param('roomKey') : '') ||
+                ''
+        );
+        const currentKey = roomKeyOf(current);
+        const matches = !!wanted && !!currentKey && currentKey === wanted;
+        // Once the routed room is current, render immediately. selecting/chatsLoading
+        // can linger across ChatState remount races on F2 and must not block ChatViewport.
+        const loading = !matches;
 
         return (
             <div className="MessagesLiveSurface">

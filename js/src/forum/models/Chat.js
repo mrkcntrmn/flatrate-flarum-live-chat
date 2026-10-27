@@ -14,6 +14,7 @@ Object.assign(Chat.prototype, {
     last_message: Model.hasOne('last_message'),
     icon: Model.attribute('icon'),
     room_key: Model.attribute('room_key'),
+    roomKey: Model.attribute('roomKey'),
     scope_type: Model.attribute('scope_type'),
     scope_key: Model.attribute('scope_key'),
     visibility: Model.attribute('visibility'),

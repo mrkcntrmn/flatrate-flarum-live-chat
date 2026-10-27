@@ -22,7 +22,7 @@ class DoctorCommand extends AbstractCommand
             ->setDescription('Report FlatRate live-chat catalog, rollout, and transport status (no secrets)');
     }
 
-    protected function fire()
+    protected function fire(): int
     {
         $catalog = resolve(RoomCatalog::class);
         $rollout = resolve(RolloutProfile::class);
@@ -76,5 +76,7 @@ class DoctorCommand extends AbstractCommand
         foreach ($lines as $line) {
             $this->info($line);
         }
+
+        return 0;
     }
 }

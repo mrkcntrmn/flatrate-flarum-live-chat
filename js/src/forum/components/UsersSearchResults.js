@@ -1,6 +1,6 @@
-import avatar from 'flarum/helpers/avatar';
 import username from 'flarum/helpers/username';
 import highlight from 'flarum/helpers/highlight';
+import Avatar from 'flarum/common/components/Avatar';
 
 import LoadingIndicator from 'flarum/components/LoadingIndicator';
 
@@ -82,7 +82,7 @@ export default class UsersSearchResults {
                 return (
                     <li className="UserSearchResult UserSearchResult" data-index={'users' + id} onclick={this.userClick.bind(this, user)}>
                         <span>
-                            {avatar(user)}
+                            <Avatar user={user} />
                             {{ ...name, text: undefined, children }}
                         </span>
                     </li>
@@ -99,7 +99,7 @@ export default class UsersSearchResults {
                 return (
                     <li className="UserSearchResult UserSearchResult" data-index={'users' + user.id()} onclick={this.userClick.bind(this, user)}>
                         <span class="selected">
-                            {avatar(user)}
+                            <Avatar user={user} />
                             {{ ...name, text: undefined, children }}
                         </span>
                     </li>
