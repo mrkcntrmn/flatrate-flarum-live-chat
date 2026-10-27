@@ -19,6 +19,12 @@ import FlatRateRealtimeClient from './realtime/FlatRateRealtimeClient';
 app.initializers.add('flatrate-live-chat', () => {
     app.store.models.chats = Chat;
     app.store.models.chatmessages = Message;
+    // F2 live-chats/rooms endpoints use type `live-rooms` (not `chats`).
+    app.store.models['live-rooms'] = Chat;
+    // F2 chat message documents use type `chat-messages`.
+    app.store.models['chat-messages'] = Message;
+    // F2 live-chats/rooms endpoints use type `live-rooms` (not `chats`).
+    app.store.models['live-rooms'] = Chat;
 
     function pivot(name, id, attr, transform) {
         pivot.hasOne = function (name, id, attr) {
@@ -51,7 +57,11 @@ app.initializers.add('flatrate-live-chat', () => {
     extend(Application.prototype, 'mount', function () {
         if (!app.forum.attribute('flatrate-live-chat.permissions.enabled')) return;
 
-        app.chat = new ChatState();
+        // Keep a ChatState created earlier by MessagesLiveConversationView.ensureChat()
+        // so in-flight exact-room selection is not orphaned by a remount.
+        if (!app.chat) {
+            app.chat = new ChatState();
+        }
 
         app.flatrateLiveRealtime = new FlatRateRealtimeClient({
             app,

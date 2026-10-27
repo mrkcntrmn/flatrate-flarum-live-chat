@@ -9,6 +9,7 @@ namespace FlatRate\LiveChat\F2\Api;
 use FlatRate\LiveChat\Commands\FetchMessage;
 use Flarum\Http\RequestUtil;
 use Flarum\User\Exception\PermissionDeniedException;
+use Flarum\User\User;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Arr;
@@ -41,18 +42,30 @@ final class FetchMessagesAction implements RequestHandlerInterface
         }
 
         $data = [];
+        $included = [];
+        $seenUsers = [];
+        $userIds = [];
         foreach ($messages as $message) {
-            $data[] = [
-                'type' => 'chat-messages',
-                'id' => (string) $message->id,
-                'attributes' => [
-                    'chatId' => (int) $message->chat_id,
-                    'userId' => (int) $message->user_id,
-                    'content' => (string) $message->message,
-                ],
-            ];
+            $data[] = ChatMessageJson::resource($message);
+            if (!empty($message->user_id)) {
+                $userIds[(int) $message->user_id] = true;
+            }
+        }
+        if ($userIds !== []) {
+            foreach (User::query()->whereIn('id', array_keys($userIds))->get() as $user) {
+                $doc = ChatMessageJson::includedUser($user);
+                if ($doc !== null && !isset($seenUsers[$user->id])) {
+                    $included[] = $doc;
+                    $seenUsers[$user->id] = true;
+                }
+            }
         }
 
-        return new JsonResponse(['data' => $data], 200, ['Cache-Control' => 'private, no-store']);
+        $payload = ['data' => $data];
+        if ($included !== []) {
+            $payload['included'] = $included;
+        }
+
+        return new JsonResponse($payload, 200, ['Cache-Control' => 'private, no-store']);
     }
 }

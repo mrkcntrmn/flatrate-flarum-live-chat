@@ -1,5 +1,5 @@
 import Component from 'flarum/Component';
-import avatar from 'flarum/helpers/avatar';
+import Avatar from 'flarum/common/components/Avatar';
 import username from 'flarum/helpers/username';
 import fullTime from 'flarum/helpers/fullTime';
 import classList from 'flarum/utils/classList';
@@ -93,17 +93,23 @@ export default class ChatMessageGroup extends Component {
     }
 
     avatarNode(author) {
+        // Flarum 2 exposes Avatar as a component (common/components/Avatar),
+        // not the F1 helpers/avatar function.
         if (author) {
             return (
                 <Link className="ChatMessageGroup-avatar" href={app.route.user(author)}>
-                    <span>{avatar(author, { className: 'avatar' })}</span>
+                    <span>
+                        <Avatar user={author} className="avatar" />
+                    </span>
                 </Link>
             );
         }
 
         return (
             <div className="ChatMessageGroup-avatar">
-                <span>{avatar(author, { className: 'avatar' })}</span>
+                <span>
+                    <Avatar className="avatar" />
+                </span>
             </div>
         );
     }

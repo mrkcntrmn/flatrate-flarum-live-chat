@@ -1,3 +1,21 @@
+// Flarum 2 no longer exposes plain @control-bg / @fa-var-* to extension LESS
+// the way F1 did. Provide compile-time fallbacks so forum CSS can build;
+// runtime theming still prefers CSS custom properties where already used.
+@control-bg: #ededed;
+@control-color: #667788;
+@body-bg: #ffffff;
+@text-color: #111111;
+@muted-color: #888888;
+@primary-color: #536f90;
+@link-color: @primary-color;
+@control-danger-bg: #ffdddd;
+@control-danger-color: #dd6666;
+@fa-var-users-cog: "\f509";
+@fa-var-crown: "\f521";
+@fa-var-trash-alt: "\f2ed";
+@fa-var-times: "\f00d";
+@fa-var-check: "\f00c";
+
 @import "forum/colors.less";
 @import "forum/ChatModal.less";
 @import "forum/ChatHeader.less";

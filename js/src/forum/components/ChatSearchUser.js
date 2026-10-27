@@ -2,7 +2,7 @@ import Search from 'flarum/components/Search';
 import LoadingIndicator from 'flarum/components/LoadingIndicator';
 import ItemList from 'flarum/utils/ItemList';
 import classList from 'flarum/utils/classList';
-import icon from 'flarum/helpers/icon';
+import Icon from 'flarum/common/components/Icon';
 import UsersSearchSource from './UsersSearchResults';
 
 export default class ChatSearchUser extends Search {
@@ -59,7 +59,7 @@ export default class ChatSearchUser extends Search {
                         <LoadingIndicator size="tiny" className="Button Button--icon Button--link" />
                     ) : currentSearch ? (
                         <button className="Search-clear Button Button--icon Button--link" onclick={this.clear.bind(this)}>
-                            {icon('fas fa-times-circle')}
+                            <Icon name="fas fa-times-circle" />
                         </button>
                     ) : (
                         ''

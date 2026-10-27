@@ -44,13 +44,13 @@
         right: 16px;
         bottom: 64px;
         border: 0;
-        background: var(--primary-color, @primary-color);
+        background: var(--primary-color);
         color: #fff;
         border-radius: 999px;
         font-size: 14px;
         line-height: 1;
         cursor: pointer;
-        .transition(opacity .1s);
+        transition: opacity .1s;
         opacity: 0.92;
 
         &:hover,
@@ -215,7 +215,7 @@
 
                     .name {
                         display: inline;
-                        color: var(--heading-color, @heading-color);
+                        color: var(--heading-color);
                         font-weight: 600;
                         cursor: pointer;
                     }
@@ -274,7 +274,7 @@
 
                         .timestamp {
                             display: inline;
-                            color: var(--muted-color, @muted-color);
+                            color: var(--muted-color);
                             cursor: pointer;
                             padding-right: 5px;
                             text-align: right;
@@ -343,7 +343,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            color: var(--heading-color, @heading-color);
+            color: var(--heading-color);
             font-weight: 600;
             cursor: pointer;
             line-height: 1.2;
@@ -352,7 +352,7 @@
         .ChatMessageGroup-time {
             flex: 0 0 auto;
             white-space: nowrap;
-            color: var(--muted-color, @muted-color);
+            color: var(--muted-color);
             font-size: 12px;
             line-height: 1.2;
             order: 0;
@@ -488,7 +488,7 @@
                 margin: 0;
                 padding: 0;
                 font-size: 16px;
-                color: var(--muted-color, @muted-color);
+                color: var(--muted-color);
                 background: transparent !important;
                 box-shadow: none !important;
                 border: 0 !important;
@@ -537,7 +537,7 @@
             }
 
             .message {
-                background: mix(@primary-color, @control-bg, 18%);
+                background: color-mix(in srgb, var(--primary-color) 18%, var(--control-bg));
             }
 
             .ChatMessage-content--grouped {

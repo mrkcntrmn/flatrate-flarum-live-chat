@@ -53,15 +53,7 @@ final class PostMessageAction implements RequestHandlerInterface
         }
 
         return new JsonResponse([
-            'data' => [
-                'type' => 'chat-messages',
-                'id' => (string) $message->id,
-                'attributes' => [
-                    'chatId' => (int) $message->chat_id,
-                    'userId' => (int) $message->user_id,
-                    'content' => (string) $message->message,
-                ],
-            ],
+            'data' => ChatMessageJson::resource($message),
         ], 201, ['Cache-Control' => 'private, no-store']);
     }
 }

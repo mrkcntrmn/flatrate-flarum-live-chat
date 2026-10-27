@@ -2,8 +2,8 @@
   "private": true,
   "dependencies": {
     "centrifuge": "^5.3.4",
-    "flarum-webpack-config": "^2.0.2",
-    "webpack": "^5.93.0",
+    "flarum-webpack-config": "^3.1.0",
+    "webpack": "^5.104.1",
     "webpack-cli": "^5.1.4"
   },
   "devDependencies": {

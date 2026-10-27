@@ -485,11 +485,30 @@ export default class ChatState {
     }
 
     apiFetchChats() {
-        return app.store.find('chats').then((chats) => {
-            chats.map((model) => this.addChat(model));
-            this.chatsLoading = false;
-            m.redraw();
-        });
+        // Prefer F2 live-chats (type live-rooms); fall back to F1 store.find('chats').
+        const fetchF2Directory = () =>
+            app
+                .request({
+                    method: 'GET',
+                    url: app.forum.attribute('apiUrl') + '/flatrate-live-chat/live-chats',
+                })
+                .then((payload) => {
+                    const models = app.store.pushPayload(payload);
+                    return Array.isArray(models) ? models : models ? [models] : [];
+                });
+
+        return fetchF2Directory()
+            .catch(() => app.store.find('chats'))
+            .then((chats) => {
+                (Array.isArray(chats) ? chats : []).forEach((model) => this.addChat(model));
+            })
+            .catch(() => {
+                // Directory failure must not leave the Live surface spinning forever.
+            })
+            .then(() => {
+                this.chatsLoading = false;
+                m.redraw();
+            });
     }
 
     apiFetchChatByRoomKey(roomKey) {

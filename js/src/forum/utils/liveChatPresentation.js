@@ -2,9 +2,21 @@ export const PRIMARY_ROOM_KEY = 'community-general-live';
 
 export function roomKeyOf(chat) {
     if (!chat) return '';
-    if (typeof chat.room_key === 'function') return chat.room_key() || '';
-    if (typeof chat.roomKey === 'function') return chat.roomKey() || '';
-    return chat.room_key || chat.roomKey || '';
+    // F2 live-rooms payloads use camelCase `roomKey`. The historical model also
+    // exposes snake_case `room_key` as an attribute function that returns empty
+    // when only camelCase is present — do not return early on that empty value.
+    const fromFn = (name) => {
+        if (typeof chat[name] !== 'function') return '';
+        const value = chat[name]();
+        return value == null ? '' : String(value);
+    };
+    return (
+        fromFn('roomKey') ||
+        fromFn('room_key') ||
+        (chat.roomKey != null && chat.roomKey !== '' ? String(chat.roomKey) : '') ||
+        (chat.room_key != null && chat.room_key !== '' ? String(chat.room_key) : '') ||
+        ''
+    );
 }
 
 /**
