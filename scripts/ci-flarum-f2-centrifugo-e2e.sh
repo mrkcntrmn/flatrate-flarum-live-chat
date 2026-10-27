@@ -30,7 +30,13 @@ if git -C "${ROOT}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 SMOKE_ROOT="${FLARUM_SMOKE_ROOT:-${TMPDIR:-/tmp}/flarum-live-f2-centrifugo-e2e-$$}"
+# Resolve relative evidence paths against ROOT: the script later cds into the
+# disposable Flarum app, so a bare relative CENTRIFUGO_E2E_EVIDENCE would miss.
 EVIDENCE_DIR="${CENTRIFUGO_E2E_EVIDENCE:-${ROOT}/evidence/forum-f2-centrifugo-e2e}"
+case "${EVIDENCE_DIR}" in
+  /*) ;;
+  *) EVIDENCE_DIR="${ROOT}/${EVIDENCE_DIR}" ;;
+esac
 FLARUM_SKELETON_VERSION="${FLARUM_SKELETON_VERSION:-2.0.0}"
 EXPECTED_CORE="${FLARUM_CORE_VERSION:-2.0.2}"
 
@@ -984,6 +990,7 @@ fi
 log "PUBLISHER_OUTAGE_FALLBACK=${RESULT_PUBLISHER_OUTAGE_FALLBACK}"
 
 # --- Persist evidence summary ---
+mkdir -p "${EVIDENCE_DIR}"
 printf '%s\n' "${DENIED_CASES_JSON}" > "${SMOKE_ROOT}/denied-cases.normalized.json"
 python3 - <<PY
 import json, pathlib, time
@@ -1017,9 +1024,11 @@ summary = {
     "Publisher outage: local edge stopped; Cloudflare edge not involved.",
   ],
 }
-path = pathlib.Path("${EVIDENCE_DIR}") / "results.json"
+evidence_dir = pathlib.Path("${EVIDENCE_DIR}")
+evidence_dir.mkdir(parents=True, exist_ok=True)
+path = evidence_dir / "results.json"
 path.write_text(json.dumps(summary, indent=2) + "\n")
-pathlib.Path("${EVIDENCE_DIR}/e2e.log").write_text(pathlib.Path("${LOG}").read_text())
+(evidence_dir / "e2e.log").write_text(pathlib.Path("${LOG}").read_text())
 print(f"EVIDENCE={path}")
 PY
 

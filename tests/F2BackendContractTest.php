@@ -52,7 +52,9 @@ class F2BackendContractTest extends TestCase
         $this->assertStringContainsString("->default('flatrate-live-chat.admin_dashboard_enabled', '0')", $f2);
         $this->assertStringContainsString("->default('flatrate-live-chat.live_chats_navigation_enabled', '0')", $f2);
         $this->assertStringContainsString('noindex, nofollow', $f2);
-        $this->assertStringNotContainsString("js(__DIR__", $f2);
+        $this->assertStringContainsString("js(__DIR__.'/js/dist/forum-f2.js')", $f2);
+        $this->assertStringContainsString('forum-f2.js', $f2);
+        $this->assertFileExists(dirname(__DIR__).'/js/dist/forum-f2.js');
         $this->assertStringContainsString('RequestUtil::getActor($request)', $actions);
         $this->assertStringNotContainsString("getAttribute('actor')", $actions);
         $this->assertStringContainsString('$message->message', $actions);
