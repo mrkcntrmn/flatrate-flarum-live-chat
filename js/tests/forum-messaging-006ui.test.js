@@ -17,10 +17,11 @@ test('ChatMessage uses one canonical author for avatar and nickname', () => {
   assert.match(src, /authorForPresentation\s*\(\)\s*\{/);
   assert.match(src, /own && this\.isMessagesV2\(\) && app\.session\.user/);
   assert.match(group, /authorForPresentation/);
-  assert.match(group, /avatar\(author/);
+  assert.match(group, /<Avatar user=\{author\}|avatar\(author/);
   assert.match(group, /username\(author\)/);
   // Forbidden split-identity pattern for the same V2 self message.
   assert.doesNotMatch(src, /avatar\(app\.session\.user\)[\s\S]*username\(this\.model\.user\(\)\)/);
+  assert.doesNotMatch(src, /<Avatar user=\{app\.session\.user\}[\s\S]*username\(this\.model\.user\(\)\)/);
   assert.doesNotMatch(src, /username\(this\.model\.user\(\)\)/);
   assert.match(src, /String\(author\.id\(\)\) === String\(actor\.id\(\)\)/);
 });
