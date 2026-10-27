@@ -3,13 +3,15 @@
 /*
  * Flarum 2.0.2 backend for FlatRate Live Chat.
  *
- * Flarum 2 removed the Flarum 1 serializer extender and JSON:API controller
- * base classes. This entry keeps server authorization, room routes,
- * Centrifugo token issuance, and an F2-safe realtime publisher (no Tobscure).
- * Forum JavaScript stays off. Feature defaults stay off.
- * Incomplete Centrifugo config still fails closed via NullRealtimePublisher.
+ * Flarum 2 removed the Flarum 1 serializer/JSON:API controller base classes used
+ * by historical controllers. This entry keeps server authorization, room routes,
+ * Centrifugo token issuance, an F2-safe realtime publisher (no Tobscure), and
+ * forum JS that registers app.flatRateMessagingSources.live (Messaging UI owns
+ * /messages). Feature defaults stay off. Incomplete Centrifugo config still
+ * fails closed via NullRealtimePublisher.
  */
 
+use Flarum\Api\Serializer\ForumSerializer;
 use Flarum\Extend;
 use Flarum\Frontend\Document;
 use Flarum\User\User;
@@ -33,11 +35,14 @@ use FlatRate\LiveChat\F2\Api\SubscribeRoomAction;
 use FlatRate\LiveChat\F2\Api\UnsubscribeRoomAction;
 use FlatRate\LiveChat\F2\Listener\PushChatEvents as F2PushChatEvents;
 use FlatRate\LiveChat\LiveChatServiceProvider;
+use FlatRate\LiveChat\Realtime\CentrifugoClientConfig;
 use FlatRate\LiveChat\Seo\ChatIndexingPolicy;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 return [
     (new Extend\Frontend('forum'))
+        ->js(__DIR__.'/js/dist/forum-f2.js')
+        ->css(__DIR__.'/resources/less/forum.less')
         ->route('/chat', 'chat')
         ->route('/live', 'flatrate-live-chat.index')
         ->route('/live/{roomKey}', 'flatrate-live-chat.live')
@@ -47,6 +52,8 @@ return [
             }
             $document->head[] = '<meta name="robots" content="noindex, nofollow">';
         }),
+
+    (new Extend\Locales(__DIR__.'/resources/locale')),
 
     (new Extend\Routes('api'))
         ->get('/chatmessages', 'neonchat.chatmessages.fetch', FetchMessagesAction::class)
@@ -72,6 +79,54 @@ return [
                 ->withPivot('joined_at', 'removed_by', 'role', 'readed_at', 'removed_at');
         }),
 
+    (new Extend\ApiSerializer(ForumSerializer::class))
+        ->attributes(function ($serializer, $model, $attributes) {
+            $actor = $serializer->getActor();
+            $permissions = [
+                'flatrate-live-chat.permissions.chat',
+                'flatrate-live-chat.permissions.create',
+                'flatrate-live-chat.permissions.create.channel',
+                'flatrate-live-chat.permissions.enabled',
+                'flatrate-live-chat.permissions.edit',
+                'flatrate-live-chat.permissions.delete',
+                'flatrate-live-chat.permissions.moderate',
+                'flatrate-live-chat.permissions.admin-rooms',
+            ];
+            foreach ($permissions as $permission) {
+                $attributes[$permission] = $actor->can($permission);
+            }
+            $attributes['flatrate-live-chat.settings.attachments'] = false;
+            $attributes['flatrate-live-chat.settings.email_notifications'] = false;
+            $attributes['flatrate-live-chat.settings.indexing'] = false;
+            $settings = resolve(\Flarum\Settings\SettingsRepositoryInterface::class);
+            $nav = $settings->get('flatrate-live-chat.live_chats_navigation_enabled');
+            $attributes['flatrate-live-chat.live_chats_navigation_enabled'] =
+                $nav === '1' || $nav === 1 || $nav === true || $nav === 'true';
+            $attributes['flatrate-live-chat.general_live_enabled'] =
+                \FlatRate\LiveChat\Auth\GeneralLiveGate::isEnabled(
+                    $settings->get(\FlatRate\LiveChat\Auth\GeneralLiveGate::SETTING_KEY)
+                );
+            $mainRollout = new \FlatRate\LiveChat\Auth\GeneralLiveMainRollout($settings);
+            $attributes[\FlatRate\LiveChat\Auth\GeneralLiveMainRollout::FORUM_ATTRIBUTE] =
+                $mainRollout->availableTo($actor);
+            $brandPreview = new \FlatRate\LiveChat\Auth\BrandLiveAdminPreview($settings);
+            $attributes[\FlatRate\LiveChat\Auth\BrandLiveAdminPreview::FORUM_ATTRIBUTE] =
+                $brandPreview->availableTo($actor);
+            $attributes[\FlatRate\LiveChat\Auth\BrandLiveAvailability::FORUM_ATTRIBUTE] =
+                (new \FlatRate\LiveChat\Auth\BrandLiveAvailability($settings, $brandPreview))->availableTo($actor);
+            $attributes['flatrate-live-chat.realtime.decision'] = 'CENTRIFUGO_SELF_HOSTED';
+            $attributes['flatrate-live-chat.rollout.profile'] = 'general-live-first';
+            $attributes['flatrate-live-chat.canPreviewHidden'] = resolve(\FlatRate\LiveChat\Auth\ChatAuthorization::class)
+                ->canPreviewHiddenChatRooms($actor);
+
+            $config = resolve(CentrifugoClientConfig::class);
+            foreach ($config->forumAttributes() as $k => $v) {
+                $attributes[$k] = $v;
+            }
+
+            return $attributes;
+        }),
+
     (new Extend\ThrottleApi())
         ->set('chat-message', ChatMessage::class),
 
@@ -80,7 +135,10 @@ return [
         ->default('flatrate-live-chat.live_chats_navigation_enabled', '0')
         ->default('flatrate-live-chat.general_live_admin_preview_enabled', '0')
         ->default('flatrate-live-chat.general_live_user_enabled', '0')
-        ->default('flatrate-live-chat.member_beta_enabled', '0'),
+        ->default('flatrate-live-chat.member_beta_enabled', '0')
+        ->serializeToForum('flatrate-live-chat.settings.charlimit', 'flatrate-live-chat.settings.charlimit')
+        ->serializeToForum('flatrate-live-chat.settings.display.minimize', 'flatrate-live-chat.settings.display.minimize')
+        ->serializeToForum('flatrate-live-chat.settings.display.censor', 'flatrate-live-chat.settings.display.censor'),
 
     (new Extend\ServiceProvider())
         ->register(LiveChatServiceProvider::class),
