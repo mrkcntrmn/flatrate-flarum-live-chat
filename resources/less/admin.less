@@ -215,3 +215,20 @@
     padding: 14px;
   }
 }
+
+@media (max-width: 600px), (pointer: coarse) {
+  .FlatRateLiveAdminDashboard .Button,
+  .FlatRateLiveAdminDashboard .FormControl,
+  .FlatRateLiveAdminTabs button {
+    min-height: 44px;
+  }
+
+  // Keep the room action reachable while telemetry columns scroll horizontally.
+  .FlatRateLiveAdminTable th:last-child,
+  .FlatRateLiveAdminTable td:last-child {
+    position: sticky;
+    right: 0;
+    background: var(--body-bg);
+    border-left: 1px solid var(--control-bg);
+  }
+}

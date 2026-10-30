@@ -167,7 +167,7 @@ class MemberBetaLiveChatTest extends TestCase
         $this->assertTrue(GeneralLiveGate::isEnabled(null));
         $this->assertFalse(MemberBetaGate::isEnabledValue(null));
 
-        $admin = file_get_contents(dirname(__DIR__) . '/js/src/admin/index.js');
+        $admin = file_get_contents(dirname(__DIR__) . '/js/src/admin/registerLiveAdmin.js');
         $locale = file_get_contents(dirname(__DIR__) . '/resources/locale/en.yaml');
         $this->assertStringContainsString('flatrate-live-chat.member_beta_enabled', $admin);
         $this->assertStringContainsString('member_beta_enabled:', $locale);

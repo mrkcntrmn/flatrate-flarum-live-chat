@@ -40,6 +40,10 @@ use FlatRate\LiveChat\Seo\ChatIndexingPolicy;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 return [
+    (new Extend\Frontend('admin'))
+        ->js(__DIR__.'/js/dist/admin-f2.js')
+        ->css(__DIR__.'/resources/less/admin.less'),
+
     (new Extend\Frontend('forum'))
         ->js(__DIR__.'/js/dist/forum-f2.js')
         ->css(__DIR__.'/resources/less/forum-f2.less')

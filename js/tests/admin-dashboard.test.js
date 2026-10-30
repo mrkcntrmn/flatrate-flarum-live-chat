@@ -7,7 +7,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '../..');
 const page = fs.readFileSync(path.join(root, 'js/src/admin/components/LiveChatRoomsDashboard.js'), 'utf8');
-const index = fs.readFileSync(path.join(root, 'js/src/admin/index.js'), 'utf8');
+const index = fs.readFileSync(path.join(root, 'js/src/admin/registerLiveAdmin.js'), 'utf8');
 const controller = fs.readFileSync(path.join(root, 'src/Api/Controllers/AdminDashboardController.php'), 'utf8');
 const service = fs.readFileSync(path.join(root, 'src/Admin/AdminDashboardService.php'), 'utf8');
 
