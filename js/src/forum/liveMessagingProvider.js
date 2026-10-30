@@ -112,7 +112,16 @@ export function createLiveMessagingProvider(options = {}) {
         kind: 'live',
         listConversations,
         getUnreadTotal,
-        renderConversation: options.renderConversation || (({ key, context }) => null),
+        renderConversation(args) {
+            // The deployed F2 shell may have no directory row for a room the
+            // member has never posted in. Supply only the current session's
+            // authorized exact-room metadata to its existing header context.
+            const selected = readSelectedConversation(getApp(), args?.key);
+            if (selected?.presentationTrusted && args?.context?.conversation) {
+                Object.assign(args.context.conversation, selected);
+            }
+            return typeof options.renderConversation === 'function' ? options.renderConversation(args) : null;
+        },
         headerOverflowItems,
         directoryOverflowItems,
         refresh,

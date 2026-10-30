@@ -35,15 +35,7 @@ final class ShowLiveRoomAction implements RequestHandlerInterface
         }
 
         return new JsonResponse([
-            'data' => [
-                'type' => 'live-rooms',
-                'id' => (string) $chat->id,
-                'attributes' => [
-                    'roomKey' => (string) $chat->room_key,
-                    'visibility' => (string) ($chat->visibility ?? ''),
-                    'audience' => (string) ($chat->audience ?? ''),
-                ],
-            ],
+            'data' => LiveRoomJson::resource($chat),
         ], 200, ['Cache-Control' => 'private, no-store']);
     }
 
