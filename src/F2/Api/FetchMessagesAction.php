@@ -8,6 +8,7 @@ namespace FlatRate\LiveChat\F2\Api;
 
 use FlatRate\LiveChat\Commands\FetchMessage;
 use Flarum\Http\RequestUtil;
+use Flarum\Http\SlugManager;
 use Flarum\User\Exception\PermissionDeniedException;
 use Flarum\User\User;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
@@ -20,7 +21,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 final class FetchMessagesAction implements RequestHandlerInterface
 {
-    public function __construct(private BusDispatcher $bus)
+    public function __construct(private BusDispatcher $bus, private SlugManager $slugManager)
     {
     }
 
@@ -53,7 +54,7 @@ final class FetchMessagesAction implements RequestHandlerInterface
         }
         if ($userIds !== []) {
             foreach (User::query()->whereIn('id', array_keys($userIds))->get() as $user) {
-                $doc = ChatMessageJson::includedUser($user);
+                $doc = ChatMessageJson::includedUser($user, $this->slugManager->forResource(User::class)->toSlug($user));
                 if ($doc !== null && !isset($seenUsers[$user->id])) {
                     $included[] = $doc;
                     $seenUsers[$user->id] = true;

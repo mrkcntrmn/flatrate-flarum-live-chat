@@ -9,6 +9,7 @@ import ViewportState from './ViewportState';
 import { throttle } from 'flarum/utils/throttleDebounce';
 import { runChatMessagesFetch } from '../utils/chatMessagesFetchLifecycle';
 import { applyPostedChatMessage } from '../utils/reconcilePostedChatMessage';
+import { reconcileDeletedChatMessage, isConfirmedDeletedChatMessage } from '../utils/reconcileDeletedChatMessage';
 import { messagesForChat as selectMessagesForChat } from '../utils/messagesForChat';
 import { isDirectoryListedChat, rememberHydratedRoom } from '../utils/selectRoutedLiveRoom';
 import { createActiveConversationLifecycle, ACTIVE_CONVERSATION_REASON } from '../activeConversationLifecycle';
@@ -76,6 +77,18 @@ export default class ChatState {
             // Trigger a bounded refetch for the active room rather than trusting payload bodies.
             const chat = this.chats.find((c) => c.room_key?.() === roomKey || c.roomKey?.() === roomKey);
             if (chat) {
+                if (envelope.type === 'message.deleted') {
+                    const messageId = envelope.payload?.messageId || envelope.order;
+                    // Independent of the viewport fetch lock: a history request
+                    // already in flight must not swallow a deletion notification.
+                    return reconcileDeletedChatMessage({
+                        state: this,
+                        chat,
+                        messageId,
+                        findMessages: () => app.store.find('chatmessages', { chat_id: chat.id(), query: [messageId] }),
+                        redraw: () => m.redraw(),
+                    });
+                }
                 this.apiFetchChatMessages?.(chat, [envelope.order || envelope.payload?.messageId].filter(Boolean), {
                     notify: true,
                     withFlash: true,
@@ -330,6 +343,7 @@ export default class ChatState {
     }
 
     insertChatMessage(model, notify = false) {
+        if (isConfirmedDeletedChatMessage(this, model)) return null;
         if (this.isChatMessageExists(model)) return null;
 
         this.chatmessages.push(model);

@@ -106,6 +106,32 @@ try {
             await expect(beta.getByRole('link', { name: 'Open ' + label + ' Public Live chat', exact: true })).toHaveAttribute('href', '/messages/live/' + key + '-live');
         }
     });
+    await record('author profile link resolves and deletion disappears from both open browsers without reload', async () => {
+        await visit(beta, '/messages/live/ford-live');
+        await visit(admin, '/messages/live/ford-live');
+        await expect(beta.locator('.ChatInput textarea')).toBeVisible();
+        await expect(admin.locator('.ChatInput textarea')).toBeVisible();
+        const text = 'LOCAL_DELETE_FORDF2_' + Date.now();
+        await beta.locator('.ChatInput textarea').fill(text);
+        await beta.locator('.ChatInput textarea').press('Enter');
+        await expect(admin.getByText(text, { exact: true })).toHaveCount(1, { timeout: 15000 });
+        const response = await admin.request.get(base + '/api/chatmessages?chat_id=' + fixture.liveRooms['ford-live']);
+        const history = await response.json();
+        const message = history.data.find(row => row.attributes.message === text);
+        assert.ok(message, 'Own synthetic message is in authorized history');
+        const author = history.included.find(row => row.type === 'users' && row.id === String(message.attributes.userId));
+        assert.ok(author.attributes.slug && author.attributes.slug !== 'undefined', 'F2 canonical slug must be included');
+        await expect(admin.locator('.MessagesLiveSurface a.ChatMessageGroup-avatar').last()).toHaveAttribute('href', '/u/' + author.attributes.slug);
+        await expect(admin.locator('.MessagesLiveSurface a[href="/u/undefined"]')).toHaveCount(0);
+        const deletionStatus = await beta.evaluate(async ({ id, token }) => {
+            const response = await fetch('/api/chatmessages/' + id, { method: 'DELETE', headers: { Authorization: 'Token ' + token } });
+            return response.status;
+        }, { id: message.id, token: fixture.users.member.token });
+        assert.equal(deletionStatus, 204);
+        await expect(admin.getByText(text, { exact: true })).toHaveCount(0, { timeout: 15000 });
+        await expect(beta.getByText(text, { exact: true })).toHaveCount(0, { timeout: 15000 });
+        await admin.screenshot({ path: resolve(evidence, 'desktop-deletion-reconciled.png'), fullPage: true });
+    });
     await record('no browser JavaScript exceptions', async () => assert.deepEqual(errors, []));
     console.log('F2_BRAND_LIVE_COMPILED_BROWSER=PASS scenarios=' + results.length);
 } finally {

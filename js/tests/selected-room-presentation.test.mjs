@@ -80,6 +80,20 @@ function view() {
     };
 }
 
+test('deployed shell receives only the current session authorized exact-room title', () => {
+    const ford = room('ford-live', 14, 'Ford Live', { flatratePresentationSessionUserId: '7' });
+    const state = installApp([ford], '7');
+    state.flatratePresentationSessionUserId = '7';
+    const provider = createLiveMessagingProvider({ app: globalThis.app, renderConversation: args => args.context.conversation });
+    const context = { conversation: { sourceId: 'ford-live', title: 'ford-live' } };
+    assert.equal(provider.renderConversation({ key: 'ford-live', context }).title, 'Ford Live');
+    globalThis.app.session.user = { id: () => '8' };
+    const nextContext = { conversation: { sourceId: 'ford-live', title: 'ford-live' } };
+    assert.equal(provider.renderConversation({ key: 'ford-live', context: nextContext }).title, 'ford-live');
+    const wrongRoom = { conversation: { sourceId: 'jlr-live', title: 'jlr-live' } };
+    assert.equal(provider.renderConversation({ key: 'jlr-live', context: wrongRoom }).title, 'jlr-live');
+});
+
 test('exact authorized Audi exposure preserves the canonical title', async () => {
     resetSelectedRoomPresenceCache();
     const state = installApp([], '7');

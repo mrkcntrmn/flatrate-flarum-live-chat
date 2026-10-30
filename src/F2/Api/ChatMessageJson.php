@@ -46,7 +46,7 @@ final class ChatMessageJson
         ];
     }
 
-    public static function includedUser($user): ?array
+    public static function includedUser($user, string $slug): ?array
     {
         if (!$user) {
             return null;
@@ -57,6 +57,7 @@ final class ChatMessageJson
             'id' => (string) $user->id,
             'attributes' => [
                 'username' => (string) $user->username,
+                'slug' => $slug,
                 'displayName' => (string) ($user->display_name ?? $user->username),
                 'avatarUrl' => $user->avatar_url ?? null,
             ],
