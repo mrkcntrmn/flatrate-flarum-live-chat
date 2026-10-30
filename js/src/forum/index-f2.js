@@ -1,7 +1,8 @@
 /**
  * Flarum 2.0.2 forum entry: register Live messaging provider + ChatState boot.
  *
- * Skips Live nav chrome and MAIN/BOARD providers (Messaging UI owns /messages).
+ * Messaging UI owns /messages and General MAIN chrome stays separate.
+ * Register the actor-gated Brand provider consumed by Forum Navigation.
  * F1 short imports resolve via webpack F1→F2 aliases + Flarum 2 proxifyCompat.
  */
 import app from 'flarum/forum/app';
@@ -14,6 +15,7 @@ import Chat from './models/Chat';
 import Message from './models/Message';
 import ChatState from './states/ChatState';
 import registerLiveMessagingProvider from './registerLiveMessagingProvider';
+import registerLiveBoardProvider from './registerLiveBoardProvider';
 import FlatRateRealtimeClient from './realtime/FlatRateRealtimeClient';
 
 app.initializers.add('flatrate-live-chat', () => {
@@ -53,6 +55,7 @@ app.initializers.add('flatrate-live-chat', () => {
     });
 
     registerLiveMessagingProvider();
+    registerLiveBoardProvider();
 
     extend(Application.prototype, 'mount', function () {
         if (!app.forum.attribute('flatrate-live-chat.permissions.enabled')) return;

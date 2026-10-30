@@ -1,7 +1,17 @@
-// Flarum 2 Messaging UI surface styles only.
-// Legacy neonchat ChatList/ChatModal/ChatViewport LESS depends on F1 mixins
-// (.transition, .fa, @phone) that F2 no longer injects into extension compiles.
-// /messages is owned by flatrate-messaging-ui; keep those CSS packs compiling.
+// Reuse the established conversation layout without importing the legacy
+// directory, modal or header chrome. Compatibility names stay local to this
+// surface so they cannot override Flarum 2's theme or other extensions.
+.MessagesLiveSurface {
+    @screen-tablet: 768px;
+    @screen-desktop: 992px;
+    .user-select(@value) {
+        -webkit-user-select: @value;
+        user-select: @value;
+    }
+
+    @import "forum/ChatViewport.less";
+    @import "forum/ChatInput.less";
+    @import "forum/MessagesBubbleStyle.less";
+}
 
 @import "forum/MessagesLiveSurface.less";
-@import "forum/MessagesBubbleStyle.less";

@@ -48,14 +48,7 @@ final class ListLiveChatsAction implements RequestHandlerInterface
 
         $data = [];
         foreach ($rooms as $chat) {
-            $data[] = [
-                'type' => 'live-rooms',
-                'id' => (string) $chat->id,
-                'attributes' => [
-                    'roomKey' => (string) $chat->room_key,
-                    'visibility' => (string) ($chat->visibility ?? ''),
-                ],
-            ];
+            $data[] = LiveRoomJson::resource($chat);
         }
 
         return new JsonResponse(['data' => $data], 200, ['Cache-Control' => 'private, no-store']);

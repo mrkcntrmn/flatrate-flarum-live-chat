@@ -22,7 +22,6 @@ assert.match(indexF2, /new ChatState\s*\(/);
 assert.match(indexF2, /apiFetchChats\s*\(/);
 assert.doesNotMatch(indexF2, /addLiveChatsNavigation\s*\(/);
 assert.doesNotMatch(indexF2, /registerLiveMainProvider\s*\(/);
-assert.doesNotMatch(indexF2, /registerLiveBoardProvider\s*\(/);
 assert.doesNotMatch(indexF2, /startLiveMainProvider\s*\(/);
 
 assert.match(provider, /app\.flatRateMessagingSources\.live\s*=|flatRateMessagingSources\.live\s*=/);
