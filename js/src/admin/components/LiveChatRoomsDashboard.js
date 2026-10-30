@@ -31,6 +31,8 @@ export default class LiveChatRoomsDashboard extends Component {
         this.sort = 'name';
         this.selectedRoomKey = null;
         this.refreshTimer = null;
+        this.requestGeneration = 0;
+        this.removed = false;
     }
 
     oncreate() {
@@ -38,15 +40,22 @@ export default class LiveChatRoomsDashboard extends Component {
     }
 
     onremove() {
+        this.removed = true;
+        this.requestGeneration += 1;
         if (this.refreshTimer) window.clearTimeout(this.refreshTimer);
     }
 
     schedule(delay) {
+        if (this.removed) return;
         if (this.refreshTimer) window.clearTimeout(this.refreshTimer);
         this.refreshTimer = window.setTimeout(() => this.load(this.selectedRoomKey, true), delay);
     }
 
     load(roomKey = null, quiet = false) {
+        if (this.removed) return Promise.resolve(null);
+        const generation = ++this.requestGeneration;
+        if (this.refreshTimer) window.clearTimeout(this.refreshTimer);
+        this.refreshTimer = null;
         if (!quiet) this.loading = true;
         this.error = '';
         const suffix = roomKey ? `?roomKey=${encodeURIComponent(roomKey)}` : '';
@@ -57,6 +66,7 @@ export default class LiveChatRoomsDashboard extends Component {
                 url: `${app.forum.attribute('apiUrl')}/flatrate-live-chat/admin/dashboard${suffix}`,
             })
             .then((data) => {
+                if (this.removed || generation !== this.requestGeneration) return;
                 this.data = data;
                 this.loading = false;
                 this.error = '';
@@ -64,6 +74,7 @@ export default class LiveChatRoomsDashboard extends Component {
                 m.redraw();
             })
             .catch(() => {
+                if (this.removed || generation !== this.requestGeneration) return;
                 this.loading = false;
                 this.error = 'Live Chat monitoring data could not be loaded.';
                 this.schedule(RETRY_MS);
@@ -205,11 +216,12 @@ export default class LiveChatRoomsDashboard extends Component {
                     <input
                         className="FormControl"
                         type="search"
+                        aria-label="Search rooms"
                         value={this.query}
                         placeholder="Search room or key"
                         oninput={(event) => (this.query = event.target.value)}
                     />
-                    <select className="FormControl" value={this.sort} onchange={(event) => (this.sort = event.target.value)}>
+                    <select className="FormControl" aria-label="Sort rooms" value={this.sort} onchange={(event) => (this.sort = event.target.value)}>
                         <option value="name">Sort: Room name</option>
                         <option value="messages24h">Sort: 24h messages</option>
                         <option value="lastActivity">Sort: Last activity</option>
@@ -229,7 +241,7 @@ export default class LiveChatRoomsDashboard extends Component {
                                 <th>7d</th>
                                 <th>Posters · 24h</th>
                                 <th>Last activity</th>
-                                <th></th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -284,7 +296,7 @@ export default class LiveChatRoomsDashboard extends Component {
                         <h3>{room.name}</h3>
                         <code>{room.roomKey}</code>
                     </div>
-                    <a className="Button" href={`${forumUrl}/live/${encodeURIComponent(room.roomKey)}`} target="_blank" rel="noopener noreferrer">
+                    <a className="Button" href={`${forumUrl}${this.attrs.roomPath || '/live/'}${encodeURIComponent(room.roomKey)}`} target="_blank" rel="noopener noreferrer">
                         Open room
                     </a>
                 </div>

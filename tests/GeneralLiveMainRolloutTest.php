@@ -254,7 +254,7 @@ class GeneralLiveMainRolloutTest extends TestCase
 
     public function testAdminRegistrationLocaleAndForumAttribute(): void
     {
-        $admin = file_get_contents(dirname(__DIR__) . '/js/src/admin/index.js');
+        $admin = file_get_contents(dirname(__DIR__) . '/js/src/admin/registerLiveAdmin.js');
         $locale = file_get_contents(dirname(__DIR__) . '/resources/locale/en.yaml');
         $extend = file_get_contents(dirname(__DIR__) . '/extend.php');
         $provider = file_get_contents(dirname(__DIR__) . '/js/src/forum/liveMainProvider.js');
