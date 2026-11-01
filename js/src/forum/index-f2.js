@@ -15,6 +15,7 @@ import Chat from './models/Chat';
 import Message from './models/Message';
 import ChatState from './states/ChatState';
 import registerLiveMessagingProvider from './registerLiveMessagingProvider';
+import registerLiveMainProvider, { startLiveMainProvider } from './registerLiveMainProvider';
 import registerLiveBoardProvider from './registerLiveBoardProvider';
 import FlatRateRealtimeClient from './realtime/FlatRateRealtimeClient';
 
@@ -55,6 +56,8 @@ app.initializers.add('flatrate-live-chat', () => {
     });
 
     registerLiveMessagingProvider();
+    // The MAIN pin fails closed until the server says this actor can use General.
+    registerLiveMainProvider();
     registerLiveBoardProvider();
 
     extend(Application.prototype, 'mount', function () {
@@ -77,6 +80,10 @@ app.initializers.add('flatrate-live-chat', () => {
         if (app.session.user && app.flatrateLiveRealtime.isConfigured()) {
             app.flatrateLiveRealtime.connect();
         }
+
+        // Keep presence ownership in Live Chat, not Forum Navigation.
+        // With General master/User Live OFF, this provider is inert for members.
+        startLiveMainProvider();
 
         if ('Notification' in window && app.chat.getFrameState('notify')) Notification.requestPermission();
 

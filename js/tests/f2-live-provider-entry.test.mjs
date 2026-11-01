@@ -10,6 +10,8 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const indexF2 = readFileSync(join(root, 'js/src/forum/index-f2.js'), 'utf8');
 const provider = readFileSync(join(root, 'js/src/forum/registerLiveMessagingProvider.js'), 'utf8');
+const mainProvider = readFileSync(join(root, 'js/src/forum/liveMainProvider.js'), 'utf8');
+const mainRegistration = readFileSync(join(root, 'js/src/forum/registerLiveMainProvider.js'), 'utf8');
 const webpack = readFileSync(join(root, 'js/webpack.config.js'), 'utf8');
 const extendF2 = readFileSync(join(root, 'extend-f2.php'), 'utf8');
 const forumF2Entry = readFileSync(join(root, 'js/forum-f2.js'), 'utf8');
@@ -21,11 +23,14 @@ assert.match(indexF2, /extend\(Application\.prototype,\s*'mount'/);
 assert.match(indexF2, /new ChatState\s*\(/);
 assert.match(indexF2, /apiFetchChats\s*\(/);
 assert.doesNotMatch(indexF2, /addLiveChatsNavigation\s*\(/);
-assert.doesNotMatch(indexF2, /registerLiveMainProvider\s*\(/);
-assert.doesNotMatch(indexF2, /startLiveMainProvider\s*\(/);
+assert.match(indexF2, /registerLiveMainProvider\s*\(/);
+assert.match(indexF2, /startLiveMainProvider\s*\(/);
 
 assert.match(provider, /app\.flatRateMessagingSources\.live\s*=|flatRateMessagingSources\.live\s*=/);
 assert.match(provider, /createLiveMessagingProvider/);
+assert.ok(mainRegistration.includes('app.flatRateLiveMain = createLiveMainProvider'));
+assert.ok(mainProvider.includes("a.forum?.attribute?.('flatrate-live-chat.main_live_available') === true"));
+assert.ok(mainProvider.includes("if (!a?.session?.user) return false"));
 
 assert.match(forumF2Entry, /index-f2/);
 assert.match(webpack, /forum-f2/);
